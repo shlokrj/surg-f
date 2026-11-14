@@ -87,6 +87,13 @@ Shlok is processing VID04, VID05, VID06, VID08, VID10, VID12, VID13, VID14, and 
 
 **Extraction recovery (2026-11-14):** pulled the Hugging Face 429/5xx retry fix. VID04 smoke `196154580792121` succeeded and full run `532427394711055` remains active on its original snapshot. The local batch controller was restarted without cancelling the remote run. `process_ml_cases.py --refresh-pending` now preserves each started case's revision while moving unstarted cases to current committed code, so VID05 onward receives the downloader fix. It checks existing bundles and active runs before new submissions. All 11 script tests passed, including preservation of the active case's smoke/full snapshot. This chat handles assigned extraction only; coverage and model selection belong to the other chat.
 
+**Live extraction checkpoint:** VID04 and VID05 have passed full independent Volume validation against source labels. VID06 full run `1045908906110666` is active. Remaining cases use the latest committed asset and frame retry fixes; no coverage or model-selection work is being done in this chat.
+
+| Case | Full run | Frames | Extraction seconds |
+|---|---|---|---|
+| VID04 | `532427394711055` | 1523 | 232.69 |
+| VID05 | `510839580767177` | 2345 | 352.48 |
+
 ## Aadhitya - videos and Databricks
 
 **Status (2026-11-14):** video work owned by Aadhitya, confirmed by Shlok. Existing results below are reported in project progress, not rerun in this session. Branch: `ml-dev`.
