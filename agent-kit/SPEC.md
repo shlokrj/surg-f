@@ -5,7 +5,7 @@ Search gallbladder surgery footage and click a result to jump to the matching mo
 ## Workflow
 
 - Dataset annotations → timestamped clip intervals → Delta table → backend search → frontend player.
-- In parallel, extract and cache SurgVLP frame features on Databricks GPU (selected by Shlok on 2026-11-14; runtime execution pending). Write validated feature bundles to the `/Volumes/workspace/default/surgf/features/` Volume. Train the tool-presence classifier in a Databricks notebook and log each run in MLflow. Export predictions through the same clip index flow.
+- In parallel, extract and cache SurgVLP frame features on Databricks serverless CPU for the first demo cases (approved by Shlok on 2026-11-14; GPU remains an option for later scaling). Write validated feature bundles to the `/Volumes/workspace/default/surgf/features/` Volume. Train the tool-presence classifier in a Databricks notebook and log each run in MLflow. Export predictions through the same clip index flow.
 - Once live SQL search works, add a Lakeflow job to rebuild the index and log search Hit@3 in MLflow. AI Search and full action triplets are stretch goals.
 
 ## Shared contracts

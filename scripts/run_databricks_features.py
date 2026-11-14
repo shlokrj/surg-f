@@ -33,7 +33,8 @@ def validate_smoke(smoke, cluster_id, remote, case_id):
             or task.state.result_state.value != 'SUCCESS'
             or task.existing_cluster_id != cluster_id or not task.notebook_task
             or task.notebook_task.notebook_path != remote + '/extract_databricks'
-            or task.notebook_task.base_parameters != {'case_id': case_id, 'full_case': 'false'}):
+            or task.notebook_task.base_parameters != {'case_id': case_id, 'full_case': 'false', 'device': 'cuda',
+                                                       'module_dir': '/Workspace' + remote}):
         raise ValueError('smoke run must succeed for this case, cluster, and committed revision')
 
 
@@ -73,7 +74,8 @@ def submit(cluster_id, case_id, full_case=False, smoke_run_id=None):
                           notebook_task=NotebookTask(notebook_path=remote + '/extract_databricks',
                                                      source=Source.WORKSPACE,
                                                      base_parameters={'case_id': case_id,
-                                                                      'full_case': str(full_case).lower()}),
+                                                                      'full_case': str(full_case).lower(), 'device': 'cuda',
+                                                                      'module_dir': '/Workspace' + remote}),
                           timeout_seconds=1200, max_retries=0)],
     ).response
     return {'run_id': response.run_id, 'cluster_id': cluster_id, 'revision': revision,
