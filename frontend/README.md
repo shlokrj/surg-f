@@ -1,6 +1,6 @@
 # Surg+F frontend
 
-The dashboard keeps the video and timeline on the left and the chat, recent questions, and search field on the right. Search output appears below both as one or more stacked sections. It is scoped to the open case, using the shared `GET /search?q=...` clip contract.
+The dashboard lets users switch between the hosted VID01 and VID02 cases. It keeps the video and timeline on the left and the chat, recent questions, and search field on the right. Search output appears below both as one or more stacked sections. It is scoped to the open case, using the shared `GET /search?q=...` clip contract.
 
 ## Run
 
@@ -34,11 +34,11 @@ This writes `frontend/public/videos/VID01.mp4` (692,593,324 bytes, 28:53) and `V
 ## Search features
 
 - `/timestamp clipper` lists annotated clipper intervals for the current video. A click seeks to the interval start.
-- `/chart` counts annotated intervals by instrument for the current video. It queries the six known instrument labels through the existing API.
-- `/quiz` makes an instrument-identification study question from one real annotation in the current video. The answer links to its video moment.
+- `/chart` counts dataset annotation intervals by instrument for the current video, excluding model predictions. It queries the six known instrument labels through the existing API.
+- `/quiz` makes an instrument-identification study question from one dataset annotation in the current video, excluding model predictions. The answer links to its video moment.
 - `/model` explains that a linked model is unavailable. It does not fabricate an anatomy model or video mapping.
 
-The four buttons add their command to the search input without submitting it. Combine commands, such as `/timestamp clipper /quiz`, to stack sections. Without commands, simple keyword rules route phrases such as “when was the clipper used” to timestamps and “how many” to a chart. This is local routing, not an LLM. The backend still exposes only exact label search. Local MP4/MOV playback has no indexed annotations, so these features are unavailable for a locally opened file.
+Timestamp results label dataset annotations and model predictions separately. Predictions can be short and noisy, especially for VID02. The four buttons add their command to the search input without submitting it. Combine commands, such as `/timestamp clipper /quiz`, to stack sections. Without commands, simple keyword rules route phrases such as “when was the clipper used” to timestamps and “how many” to a chart. This is local routing, not an LLM. The backend still exposes only exact label search. Local MP4/MOV playback has no indexed annotations, so these features are unavailable for a locally opened file.
 
 ## Check
 
