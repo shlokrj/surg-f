@@ -6,7 +6,7 @@ import { videoForCase } from './cases.js';
 const app = document.querySelector('#app');
 const state = {
   page: 'home', caseId: 'VID01', title: 'VID01 · Cholecystectomy', videoUrl: videoForCase('VID01'),
-  localVideo: false, localUrl: null, query: '', draft: '', results: [], history: [], active: null,
+  localVideo: false, localUrl: null, filterOn: true, query: '', draft: '', results: [], history: [], active: null,
   loading: false, error: '', pendingSeek: null, duration: 0, outputs: [], timeline: null, timelineError: '', quiz: null, quizAnswers: {}, quizSubmitted: false, reply: '', chartRequest: null, actionRows: [],
 };
 const formatTime = seconds => {
@@ -31,6 +31,10 @@ function render() {
   wire();
 }
 
+function filterButton() {
+  return `<button type="button" class="filter-toggle" data-filter-toggle aria-pressed="${state.filterOn}" aria-label="Content filter ${state.filterOn ? 'on' : 'off'}">Content filter: ${state.filterOn ? 'On' : 'Off'}</button>`;
+}
+
 function home() {
   return `<main class="home"><div class="hero"><div class="hero-logo">${logo}</div>
     <h1>Find the moments that<br><em>matter.</em></h1>
@@ -40,8 +44,8 @@ function home() {
       <div class="upload-icon">↑</div><strong>Open your own video</strong><span>Play a local MP4 or MOV. Event search is available for indexed cases only.</span>
     </div><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>
     ${state.error ? `<p class="home-error" role="alert">${escapeHtml(state.error)}</p>` : ''}
-    </div><aside class="sample-preview"><div class="preview-label">AVAILABLE DEMO CASE</div>
-      <div class="preview-video"><video src="${escapeHtml(videoForCase('VID01'))}" muted playsinline preload="auto" aria-label="Preview of VID01 surgery footage"></video></div>
+    </div><aside class="sample-preview"><div class="preview-top"><div class="preview-label">AVAILABLE DEMO CASE</div>${filterButton()}</div>
+      <div class="preview-video surgical-media ${state.filterOn ? 'filtered' : ''}"><video src="${escapeHtml(videoForCase('VID01'))}" muted playsinline preload="auto" aria-label="Preview of VID01 surgery footage"></video></div>
       <div class="preview-details"><div><span class="preview-kicker">VID01 · CHOLECYSTECTOMY</span><h2>Explore a real annotated case</h2><p>Search for clipper, hook, grasper, and other labeled instrument events. Select a result to seek to that moment.</p></div>
       <div class="preview-event"><span>EXAMPLE ANNOTATION</span><strong>Clipper</strong><b>11:14–11:30</b></div>
       <button id="sample-event" class="preview-action">View clipper event at 11:14 <span>↗</span></button></div>
@@ -114,8 +118,8 @@ function outputSections() {
 function dashboard() {
   const currentResults = (state.timeline?.segments ?? []).map((result, index) => ({ result, index }));
   const duration = state.duration || 1800;
-  return `<main class="dashboard dashboard-features"><section class="workbench"><div class="section-heading"><div><span class="kicker">VIDEO</span><h1>${escapeHtml(state.title)}</h1></div><div class="case-switch" role="group" aria-label="Demo video"><button data-case="VID01" ${state.caseId === 'VID01' ? 'aria-pressed="true"' : ''}>VID01</button><button data-case="VID02" ${state.caseId === 'VID02' ? 'aria-pressed="true"' : ''}>VID02</button></div></div>
-    <div class="video-frame"><video id="player" data-case-id="${escapeHtml(state.caseId)}" controls preload="metadata" ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video><div class="video-fallback" id="video-fallback" hidden><strong>Video unavailable</strong><span>The video for ${escapeHtml(state.caseId)} has not been downloaded or hosted yet.</span></div></div>
+  return `<main class="dashboard dashboard-features"><section class="workbench"><div class="section-heading"><div><span class="kicker">VIDEO</span><h1>${escapeHtml(state.title)}</h1></div><div class="section-actions">${filterButton()}<div class="case-switch" role="group" aria-label="Demo video"><button data-case="VID01" ${state.caseId === 'VID01' ? 'aria-pressed="true"' : ''}>VID01</button><button data-case="VID02" ${state.caseId === 'VID02' ? 'aria-pressed="true"' : ''}>VID02</button></div></div></div>
+    <div class="video-frame surgical-media ${state.filterOn ? 'filtered' : ''}"><video id="player" data-case-id="${escapeHtml(state.caseId)}" controls preload="metadata" ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video><div class="video-fallback" id="video-fallback" hidden><strong>Video unavailable</strong><span>The video for ${escapeHtml(state.caseId)} has not been downloaded or hosted yet.</span></div></div>
     ${state.localVideo ? '<p class="local-note">Local video playback only. This file has no indexed annotations.</p>' : ''}
     <div class="timeline-panel"><div class="timeline-header"><div><span class="kicker">CURRENT VIDEO</span><h2>Event timeline</h2></div></div>
       ${state.localVideo ? '' : '<div class="feature-options"><button data-prompt="/timestamp">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/model">/model</button></div>'}
@@ -132,13 +136,22 @@ function dashboard() {
 
 function openSample(seek = null) {
   state.page = 'dash'; state.caseId = 'VID01'; state.title = 'VID01 · Cholecystectomy';
-  state.videoUrl = videoForCase('VID01'); state.localVideo = false; state.error = '';
+  state.videoUrl = videoForCase('VID01'); state.localVideo = false; state.filterOn = true; state.error = '';
   state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.chartRequest = null; state.actionRows = []; state.query = ''; state.active = null; state.duration = 0; state.pendingSeek = seek;
   render();
   loadCurrentTimeline();
   if (seek != null) runSearch('/timestamp clipper');
 }
 function wire() {
+  document.querySelectorAll('[data-filter-toggle]').forEach(button => button.addEventListener('click', () => {
+    state.filterOn = !state.filterOn;
+    document.querySelectorAll('.surgical-media').forEach(media => media.classList.toggle('filtered', state.filterOn));
+    document.querySelectorAll('[data-filter-toggle]').forEach(toggle => {
+      toggle.textContent = `Content filter: ${state.filterOn ? 'On' : 'Off'}`;
+      toggle.setAttribute('aria-pressed', String(state.filterOn));
+      toggle.setAttribute('aria-label', `Content filter ${state.filterOn ? 'on' : 'off'}`);
+    });
+  }));
   document.querySelector('#change-video')?.addEventListener('click', () => { state.page = 'home'; state.error = ''; render(); });
   const preview = document.querySelector('.preview-video video');
   preview?.addEventListener('loadedmetadata', () => { preview.currentTime = 674; });
@@ -149,7 +162,7 @@ function wire() {
     const next = el.dataset.case;
     if (next === state.caseId) return;
     const query = state.query;
-    state.caseId = next; state.title = `${next} · Cholecystectomy`; state.videoUrl = videoForCase(next);
+    state.caseId = next; state.title = `${next} · Cholecystectomy`; state.videoUrl = videoForCase(next); state.filterOn = true;
     state.duration = 0; state.pendingSeek = null; state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.chartRequest = null; state.actionRows = []; state.query = ''; state.error = '';
     render();
     loadCurrentTimeline();
@@ -214,7 +227,7 @@ function openFile(file) {
   if (state.localUrl) URL.revokeObjectURL(state.localUrl);
   state.localUrl = URL.createObjectURL(file);
   state.page = 'dash'; state.caseId = 'Local video'; state.title = file.name;
-  state.videoUrl = state.localUrl; state.localVideo = true; state.query = '';
+  state.videoUrl = state.localUrl; state.localVideo = true; state.filterOn = true; state.query = '';
   state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.active = null; state.error = ''; state.duration = 0; state.pendingSeek = null;
   render();
 }
