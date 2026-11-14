@@ -12,7 +12,17 @@ Shlok selected Databricks GPU on 2026-11-14. No cluster has been launched or Vol
 4. After the smoke check succeeds, set `full_case=true` and rerun from the widget cell. This downloads only VID01, extracts all 1,734 frames, and publishes to `/Volumes/workspace/default/surgf/features/VID01/`. It reloads and validates the uploaded files before reporting success. Existing complete bundles are validated and preserved; incomplete or incompatible destinations require review, not automatic replacement.
 5. Record the actual cluster/runtime, result, and destination in `PROGRESS.md`. Process another case separately. Stop compute when finished.
 
-The notebook uses the attached Databricks identity; it needs no token in source. For launching remotely from this Mac, configure workspace authentication locally first. The SQL warehouse HTTP path alone cannot launch GPU extraction.
+The notebook uses the attached Databricks identity; it needs no token in source. Local workspace authentication is now verified using the existing team token (Aadhitya's identity). The SQL warehouse HTTP path alone cannot launch GPU extraction.
+
+To check the local setup again:
+
+```sh
+source ~/madhacks2026/.venv-surgf/bin/activate
+pip install databricks-sdk python-dotenv
+python scripts/check_databricks_auth.py
+```
+
+The script loads the Git-ignored repo-root `.env`: `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH` (for SQL), and `DATABRICKS_TOKEN`. It also accepts `DATABRICKS_HOST` as a full HTTPS workspace URL. Keep `.env` owner-readable/writable only (`chmod 600 .env`). The SDK does not load `.env` automatically; this script loads it explicitly. It checks the token identity, Volume metadata, and visible cluster count without starting compute. See the [official SDK authentication guide](https://docs.databricks.com/aws/en/dev-tools/sdk-python).
 
 ## Local setup and smoke check
 
