@@ -6,7 +6,7 @@ import { videoForCase } from './cases.js';
 const app = document.querySelector('#app');
 const state = {
   page: 'home', caseId: 'VID01', title: 'VID01 · Cholecystectomy', videoUrl: videoForCase('VID01'),
-  localVideo: false, localUrl: null, query: '', results: [], history: [], active: null,
+  localVideo: false, localUrl: null, query: '', draft: '', results: [], history: [], active: null,
   loading: false, error: '', pendingSeek: null, duration: 0, outputs: [], timeline: null, timelineError: '', quiz: null, quizAnswers: {}, quizSubmitted: false, reply: '', chartRequest: null, actionRows: [],
 };
 const formatTime = seconds => {
@@ -19,6 +19,8 @@ const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({
 const logo = `<span class="wordmark" aria-label="Surg+F">Surg<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="m15.3 15.3 6 6M10 6v8M6 10h8"/></svg>F</span>`;
 
 function render() {
+  const previousInput = document.querySelector('#query');
+  if (previousInput) state.draft = previousInput.value;
   const previousVideo = document.querySelector('#player');
   if (previousVideo?.dataset.caseId === state.caseId && previousVideo.readyState >= 1 && state.pendingSeek == null) {
     state.pendingSeek = previousVideo.currentTime;
@@ -124,7 +126,7 @@ function dashboard() {
     </section><aside class="chat"><div class="chat-header"><span class="kicker">SURG+F ASSISTANT</span><h2>Ask the footage<span class="chat-spark">✳</span></h2><p>Choose an output or ask about this video.</p></div>
       <div class="history"><div class="aside-label">RECENT QUESTIONS</div>${state.history.length ? state.history.map((query, index) => `<button class="history-item" data-history="${index}"><span>⌕</span>${escapeHtml(query)}<b>↗</b></button>`).join('') : '<p class="history-empty">Your questions will appear here.</p>'}</div>
       <div class="chat-body">${state.query ? `<div class="chat-message user">${escapeHtml(state.query)}</div><div class="chat-message assistant"><span class="mini-logo">✳</span><div>${state.loading ? 'Finding annotations…' : state.error ? escapeHtml(state.error) : escapeHtml(state.reply || (state.outputs.length ? `Showing ${state.outputs.map(mode => `/${mode}`).join(', ')} below the video.` : 'Try an instrument name, /chart or /quiz.'))}</div></div>` : '<div class="chat-intro"><strong>What would you like to explore?</strong><p>Try “when was the clipper used?” or choose a feature below.</p></div>'}</div>
-      <div class="chat-compose">${state.localVideo ? '<p>Event features require an indexed video.</p><button class="sample-btn" id="open-sample">Open indexed sample →</button>' : `<div class="suggestions"><button data-prompt="/timestamp">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/model">/model</button></div><form id="search-form"><label class="sr-only" for="query">Ask about this video</label><input id="query" name="q" placeholder="Ask about this video…" required><button type="submit" aria-label="Search">→</button></form><small>Timeline and chart use this video; quiz covers the operation generally.</small>`}</div></aside>
+      <div class="chat-compose">${state.localVideo ? '<p>Event features require an indexed video.</p><button class="sample-btn" id="open-sample">Open indexed sample →</button>' : `<div class="suggestions"><button data-prompt="/timestamp">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/model">/model</button></div><form id="search-form"><label class="sr-only" for="query">Ask about this video</label><input id="query" name="q" value="${escapeHtml(state.draft)}" placeholder="Ask about this video…" required><button type="submit" aria-label="Search">→</button></form><small>Timeline and chart use this video; quiz covers the operation generally.</small>`}</div></aside>
       <div class="feature-results" aria-live="polite">${outputSections()}</div></main>`;
 }
 
@@ -161,13 +163,33 @@ function wire() {
   zone?.addEventListener('dragleave', () => zone.classList.remove('drag'));
   zone?.addEventListener('drop', event => { event.preventDefault(); zone.classList.remove('drag'); openFile(event.dataTransfer.files[0]); });
   input?.addEventListener('change', () => openFile(input.files[0]));
-  document.querySelector('#search-form')?.addEventListener('submit', event => { event.preventDefault(); runSearch(new FormData(event.currentTarget).get('q')); });
+  const queryInput = document.querySelector('#query');
+  const syncCommands = () => {
+    const selected = new Set(queryInput?.value.match(/\/(?:timestamp|quiz|chart|model)\b/g) ?? []);
+    document.querySelectorAll('[data-prompt]').forEach(button => {
+      const active = selected.has(button.dataset.prompt);
+      button.classList.toggle('selected', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+  };
+  queryInput?.addEventListener('input', () => { state.draft = queryInput.value; syncCommands(); });
+  syncCommands();
+  document.querySelector('#search-form')?.addEventListener('submit', event => {
+    event.preventDefault();
+    const query = queryInput.value;
+    queryInput.value = ''; state.draft = ''; syncCommands();
+    runSearch(query);
+  });
   document.querySelectorAll('[data-prompt]').forEach(el => el.addEventListener('click', () => {
     const input = document.querySelector('#query');
     if (!input) return;
     const command = el.dataset.prompt;
+    const selected = new Set(input.value.match(/\/(?:timestamp|quiz|chart|model)\b/g) ?? []);
+    if (selected.has(command)) { input.focus(); return; }
     const current = input.value.trim();
     input.value = current ? `${current} ${command}` : command;
+    state.draft = input.value;
+    syncCommands();
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
   }));
