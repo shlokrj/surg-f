@@ -32,6 +32,8 @@ class Settings:
     fixtures_dir: Path = FIXTURES_DIR
     quiz_bank_file: Path = QUIZ_BANK_FILE
     warmup: bool = True
+    genie_space_id: str | None = None
+    genie_timeout_sec: float = 40.0
 
 
 def _hostname(values: Mapping[str, str | None]) -> str:
@@ -55,8 +57,16 @@ def settings_from(values: Mapping[str, str | None]) -> Settings:
     origins_raw = values.get("SURGF_CORS_ORIGINS") or ""
     origins = tuple(o.strip() for o in origins_raw.split(",") if o.strip())
     warmup = (values.get("SURGF_WARMUP") or "1").strip().lower() not in ("0", "false", "no")
+    try:
+        genie_timeout = float(values.get("SURGF_GENIE_TIMEOUT_SEC") or 40)
+    except ValueError:
+        genie_timeout = 40.0
     return Settings(
-        databricks=databricks, cors_origins=origins or DEFAULT_CORS_ORIGINS, warmup=warmup
+        databricks=databricks,
+        cors_origins=origins or DEFAULT_CORS_ORIGINS,
+        warmup=warmup,
+        genie_space_id=(values.get("DATABRICKS_GENIE_SPACE_ID") or "").strip() or None,
+        genie_timeout_sec=genie_timeout,
     )
 
 
