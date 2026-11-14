@@ -35,6 +35,8 @@ Scope: frozen SurgVLP setup, one-case-at-a-time feature extraction, annotation a
 
 **Serverless CPU implementation (2026-11-14):** Shlok approved the CPU next steps. Updated the notebook and Aadhitya's shared launcher with pinned torch/torchvision dependencies, explicit device and absolute workspace paths, portable temporary storage, extraction timing, and same-case/revision smoke gating before full runs. `python -m compileall -q ml scripts` and both unittest suites passed (12 bundle tests, 7 launcher tests). Next: execute a timed serverless smoke test, then VID01 and VID02 if it passes. Full extraction remains on Databricks.
 
+**CPU dependency correction (2026-11-14):** smoke run `886657513377262` failed during library installation before model execution. Replaced manually pinned torch/torchvision packages with the listed managed ML v6 CPU base environment and ijson 3.6.0. Launcher tests now cover CPU environment selection, explicit paths/device, timeout, and rejection of missing or wrong-device smoke evidence; 10 launcher tests passed. Retry pending.
+
 **Workflow:** pull before work, commit each feature or major change and update docs, then push only `ml-dev`. Update `main` only at Shlok's explicit request.
 
 ## Aadhitya - videos and Databricks
