@@ -2,7 +2,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path, Query, Request
 
-from .models import ErrorResponse, QuizResponse, SearchResponse, TimelineResponse, TimelineSource
+from .models import (
+    ErrorResponse,
+    InterpretResponse,
+    QuizResponse,
+    SearchResponse,
+    TimelineResponse,
+    TimelineSource,
+)
 from .quiz import MAX_SEED
 from .repository import RepositoryError
 from .service import CaseNotFoundError
@@ -97,6 +104,48 @@ def quiz(
     ] = None,
 ) -> QuizResponse:
     return request.app.state.quiz_service.quiz(seed)
+
+
+@router.get(
+    "/interpret",
+    response_model=InterpretResponse,
+    summary="Turn typed input into actions",
+    description="Send whatever the user typed in the search bar. Returns `actions`, each "
+    "with a `type` (`timestamp`, `chart`, `quiz` or `model`) and the backend `request` that "
+    "carries it out. Slash commands and simple questions are decided instantly by rules. "
+    "Free-form data questions go to Databricks Genie when a Genie space is configured, "
+    "which can take 5 to 30 seconds. If Genie is not configured or fails, the rules' best "
+    "guess is returned, so this endpoint does not fail because of Genie.",
+    responses=INVALID,
+    tags=["interpret"],
+)
+def interpret(
+    request: Request,
+    q: Annotated[
+        str,
+        Query(
+            min_length=1,
+            max_length=300,
+            description="What the user typed",
+            examples=["when was the clipper used?"],
+        ),
+    ],
+    case_id: Annotated[
+        str | None,
+        Query(
+            pattern=r"^[A-Za-z0-9_-]{1,32}$",
+            description="Video currently open, used when the text names no video",
+            examples=["VID01"],
+        ),
+    ] = None,
+) -> InterpretResponse:
+    try:
+        response = request.app.state.interpret_service.interpret(q, case_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if response.genie and response.genie.error:
+        request.state.error = f"genie: {response.genie.error}"
+    return response
 
 
 @router.get(
