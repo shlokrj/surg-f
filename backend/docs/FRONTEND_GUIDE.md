@@ -246,3 +246,9 @@ Errors: 422 for an invalid `seed`.
 ```ts
 type HealthResponse = { status: "ok"; mode: "databricks" | "fixture" };
 ```
+
+## Planned stage 3: video localization
+
+Future overlay integration should expose frame timestamps, source dimensions, normalized boxes and provenance. The player must map into the actual video content rectangle and discard stale detections. The stage-3 payload is still proposed; existing endpoint documentation does not promise box or verb predictions.
+
+See [Stage 3 localization plan](../../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

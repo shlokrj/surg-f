@@ -36,3 +36,9 @@ Status: **proposal, 2026-11-14 (Rohan).** The backend serves these endpoints on 
 - Should `/search` keep mixing `annotation` and `prediction` rows (current behavior), or take the same `source` filter as the timeline? Changing it would be a contract change.
 - Is `case_id` case-sensitive (current behavior, `VID01` only), or should `vid01` also work?
 - Should the frontend's `VITE_USE_FIXTURE` mode use these fixtures, or call the backend's fixture mode instead?
+
+## Planned stage 3: video localization
+
+The planned localization stage is a separate future proposal from the timeline/quiz contract above. No box route has been agreed. Consult the stage-3 plan for candidate fields and negotiate the spatial contract with ML/frontend before implementation.
+
+See [Stage 3 localization plan](../../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

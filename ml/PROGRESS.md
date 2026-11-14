@@ -201,3 +201,11 @@ Work one case at a time; do not download the entire dataset. Keep credentials, f
 Before each task, inspect `git status --short --branch`, fetch, pull `ml-dev`, and merge `origin/main` following the exact commands in the handoff guide. Preserve uncommitted teammate work.
 
 Commit each feature or major change on `ml-dev` with a lowercase Conventional Commit subject, the configured author identity, and no co-authors. Update this tracker and affected project docs in the same push. Fetch and reconcile remote changes before pushing `ml-dev`, leave `main` unchanged unless Shlok explicitly requests a push to it. Never force-push.
+
+## Planned stage 3: video localization
+
+2026-11-14: Stage 3 recorded at Shlok's request; research/documentation complete, implementation deferred. The central plan records the seven-instrument proposal versus the official dataset inventory, annotation audit, model recommendation and later responsibilities. No detector was run and no accuracy, throughput or UI verification is claimed. Resume existing validation work independently.
+
+See [Stage 3 localization plan](LOCALIZATION_PLAN.md) for the complete context and primary sources.
+
+Documentation verification (2026-11-14, `docs/stage-three-localization`, target `main`): `git diff --check` passed; local Markdown link and stage-3 coverage checks passed across all 21 Markdown files including the new plan. Primary model/dataset documentation was checked online. No application tests or model inference were needed for these documentation-only changes. Next: team reads the plan and resolves taxonomy/data access when stage 3 begins.

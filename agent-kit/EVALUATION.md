@@ -4,3 +4,9 @@
 - For model evaluation, split by surgery before fitting or threshold tuning. Start with tool presence and record which cases, checkpoint, and thresholds you used.
 - Label expected time ranges for a handful of demo questions. Count a hit when a top-three result is from an expected case and overlaps an accepted time range. Log the query count and misses alongside the score.
 - Demo search to playback first. Then show the Delta row, the Lakeflow run and MLflow run if implemented, and the annotation versus prediction view if ready.
+
+## Planned stage 3: video localization
+
+For the future localization stage, establish surgery-separated box ground truth before reporting detection quality. Evaluate instrument/anatomy localization separately; add action-link, mask or tracking evaluation only when those outputs exist. Check playback alignment and false positives as well as box metrics. No localization result is currently verified.
+
+See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

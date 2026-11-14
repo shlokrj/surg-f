@@ -28,3 +28,9 @@ Agent kit prepared and Markdown links checked. The first integration target is *
 5. **Shared branch agreed (2026-11-14):** Aadhitya and Shlok work together on branch `ml-dev`. Shlok confirmed the split: Aadhitya handles videos; Shlok sets up SurgVLP and extracts features. Shlok owns classifier training and MLflow; Aadhitya owns prediction export/import. Track work separately in [ML progress](../ml/PROGRESS.md).
 
 Replace proposed owners with names when confirmed. At each handoff, update your row with status, a verified command or PR link, blockers, and the next step. Keep teammates' entries when resolving conflicts.
+
+## Planned stage 3: video localization
+
+2026-11-14: Shlok requested stage 3, toggleable instrument/anatomy localization with later supported action-triplet links. Status: documentation/research only, not started. Recommendation, taxonomy questions, data gaps, proposed owner handoffs and acceptance checks are in the central plan. Current extraction/classifier/smoothing evidence is unchanged by this entry.
+
+See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

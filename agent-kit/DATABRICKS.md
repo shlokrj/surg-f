@@ -21,3 +21,9 @@
 | Playable `.mp4` per case | Built at 25 fps from Cholec80 with `ml/download_cholec80_video.py` (VID01–VID80), otherwise at 1 fps with `ml/make_case_video.py`. Shared copies live in `/Volumes/workspace/default/surgf/videos/<case_id>.mp4` (VID01, VID02). Pull them into `frontend/public/videos/` with `python scripts/fetch_videos.py VID01 VID02`. Never commit them to Git | Team |
 | Code and docs | GitHub | Team |
 | Credentials | Repo-root `.env`, git-ignored | Never shared in Git |
+
+## Planned stage 3: video localization
+
+Future spatial detections should use a separate versioned artifact/table design with model and video provenance, agreed with backend first. Do not insert bounding boxes or action relationships into the existing clip CSV. Detector compute and any mask/tracking workload need their own measured feasibility check; no resources were provisioned for stage 3.
+
+See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

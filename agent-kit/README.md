@@ -9,3 +9,9 @@ Start with [AGENTS.md](AGENTS.md) for Git and collaboration rules. Use [SPEC.md]
 - [Project decisions](DECISIONS.md) records choices that affect multiple lanes.
 
 - [ML team progress](../ml/PROGRESS.md) separates Shlok's feature extraction from Aadhitya's video work.
+
+## Planned stage 3: video localization
+
+The planned third milestone is video localization and optional instrument/anatomy overlays. The central plan records the user reference, model recommendation, taxonomy discrepancy, proposed interfaces and later team handoffs; implementation has not started.
+
+See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

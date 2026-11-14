@@ -36,3 +36,9 @@ The chat-shaped panel currently performs annotated label search. General Q&A, co
 ## Integration check
 
 With the backend returning real rows and `VID01.mp4` available, search `clipper`. Click the first result and confirm `VID01` seeks to `11:14` (674 s). Repeat with VID02: the first `clipper` annotation is `VID02 1255–1268` (20:55). Also check a result from a case without video (for example any `clipper` hit outside VID01/VID02), a `prediction` result, and a no-match query. Run `npm run build` for a production build.
+
+## Planned stage 3: video localization
+
+Planned stage 3: a player toggle for instrument/anatomy boxes and readable labels/scores, with later supported action links. Proposed behavior includes clearing stale overlays on seek/case change and correct fullscreen/letterbox scaling. Use explicitly labeled fixtures only after schema agreement. The reference screenshot is not our procedure taxonomy or real prediction output.
+
+See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

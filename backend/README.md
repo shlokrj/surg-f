@@ -56,3 +56,9 @@ python -m uv run python scripts/export_fixtures.py
 - `data/quiz_bank.json`: quiz content.
 - `fixtures/`: saved responses.
 - `docs/`: the frontend guide and the contract proposal.
+
+## Planned stage 3: video localization
+
+Stage 3 will need a separate versioned spatial-overlay response keyed by video asset and time/frame, after ML/data agree a schema. Search intervals alone cannot provide boxes. No localization endpoint is added by this plan, and existing search/timeline/quiz behavior is unchanged.
+
+See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.
