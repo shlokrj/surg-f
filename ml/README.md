@@ -67,6 +67,16 @@ The expanded run chooses balanced or unweighted training by validation macro F1,
 
 For assigned extractions, `scripts/process_ml_cases.py --cases VID04 VID05 --samples PATH --state PATH_OUTSIDE_GIT` processes cases serially, keeps a fixed code revision, and saves run IDs plus independent verification results. Resume with the same arguments. A failed job stops for review.
 
+## Clip export and smoothing (Aadhitya)
+
+The model labels each second independently, so its output flickers. `smooth()` in [export_predictions.py](export_predictions.py) first fills off-gaps of up to `max_gap` seconds between predicted clips, then drops clips shorter than `min_len` seconds. `0:1` leaves clips unchanged. One serverless CPU job (ML v6) sweeps several settings on one case:
+
+```sh
+python scripts/export_databricks_clips.py --model-run-id <TRAINING_RUN> --case-id <VALIDATION_CASE> --smoothing 0:1,1:1,2:2,3:3,5:3
+```
+
+Each setting becomes its own **MLflow child run** of the training run, named `clips-<CASE>-gap<G>-min<M>`. It logs params `max_gap_sec` and `min_clip_sec`, metrics `<tool>_event_*` and `macro_event_f1`, and artifacts `clips/`. Each setting also writes a CSV to `/Volumes/workspace/default/surgf/predictions/<TRAINING_RUN>/<CASE>-gap<G>-min<M>.csv`; `0:1` keeps the name `<CASE>.csv`. Existing CSVs are never overwritten. Choose the setting by `macro_event_f1` across the **validation** cases only, then import just that setting's CSVs with `scripts/clips_job.py run --csv`.
+
 ## Feature contract
 
 Each `/Volumes/workspace/default/surgf/features/<case_id>/` bundle contains:
