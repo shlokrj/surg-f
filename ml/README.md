@@ -120,6 +120,12 @@ For an independent source annotation join, add `--samples path/to/samples.json`.
 
 ## Compare models without evaluating the final test set
 
+Check only the bundles needed for model selection first (exit 1 means blockers remain):
+
+```sh
+python scripts/check_training_readiness.py --databricks --validation-only --output /tmp/surgf-validation-readiness.json
+```
+
 Once training and validation bundles are available, run:
 
 ```sh
