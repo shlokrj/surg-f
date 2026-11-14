@@ -13,6 +13,7 @@ from app.repository import (
     FixtureClipRepository,
     RepositoryError,
 )
+from app.service import normalize_label
 
 FIXTURE = json.loads(FIXTURE_FILE.read_text(encoding="utf-8"))
 
@@ -46,14 +47,15 @@ def test_full_credentials_select_databricks_mode():
 
 
 def test_fixture_search_matches_shared_fixture(client):
-    response = client.get("/search", params={"q": "clip applier"})
+    response = client.get("/search", params={"q": "clipper"})
     assert response.status_code == 200
     assert response.json() == FIXTURE
 
 
 def test_label_is_case_and_whitespace_insensitive(client):
-    response = client.get("/search", params={"q": "  Clip   APPLIER "})
+    response = client.get("/search", params={"q": "  CLIPPER "})
     assert response.json() == FIXTURE
+    assert normalize_label(" Clip   APPLIER ") == "clip applier"  # multi-word labels still collapse
 
 
 def test_no_match_returns_empty_results(client):
