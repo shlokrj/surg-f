@@ -52,6 +52,12 @@ Scope: playable demo videos, Databricks ingestion, and exporting classifier pred
 
 **For Shlok (2026-11-14):** serverless GPU never got a GPU, but serverless CPU runs. To run `extract_databricks.py` on serverless CPU with `python scripts/gpu_run.py start --case-id VID01 --cpu`, the notebook needs three changes. It's your file, so make them or tell Aadhitya to: (1) allow `device='cpu'` when CUDA is absent, instead of raising; (2) `%pip install` torch>=2.6 and torchvision, since the base serverless environment has no torch; (3) replace `/local_disk0`, which likely doesn't exist on serverless, with `tempfile.mkdtemp()`. ResNet-50 on about 1.7k frames should take minutes on CPU. This is unmeasured.
 
+**For Shlok: scale up training data (2026-11-14, Aadhitya).** One training surgery is a smoke test, not a result. Frames within a surgery are highly correlated, and the rare tools barely appear in VID01: labeled frames there are grasper 1141, hook 788, irrigator 133, bipolar 124, clipper 102, scissors 17. Across all 50 cases: clipper 3429, scissors 2134. Proposal:
+1. **Extract 20 cases**, the first 20 CholecT50 IDs ≤ 80 in order (all have 25 fps video): VID01, 02, 04, 05, 06, 08, 10, 12, 13, 14, 15, 18, 22, 23, 25, 26, 27, 29, 31, 32. At the measured ~6.4 min per case, 18 cases are about 2 h serially, or much less in parallel.
+2. **Split extraction to avoid collisions.** `publish_features.py` refuses existing destinations anyway. **Shlok:** VID04, 05, 06, 08, 10, 12, 13, 14, 15. **Aadhitya:** VID18, 22, 23, 25, 26, 27, 29, 31, 32, starting now with `gpu_run.py start --cpu`: smoke first, then `--full-case --smoke-run-id`.
+3. **Make train and test cases notebook parameters.** `train_tools_databricks.py` currently hardcodes `['VID01']` / `['VID02']` and run name `vid01-train-vid02-test`, while `fit_baseline` already accepts lists. Suggested split: about 15 train / 5 test by surgery. Your call on which cases; picking them before seeing results avoids tuning on test.
+4. Keep VID01→VID02 as the first end-to-end smoke test. Rerun with the larger split as a new MLflow run so the two can be compared.
+
 ## Shared feature handoff
 
 Use `/Volumes/workspace/default/surgf/features/<case_id>/` with `features.npy` shaped `[frames, features]` and `manifest.csv` containing `case_id,frame_id` in matching row order. Follow the shared contracts for checkpoint/preprocessing records and annotation joins. Keep surgery cases separate across training and evaluation.
