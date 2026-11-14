@@ -254,9 +254,13 @@ function wire() {
   video?.addEventListener('pause', updateControls);
   video?.addEventListener('volumechange', updateControls);
   video?.addEventListener('error', () => { document.querySelector('#video-fallback').hidden = false; });
+  video?.addEventListener('seeked', () => {
+    if (state.pendingSeek != null && Math.abs(video.currentTime - state.pendingSeek) < 1) state.pendingSeek = null;
+    updateControls();
+  });
   video?.addEventListener('loadedmetadata', () => {
     state.duration = video.duration;
-    if (state.pendingSeek != null) { video.currentTime = state.pendingSeek; state.pendingSeek = null; }
+    if (state.pendingSeek != null) video.currentTime = state.pendingSeek;
     updateTimeline();
     updateControls();
   });
@@ -326,7 +330,7 @@ function selectResult(index) {
     render();
   } else {
     const video = document.querySelector('#player');
-    if (video?.readyState >= 1) { video.currentTime = state.pendingSeek; state.pendingSeek = null; }
+    if (video?.readyState >= 1) video.currentTime = state.pendingSeek;
     document.querySelectorAll('[data-result]').forEach(el => {
       const chosen = Number(el.dataset.result) === index;
       el.classList.toggle('active', chosen); el.classList.toggle('selected', chosen && el.classList.contains('timeline-event'));

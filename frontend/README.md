@@ -49,6 +49,8 @@ The four buttons are multi-select controls: clicking an unselected button insert
 
 Run `npm run build`. With the Databricks backend and VID01 video available, enter `/timestamp clipper`; the first known interval is `674–690` seconds. Select it and confirm the video seeks to 11:14. `/chart` and `/quiz` require the six instrument-label queries to succeed. A cold warehouse may take time to respond.
 
+On the home page, **View clipper event at 11:14** opens VID01 at 674 seconds. The requested seek stays pending while the dashboard reloads for timeline and search results, and the player clears it only after the `seeked` event. Check that the time control reads 11:14 after the clip loads.
+
 With the backend returning real rows and `VID01.mp4` available, search `clipper`. Click the first result and confirm `VID01` seeks to `11:14` (674 s). Repeat with VID02: the first `clipper` annotation is `VID02 1255–1268` (20:55). Also check a result from a case without video (for example any `clipper` hit outside VID01/VID02), a `prediction` result, and a no-match query. Run `npm run build` for a production build.
 
 ## Planned stage 3: video localization
