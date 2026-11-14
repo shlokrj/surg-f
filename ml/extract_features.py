@@ -10,6 +10,7 @@ import json
 import re
 import shutil
 import tempfile
+import time
 from pathlib import Path
 
 import ijson
@@ -152,7 +153,10 @@ def extract(samples, case_id, frames_dir, checkpoint, output, device='cpu', batc
         raise RuntimeError('CUDA requested but unavailable; attach a GPU cluster')
     if device == 'cpu':
         torch.set_num_threads(min(4, torch.get_num_threads()))
+    loading_started = time.perf_counter()
     model, preprocess = load_encoder(checkpoint, device)
+    loading_seconds = time.perf_counter() - loading_started
+    extraction_started = time.perf_counter()
     batches = []
     with torch.inference_mode():
         for offset in range(0, len(selected), batch_size):
@@ -162,6 +166,7 @@ def extract(samples, case_id, frames_dir, checkpoint, output, device='cpu', batc
                     tensors.append(preprocess(image.convert('RGB')))
             batches.append(model(torch.stack(tensors).to(device)).float().cpu().numpy())
             print(f'{case_id}: {min(offset + batch_size, len(selected))}/{len(selected)} frames', flush=True)
+    extraction_seconds = time.perf_counter() - extraction_started
     features = np.concatenate(batches).astype(np.float32)
     output.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=f'.{output.name}-', dir=output.parent))
@@ -178,6 +183,9 @@ def extract(samples, case_id, frames_dir, checkpoint, output, device='cpu', batc
             'upstream_revision': UPSTREAM_REVISION, 'checkpoint_url': CHECKPOINT_URL,
             'checkpoint_sha256': sha256(checkpoint), 'samples_sha256': sha256(samples),
             'preprocessing': PREPROCESSING, 'device': device,
+            'timing': {'model_loading_seconds': loading_seconds,
+                       'extraction_seconds': extraction_seconds,
+                       'frames_per_second': len(selected) / extraction_seconds},
             'torch': torch.__version__, 'torchvision': torchvision.__version__,
             'file_sha256': {name: sha256(staging / name) for name in ['features.npy', 'manifest.csv', 'annotations.json']},
         }
