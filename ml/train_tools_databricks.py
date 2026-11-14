@@ -67,7 +67,7 @@ with mlflow.start_run(run_name=split['name'] if split else 'vid01-train-vid02-te
     mlflow.log_artifacts(str(local_output), artifact_path='baseline')
     destination = Path('/Volumes/workspace/default/surgf/models/tool-presence') / run.info.run_id
     destination.mkdir(parents=True, exist_ok=False)
-    for name in ['tool_classifiers.joblib', 'metrics.json']:
+    for name in ['tool_classifiers.joblib', 'metrics.json', 'comparison.md']:
         shutil.copyfile(local_output / name, destination / name)
         from extract_features import sha256
         if sha256(local_output / name) != sha256(destination / name):
