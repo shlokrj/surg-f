@@ -9,6 +9,8 @@ https://huggingface.co/datasets/Voxel51/cholect50/resolve/main/samples.json
 """
 import json
 import sys
+import time
+import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -32,7 +34,14 @@ def download_frames(samples, case_id, out_dir, start=None, end=None):
         dst = frames_dir / f"{i:06d}.png"
         if not dst.exists():  # resumable
             tmp = dst.with_suffix(".part")
-            urllib.request.urlretrieve(BASE + paths[i], tmp)
+            for attempt in range(8):  # Hugging Face rate-limits (429) when many runs download at once
+                try:
+                    urllib.request.urlretrieve(BASE + paths[i], tmp)
+                    break
+                except urllib.error.HTTPError as e:
+                    if e.code != 429 and e.code < 500 or attempt == 7:
+                        raise
+                    time.sleep(float(e.headers.get("Retry-After") or 0) or min(60, 2 ** attempt))
             tmp.rename(dst)
 
     with ThreadPoolExecutor(16) as pool:
