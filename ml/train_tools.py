@@ -105,36 +105,60 @@ def fit_baseline(features_root, train_cases, test_cases, output, class_weight="b
 
 def validate_split(split):
     import re
+    if not isinstance(split, dict):
+        raise ValueError('split must be an object')
     seen = set()
     for key in ['train', 'validation', 'test', 'diagnostic']:
         cases = split.get(key, [])
-        if key != 'diagnostic' and not cases:
+        if not isinstance(cases, list) or (key != 'diagnostic' and not cases):
             raise ValueError(f'{key} must be nonempty')
+        if any(not isinstance(case, str) for case in cases):
+            raise ValueError('split case IDs must be strings')
         if (len(set(cases)) != len(cases) or seen.intersection(cases)
                 or any(not re.fullmatch(r'VID\d+', case) for case in cases)):
             raise ValueError('split requires unique, disjoint surgery IDs')
         seen.update(cases)
+    if 'VID02' in seen and 'VID02' not in split.get('diagnostic', []):
+        raise ValueError('previously inspected VID02 must remain diagnostic')
     return split
 
 
-def fit_selected(features_root, split, output):
+def fit_selected(features_root, split, output, validation_only=False):
     """Choose class weighting on validation only, then evaluate test once."""
     import tempfile
+    import shutil
     validate_split(split)
-    scores, reports = {}, {}
+    output = Path(output)
+    if output.exists():
+        raise FileExistsError(output)
+    scores, reports, candidate_reports = {}, {}, {}
     with tempfile.TemporaryDirectory(prefix='surgf-selection-') as tmp:
         for label, weight in [('balanced', 'balanced'), ('unweighted', None)]:
             report = fit_baseline(features_root, split['train'], split['validation'],
                                   Path(tmp) / label, class_weight=weight)
+            candidate_reports[label] = report
             reports[label] = report['tools']
             scores[label] = sum(m.get('f1', 0.0) for m in report['tools'].values()) / len(TOOLS)
-    # Stable tie break prefers balanced. No threshold search is performed.
-    chosen = max(scores, key=scores.get)
-    report = fit_baseline(features_root, split['train'], split['test'], output,
-                          class_weight='balanced' if chosen == 'balanced' else None)
+        # Stable tie break prefers balanced. No threshold search is performed.
+        chosen = max(scores, key=scores.get)
+        if validation_only:
+            # Copy the selected validation artifact without ever loading final-test cases.
+            shutil.copytree(Path(tmp) / chosen, output)
+            report = dict(candidate_reports[chosen])
+        else:
+            report = fit_baseline(features_root, split['train'], split['test'], output,
+                                  class_weight='balanced' if chosen == 'balanced' else None)
+    validation_provenance = {
+        label: {key: candidate.get(key) for key in
+                ['checkpoint_sha256', 'preprocessing', 'samples_sha256', 'versions', 'feature_bundle_hashes']}
+        for label, candidate in candidate_reports.items()}
     report.update({'split': split, 'validation_cases': split['validation'],
+                   'evaluation_partition': 'validation' if validation_only else 'test',
+                   'final_test_evaluated': not validation_only,
                    'selection_metric': 'validation_macro_f1',
+                   'selection_tie_break': 'balanced',
                    'validation_macro_f1': scores, 'validation_tools': reports,
+                   'validation_provenance': validation_provenance,
                    'selected_weighting': chosen})
     (Path(output) / 'metrics.json').write_text(json.dumps(report, indent=2) + '\n')
     return report
