@@ -1,6 +1,6 @@
 # Surg+F frontend
 
-Two-page video chooser and search/playback dashboard based on Mihir's Claude Design prototype. Search calls the shared `GET /search?q=...` API. Selecting a result switches to its `case_id` video and seeks to `start_sec`.
+Two-page video chooser and search/playback dashboard. The home page previews the real VID01 demo case and its verified clipper annotation. Search calls the shared `GET /search?q=...` API. Selecting a result switches to its `case_id` video and seeks to `start_sec`. The timeline displays matches for the currently loaded case; the result list covers all returned cases.
 
 ## Run
 
@@ -10,12 +10,19 @@ npm install
 npm run dev
 ```
 
-Set `VITE_BACKEND_URL` to the API origin (default `http://localhost:8000`). For local development without the backend, set `VITE_USE_FIXTURE=true` in `frontend/.env.local`; this reads `shared/search.fixture.json`. Switch to the real API by changing that environment variable.
+Run the backend from `backend/` as described in [backend/README.md](../backend/README.md). `VITE_BACKEND_URL` defaults to `http://localhost:8000`. For local UI work without Databricks, set `VITE_USE_FIXTURE=true` in `frontend/.env.local`; this reads `shared/search.fixture.json`. Remove that setting to use the real backend. The fixture only matches `clip applier`; real annotation labels include `clipper`, `hook`, and `grasper`.
 
-Put playable assets at `frontend/public/videos/VID01.mp4`, etc., or set `VITE_VIDEO_BASE_URL` to a URL containing the same filenames. The case manifest maps `VID01` and `VID02`; the data owner must supply or host the assets. Video files are excluded from Git. A local upload plays in the browser but does not ingest or annotate the video.
+The video owner hosts the prepared case in the Databricks Volume. From the repo root, with the team `.env` present, download it locally with:
 
-The chat-shaped panel currently performs annotated label search. General Q&A, counts, persistent chat history, arbitrary upload processing, and bleeding detection need backend support and are not claimed by this build.
+```sh
+pip install databricks-sdk python-dotenv
+python scripts/fetch_videos.py VID01
+```
+
+The script places `VID01.mp4` in `frontend/public/videos/`, which is Git ignored. Alternatively, set `VITE_VIDEO_BASE_URL` to a host with `VID01.mp4` and `VID02.mp4`. The case manifest currently maps those two IDs. A local MP4/MOV can be opened for playback, but it is not uploaded or indexed; the app disables event search for it.
+
+The right panel is an exact instrument-label search, not a general question-answering model. Recent searches are session-only. General Q&A, counts, arbitrary upload processing, and bleeding detection require separate backend support.
 
 ## Integration check
 
-With the backend returning real rows and `VID01.mp4` available, search `clipper`. Click the first result and confirm `VID01` seeks to `11:14` (674 s). Repeat with a second case and a no-match query. Run `npm run build` for a production build.
+With the Databricks backend and VID01 video available, search `clipper`. The backend should return first result `VID01` at `674–690` seconds. Click it and confirm that VID01 seeks to `11:14` with the clip applier visible. Search a label with no matches and check the empty state. Run `npm run build` for a production build.
