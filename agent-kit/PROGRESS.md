@@ -11,6 +11,10 @@ Agent kit prepared and Markdown links checked. The first integration target is *
 | Data and ML | Teammate 2 (proposed) | pending confirmation | Playable footage, label alignment, and feature batch unverified | Share one verified clip and a reloadable SurgVLP feature batch |
 | Frontend | Teammate 3 (proposed) | pending confirmation | Playback and seek unverified | Open the correct case at a result timestamp |
 
+## Repository workflow
+
+2026-11-14 (Shlok, `main`): reviewed all 14 Markdown files, pulled shared changes through `1d54791` with `git pull --ff-only`, and reconciled the local agent workflow instructions. `git diff --check` and a local Markdown link-target check passed. No repository sync blockers remain; application blockers and lane handoffs below are unchanged. Next: teammates pull `main` before continuing.
+
 ## Open questions and proposals (not decided)
 
 1. **Label names:** the dataset uses `clipper`, but the fixture and the import_clips.sql check query use `clip applier`. Pick one before demo queries are written.
