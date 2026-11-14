@@ -30,5 +30,5 @@ Both people and their agents commit to `ml-dev`. Merge to `main` through a PR.
    - In Databricks, go to Catalog → `workspace` → `default` → Create → Table and upload `clips.csv` as `surgf_clip_staging`.
    - Run `databricks/import_clips.sql` with catalog `workspace` and schema `default`.
    - Check that `SELECT count(*) FROM workspace.default.surgf_clips WHERE source = 'annotation'` returns 3620, then record it.
-2. Aadhitya (proposed): build `.mp4` files for 2 demo cases from the frames at 1 fps, and build a Databricks training notebook with MLflow under `ml/`.
+2. Aadhitya (proposed): build `.mp4` files for 2 demo cases (VID01 done 2026-11-14 with `ml/make_case_video.py`; needs ffmpeg or `pip install imageio-ffmpeg`) from the frames at 1 fps, and build a Databricks training notebook with MLflow under `ml/`.
 3. ML owner (proposed): set up frozen SurgVLP and extract bundles for 2–3 cases into `/Volumes/workspace/default/surgf/features/<case_id>/`, using the format in CONTRACTS.md.

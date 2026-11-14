@@ -18,6 +18,6 @@
 | SurgVLP feature bundles | `/Volumes/workspace/default/surgf/features/<case_id>/` | Team |
 | Classifier runs and model | MLflow in the team workspace | Team |
 | Prediction clips | Same `surgf_clips` table, `source = prediction` | Team |
-| Playable `.mp4` per case | Not decided. Wherever the frontend player can load it, never Git | Open |
+| Playable `.mp4` per case | Built by `ml/make_case_video.py`. Hosting not decided: wherever the frontend player can load it, never Git | Open |
 | Code and docs | GitHub | Team |
 | Credentials | Repo-root `.env`, git-ignored | Never shared in Git |
