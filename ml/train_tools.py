@@ -36,7 +36,7 @@ def load_cases(root, case_ids):
     return np.concatenate(matrices), np.array([[tool in row for tool in TOOLS] for row in labels], dtype=np.int32), provenance
 
 
-def fit_baseline(features_root, train_cases, test_cases, output):
+def fit_baseline(features_root, train_cases, test_cases, output, class_weight="balanced"):
     import joblib
     import sklearn
     from sklearn.linear_model import LogisticRegression
@@ -68,7 +68,7 @@ def fit_baseline(features_root, train_cases, test_cases, output):
                              'train_positive_frames': int(target.sum())}
             continue
         model = make_pipeline(StandardScaler(), LogisticRegression(
-            C=1.0, class_weight='balanced', solver='liblinear', max_iter=1000, random_state=0))
+            C=1.0, class_weight=class_weight, solver='liblinear', max_iter=1000, random_state=0))
         model.fit(x_train, target)
         probabilities = model.predict_proba(x_test)[:, 1]
         predictions = probabilities >= 0.5
@@ -83,14 +83,14 @@ def fit_baseline(features_root, train_cases, test_cases, output):
     if not models:
         raise ValueError('no tool has both classes in the training set')
     report = {'train_cases': train_cases, 'test_cases': test_cases, 'threshold': 0.5,
-              'train_frames': len(x_train), 'test_frames': len(x_test), 'tools': metrics,
+              'class_weight': class_weight, 'train_frames': len(x_train), 'test_frames': len(x_test), 'tools': metrics,
               'checkpoint_sha256': first_train['checkpoint_sha256'],
               'preprocessing': first_train['preprocessing'],
               'samples_sha256': first_train['samples_sha256'],
               'versions': {'numpy': np.__version__, 'sklearn': sklearn.__version__, 'joblib': joblib.__version__},
               'feature_bundle_hashes': {case: metadata.get('file_sha256', {})
                                        for case, metadata in {**train_meta, **test_meta}.items()},
-              'limitations': 'Two-case engineering baseline, not a generalization claim. No test-set tuning.'}
+              'limitations': 'Surgery-held-out engineering baseline. No test-set tuning; not clinical validation.'}
     output.mkdir(parents=True)
     joblib.dump({'models': models, 'threshold': 0.5, 'tools': TOOLS}, output / 'tool_classifiers.joblib')
     (output / 'metrics.json').write_text(json.dumps(report, indent=2) + '\n')
@@ -99,6 +99,68 @@ def fit_baseline(features_root, train_cases, test_cases, output):
     for tool in models:
         np.testing.assert_allclose(models[tool].predict_proba(x_test),
                                    reloaded['models'][tool].predict_proba(x_test), rtol=0, atol=0)
+    return report
+
+
+
+def validate_split(split):
+    import re
+    if not isinstance(split, dict):
+        raise ValueError('split must be an object')
+    seen = set()
+    for key in ['train', 'validation', 'test', 'diagnostic']:
+        cases = split.get(key, [])
+        if not isinstance(cases, list) or (key != 'diagnostic' and not cases):
+            raise ValueError(f'{key} must be nonempty')
+        if any(not isinstance(case, str) for case in cases):
+            raise ValueError('split case IDs must be strings')
+        if (len(set(cases)) != len(cases) or seen.intersection(cases)
+                or any(not re.fullmatch(r'VID\d+', case) for case in cases)):
+            raise ValueError('split requires unique, disjoint surgery IDs')
+        seen.update(cases)
+    if 'VID02' in seen and 'VID02' not in split.get('diagnostic', []):
+        raise ValueError('previously inspected VID02 must remain diagnostic')
+    return split
+
+
+def fit_selected(features_root, split, output, validation_only=False):
+    """Choose class weighting on validation only, then evaluate test once."""
+    import tempfile
+    import shutil
+    validate_split(split)
+    output = Path(output)
+    if output.exists():
+        raise FileExistsError(output)
+    scores, reports, candidate_reports = {}, {}, {}
+    with tempfile.TemporaryDirectory(prefix='surgf-selection-') as tmp:
+        for label, weight in [('balanced', 'balanced'), ('unweighted', None)]:
+            report = fit_baseline(features_root, split['train'], split['validation'],
+                                  Path(tmp) / label, class_weight=weight)
+            candidate_reports[label] = report
+            reports[label] = report['tools']
+            scores[label] = sum(m.get('f1', 0.0) for m in report['tools'].values()) / len(TOOLS)
+        # Stable tie break prefers balanced. No threshold search is performed.
+        chosen = max(scores, key=scores.get)
+        if validation_only:
+            # Copy the selected validation artifact without ever loading final-test cases.
+            shutil.copytree(Path(tmp) / chosen, output)
+            report = dict(candidate_reports[chosen])
+        else:
+            report = fit_baseline(features_root, split['train'], split['test'], output,
+                                  class_weight='balanced' if chosen == 'balanced' else None)
+    validation_provenance = {
+        label: {key: candidate.get(key) for key in
+                ['checkpoint_sha256', 'preprocessing', 'samples_sha256', 'versions', 'feature_bundle_hashes']}
+        for label, candidate in candidate_reports.items()}
+    report.update({'split': split, 'validation_cases': split['validation'],
+                   'evaluation_partition': 'validation' if validation_only else 'test',
+                   'final_test_evaluated': not validation_only,
+                   'selection_metric': 'validation_macro_f1',
+                   'selection_tie_break': 'balanced',
+                   'validation_macro_f1': scores, 'validation_tools': reports,
+                   'validation_provenance': validation_provenance,
+                   'selected_weighting': chosen})
+    (Path(output) / 'metrics.json').write_text(json.dumps(report, indent=2) + '\n')
     return report
 
 

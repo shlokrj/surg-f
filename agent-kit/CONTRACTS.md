@@ -1,6 +1,6 @@
 # Shared interfaces
 
-Initial search API: `GET /search?q=clip%20applier`. Return an object with a `results` array, including an empty array for no match.
+Initial search API: `GET /search?q=clipper`. Return an object with a `results` array, including an empty array for no match.
 
 ```json
 {"results":[{"case_id":"case_01","start_sec":30,"end_sec":35,"label":"clipper","source":"fixture"}]}

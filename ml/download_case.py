@@ -9,11 +9,24 @@ https://huggingface.co/datasets/Voxel51/cholect50/resolve/main/samples.json
 """
 import json
 import sys
+import time
+import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 BASE = "https://huggingface.co/datasets/Voxel51/cholect50/resolve/main/"
+
+
+def with_retry(call, attempts=8):
+    """Run call(), retrying Hugging Face rate limits (429) and 5xx with backoff; other errors raise."""
+    for attempt in range(attempts):
+        try:
+            return call()
+        except urllib.error.HTTPError as e:
+            if e.code != 429 and e.code < 500 or attempt == attempts - 1:
+                raise
+            time.sleep(float(e.headers.get("Retry-After") or 0) or min(60, 2 ** attempt))
 
 
 def download_frames(samples, case_id, out_dir, start=None, end=None):
@@ -32,7 +45,7 @@ def download_frames(samples, case_id, out_dir, start=None, end=None):
         dst = frames_dir / f"{i:06d}.png"
         if not dst.exists():  # resumable
             tmp = dst.with_suffix(".part")
-            urllib.request.urlretrieve(BASE + paths[i], tmp)
+            with_retry(lambda: urllib.request.urlretrieve(BASE + paths[i], tmp))
             tmp.rename(dst)
 
     with ThreadPoolExecutor(16) as pool:
