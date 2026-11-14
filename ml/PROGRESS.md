@@ -98,6 +98,12 @@ Implemented on `feat/ml-surgery-report` for publication to `ml-dev` and `main`. 
 
 Verification: `python -m unittest discover -s ml -p 'test_*.py'` passed 39 tests; `python -m unittest discover -s scripts -p 'test_*.py'` passed 17. Tests check hand-calculated confusion counts/AP, training-only prevalence, single-class labels, two-surgery reporting with actual synthetic logistic regression, unsupported tools and Markdown output. `git diff --check` and Python compilation passed. Real-data reporting awaits a new training run; no remote job was submitted here. Next: Shlok uses the existing validation-only command when inputs are ready; Aadhitya implements the assigned timestamp review export above.
 
+### Error-review implementation (2026-11-14)
+
+Shlok authorized completing Aadhitya's remaining review task. Implemented `ml/review_prediction_errors.py`, its tests, and `scripts/review_databricks_errors.py` / `ml/review_errors_databricks.py` on `feat/ml-error-review`. It creates a separate bounded CSV and provenance sidecar, excludes unknown labels, rejects training/final-test cases and mismatched model/bundle provenance, and requires explicit diagnostic mode for VID02. Samples are evenly spaced chronologically per tool/error type; frame IDs equal seconds. These are raw frame decisions, not smoothed clip errors, and are not imported into search. Outputs are marked not visually reviewed.
+
+Local verification: ML suite passed 46 tests including timestamp/threshold boundaries, unknown labels, sampling determinism, no duplicate rows, partition guards, provenance, CSV/sidecar output and overwrite rejection. Python syntax and `git diff --check` passed. A live validation readiness check found 12/15 bundles ready; VID08, VID10 and VID12 still had missing files. No expanded training was launched. Next: run the review notebook on the existing VID02 baseline as a diagnostic, then use validation cases once the expanded model is available.
+
 ### Assigned extraction batch (2026-11-14)
 
 Shlok is processing VID04, VID05, VID06, VID08, VID10, VID12, VID13, VID14, and VID15 in this chat. `scripts/process_ml_cases.py` runs one case at a time on Databricks CPU, with a smoke gate, a pinned committed snapshot, and independent source-label validation. A local state file outside Git records run IDs and allows resuming. Failed jobs stop for review. Aadhitya's active jobs are left running.

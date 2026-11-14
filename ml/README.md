@@ -153,3 +153,15 @@ New training runs save `comparison.md` beside `metrics.json` and `tool_classifie
 Reference baselines predict always absent or use the constant positive prevalence calculated only from training labels. Probabilities are thresholded at 0.5, including ties. Missing annotations are excluded. Precision/recall/F1 with zero denominators are recorded as 0; AP is null for single-class evaluation labels. A tool without both training classes has null model metrics, not a zero-quality fitted model. Reference metrics remain available. These reports do not change the existing pooled validation macro-F1 selection criterion.
 
 For final-evaluation runs, the Markdown candidate table remains validation-only; final-test per-surgery results are in `case_metrics` in JSON. Older saved runs are not backfilled. See the [reporting and error-review assignments](PROGRESS.md#reporting-and-error-review-assignments-2026-11-14) for Aadhitya's next task and the handoff.
+
+## Generate timestamp error-review files
+
+```sh
+python scripts/review_databricks_errors.py --model-run-id MODEL_RUN_ID --case-id VID15
+# Existing baseline diagnostics only:
+python scripts/review_databricks_errors.py --model-run-id 54659bc60d734052927dadf80ea16e13 --case-id VID02 --diagnostic
+```
+
+The runner downloads the model from MLflow inside Databricks ML v6, creates up to 20 rows per tool/error type, and saves `review.csv` plus `review.json` in a child MLflow run and `/Volumes/workspace/default/surgf/reviews/<review-run-id>/`. Readback hashes are checked. CSV columns include case, tool, frame/second, expected label, probability, threshold, error type, model run and partition. The sidecar records total error counts before sampling, unknown-frame count, provenance and `visually_reviewed=false`.
+
+Training/final-test cases are rejected; VID02 requires `--diagnostic`. Only known labels are reviewed. Chronologically spaced sampling is reproducible, not an unbiased estimate of model quality. Review rows describe raw frame decisions before smoothing and must not be imported into the clip search table. Local/mounted use: `python ml/review_prediction_errors.py MODEL_DIR BUNDLE_DIR review.csv --split ml/case_split.json` (use the model's package versions).
