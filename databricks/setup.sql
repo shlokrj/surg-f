@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS surgf_clips (
 MERGE INTO surgf_clips AS clips
 USING (
   SELECT 'fixture_01' AS case_id, CAST(30 AS DOUBLE) AS start_sec,
-         CAST(35 AS DOUBLE) AS end_sec, 'clip applier' AS label,
+         CAST(35 AS DOUBLE) AS end_sec, 'clipper' AS label,
          'fixture' AS source
 ) AS sample
 ON clips.case_id = sample.case_id
