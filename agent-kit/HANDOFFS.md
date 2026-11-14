@@ -14,6 +14,10 @@ Record the branch or PR, what runs, the exact verification command or demo steps
 
 Videos for VID01 and VID02 are hosted. Fetch them with `python scripts/fetch_videos.py VID01 VID02`. Search returns clips from 50 cases, but only those two have video, and it includes noisy VID02 `prediction` rows from the baseline model. See [frontend/README.md](../frontend/README.md#videos-and-data-from-dataml-2026-11-14) for details and the integration check.
 
+## Backend → frontend (2026-11-14)
+
+Mihir: everything needed to wire up search, the instrument chart, and the quiz is in [backend/docs/FRONTEND_GUIDE.md](../backend/docs/FRONTEND_GUIDE.md). It covers URLs, curl examples, real responses, TypeScript types, errors, and which UI element uses which endpoint. On branch `backend`, start the API with `cd backend; python -m uv run uvicorn app.main:app --port 8000`. Use `GET /cases/{case_id}/timeline` for the chart instead of six `/search` calls; it leaves predictions out by default. Use `GET /quiz` for five general questions instead of the per-video quiz, and show a "not yet medically reviewed" notice while `reviewed` is false. The timeline and quiz shapes are a [proposal](../backend/docs/CONTRACT_PROPOSAL.md) until the team agrees. Offline copies are in `backend/fixtures/`.
+
 ## Shared `ml-dev` branch (Aadhitya + Shlok)
 
 Both people and their agents commit and push to `ml-dev`. Update `main` only when Shlok explicitly requests it. Track separate work in [ML progress](../ml/PROGRESS.md): Shlok owns SurgVLP/features, coverage analysis, dataset splits, classifier training, and MLflow. Aadhitya owns videos, prediction export/import, and clip-level evaluation.
