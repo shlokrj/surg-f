@@ -1,0 +1,4 @@
+# Install a matching torch/torchvision pair for your CPU or CUDA environment first.
+numpy>=1.26,<2
+Pillow>=10,<12
+ijson>=3.3,<4
