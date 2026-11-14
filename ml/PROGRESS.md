@@ -48,10 +48,14 @@ Scope: playable demo videos and existing Databricks ingestion work. The training
 - [x] Check smooth-video source (2026-11-14). Cholec80 25 fps videos download directly with no request form. Single videos can be pulled from the 74.9 GB zip using range requests. `RemoteZip(url).infolist()` listed 324 entries, including `videos/video01.mp4` at 692.7 MB. Covers VID01–VID80 only. Details are in agent-kit/PROGRESS.md, open question 2.
 - [x] Add `ml/download_cholec80_video.py` (2026-11-14). It builds smooth 25 fps browser-ready demo videos with faststart, copying the stream without re-encoding. Built `VID01.mp4` (692.6 MB) and `VID02.mp4` (1.14 GB) on Aadhitya's machine. Alignment against CholecT50 frames is a constant -0.04 s for VID01 and +0.08 s for VID02, with no drift across 5 checked points. `VID92` is rejected with an error because Cholec80 only covers VID01–VID80.
 - [x] Build another demo case: VID02 (25 fps).
+- [x] Add `scripts/gpu_run.py` (2026-11-14) to start, list, and stop extraction runs on serverless compute. Each run has a hard timeout (default 30 min) and bills only while active. It reuses `run_databricks_features.py` deploy/snapshot unchanged. Verified: `start --case-id VID01 --cpu --timeout-min 5` launched run 409734303669408, `list` showed it, `stop` cancelled it, and `list` no longer showed it. Needs `pip install databricks-sdk python-dotenv`.
+- [x] Test serverless compute (2026-11-14). Serverless GPU (`GPU_1xA10`) stayed `PENDING` for 13.5 min with no GPU assigned, then was cancelled. Serverless CPU starts in under 1 min. Details are in agent-kit/PROGRESS.md, open question 4.
 - [ ] Agree with frontend on video hosting and hand over playable URLs.
 - [ ] Confirm ownership of the Databricks classifier notebook and MLflow runs.
 
 **Blocker / next handoff:** 25 fps `VID01.mp4` and `VID02.mp4` exist on Aadhitya's machine and are not hosted. Frontend needs an accessible video; training needs Shlok's validated features.
+
+**For Shlok (2026-11-14):** serverless GPU never got a GPU, but serverless CPU runs. To run `extract_databricks.py` on serverless CPU with `python scripts/gpu_run.py start --case-id VID01 --cpu`, the notebook needs three changes. It's your file, so make them or tell Aadhitya to: (1) allow `device='cpu'` when CUDA is absent, instead of raising; (2) `%pip install` torch>=2.6 and torchvision, since the base serverless environment has no torch; (3) replace `/local_disk0`, which likely doesn't exist on serverless, with `tempfile.mkdtemp()`. ResNet-50 on about 1.7k frames should take minutes on CPU. This is unmeasured.
 
 ## Shared feature handoff
 
