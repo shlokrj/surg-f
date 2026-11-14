@@ -6,7 +6,7 @@ Agent kit prepared and Markdown links checked. The first integration target is *
 
 | Lane | Owner | Status | Verified evidence or blocker | Next handoff |
 |---|---|---|---|---|
-| Databricks | Shlok, Aadhitya | in progress | Setup SQL, shared fixture, and staging import prepared. 2026-11-14 (Aadhitya): team warehouse connection verified with `SELECT current_catalog(), current_schema()` via the SQL Statement API, which returned `workspace`, `default`. `surgf_clips` not created yet. Real data pending | Run setup.sql in `workspace.default`, then share `workspace.default.surgf_clips` and the fixture query with backend |
+| Databricks | Shlok, Aadhitya | in progress | 2026-11-14 (Aadhitya): ran setup.sql in `workspace.default` on the team warehouse. Created `workspace.default.surgf_clips`; the MERGE inserted 1 row, and `SELECT case_id, start_sec, end_sec, label, source FROM workspace.default.surgf_clips WHERE source = 'fixture' AND case_id = 'fixture_01'` returned `fixture_01, 30.0, 35.0, clip applier, fixture`. Real annotation data pending | Backend: query `workspace.default.surgf_clips` by label and return the fixture row from /search. Data owner: send the clip CSV for `surgf_clip_staging` |
 | Backend | Teammate 1 (proposed) | pending confirmation | API and SQL connection unverified | Return the shared clip result from /search |
 | Data and ML | Teammate 2 (proposed) | pending confirmation | Playable footage, label alignment, and feature batch unverified | Share one verified clip and a reloadable SurgVLP feature batch |
 | Frontend | Teammate 3 (proposed) | pending confirmation | Playback and seek unverified | Open the correct case at a result timestamp |
