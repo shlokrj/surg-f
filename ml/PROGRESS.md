@@ -112,6 +112,12 @@ The criterion is fixed now, before expanded-model results: average six-tool even
 
 Verification: ML suite passed 51 tests; scripts suite passed 17. Tests include hand-calculated scores, tie order, complete-sweep enforcement, test/diagnostic exclusion, provenance/threshold/support mismatches and CLI output/overwrite behavior. `git diff --check` and Python compilation passed. Next: after validation training, run the declared sweep on VID15/VID25/VID26, download the new `clips/evaluation.json` artifacts and use the README selection command. Historical reports missing provenance are rejected rather than silently mixed.
 
+### Prediction export integrity (2026-11-14)
+
+Completed on `fix/ml-export-validation` for publication to `ml-dev` and `main`. Clip export now rejects model/bundle checkpoint, preprocessing or source-label mismatches before model loading; it checks saved/report threshold agreement, recognized tool models, binary class order and finite normalized probability outputs. Smoothing rejects noninteger/invalid settings and unsorted/empty intervals, and nested intervals no longer shorten their containing clip. Valid default exports and search fields are unchanged.
+
+Verification: `python -m unittest discover -s ml -p 'test_*.py'` passed 54 tests; scripts suite passed 17; Python compilation and `git diff --check` passed. New checks cover incompatible provenance before inference, invalid thresholds/classes/probabilities and nested interval behavior. No prediction CSV was imported or remote job started. Live status check: VID12 full extraction `812670622528218` was still RUNNING. Next: validate its published bundle before launching the expanded validation-only model comparison.
+
 ### Assigned extraction batch (2026-11-14)
 
 Shlok is processing VID04, VID05, VID06, VID08, VID10, VID12, VID13, VID14, and VID15 in this chat. `scripts/process_ml_cases.py` runs one case at a time on Databricks CPU, with a smoke gate, a pinned committed snapshot, and independent source-label validation. A local state file outside Git records run IDs and allows resuming. Failed jobs stop for review. Aadhitya's active jobs are left running.
