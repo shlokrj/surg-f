@@ -88,3 +88,19 @@ python -m unittest discover -s scripts -p 'test_*.py' -v
 ```
 
 The launcher uploads only files from the current Git commit, never `.env`, raw data, or uncommitted code. It uses existing compute, sets a 20-minute task / 30-minute run timeout and zero task retries, and requires smoke success for the same case, cluster, and revision before a full run. It does not terminate an existing cluster that another teammate might be using. Stop your dedicated extraction compute when finished.
+
+## CPU or GPU for the demo
+
+Current recommendation: Databricks serverless CPU for VID01 and VID02, then reconsider GPU for more cases. We run a frozen image encoder, not backbone training. CPU already produced valid features locally; a timed Databricks run is still needed before estimating full-case duration.
+
+Live workspace checks on 2026-11-14 found:
+
+| Option | Evidence | Next step |
+|---|---|---|
+| Classic T4 GPU | Launch rejected because no worker environment is attached | Do not keep retrying; account provisioning must be resolved |
+| Serverless GPU | AI environments listed; existing probe has not executed successfully | Revisit if CPU is too slow; a listed environment does not guarantee GPU capacity |
+| Serverless CPU | Probe reached Python but lacked torch; managed ML CPU environment lists torch and torchvision | Add serverless support and benchmark a real batch with the ML environment |
+
+For serverless CPU, select the managed ML base environment, add ijson, explicitly choose CPU, use a writable temporary directory, and resolve workspace modules by absolute path. The current GPU notebook and launcher need these changes before they can run there. Keep full extraction and feature storage on Databricks. Train the small classifier on cached features using CPU.
+
+This recommendation prioritizes getting the demo working. Extraction throughput and total cost on Databricks have not yet been measured. See [serverless environment configuration](https://docs.databricks.com/aws/en/compute/serverless/dependencies) and [AI Runtime overview](https://docs.databricks.com/aws/en/machine-learning/ai-runtime/overview).
