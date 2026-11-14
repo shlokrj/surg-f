@@ -41,6 +41,8 @@ Scope: frozen SurgVLP setup, one-case-at-a-time feature extraction, annotation a
 
 **Classifier implementation (2026-11-14):** Shlok is implementing the CPU baseline under the approved next steps. `train_tools.py` uses per-tool logistic regression on frozen features, trains on VID01, holds out VID02, fits scaling on training rows only, excludes missing annotations, and fixes the threshold at 0.5. Tools without both training classes are marked not trained. The Databricks notebook logs params, per-tool metrics, and fitted classifier artifacts to MLflow and the Volume. Three synthetic-data tests cover surgery separation, train-only scaling, and matching provenance; 15 ML tests pass in total. Training has not run on real bundles yet.
 
+**VID01 complete (2026-11-14):** Databricks CPU run `1014355595133232` succeeded. Uploaded `/Volumes/workspace/default/surgf/features/VID01/` with `[1734,768]` float32 features. Extraction: 263.91 s (6.57 frames/s); notebook elapsed: 382.92 s. `python scripts/verify_databricks_features.py --case-id VID01 --samples ~/madhacks2026/data/cholect50/samples.json` downloaded all four files and independently passed full-case coverage, checksums, and source annotation joins. This validation ran locally but no full local extraction occurred. Next: VID02 smoke/full run, then the classifier baseline.
+
 **Workflow:** pull before work, commit each feature or major change and update docs, then push only `ml-dev`. Update `main` only at Shlok's explicit request.
 
 ## Aadhitya - videos and Databricks
