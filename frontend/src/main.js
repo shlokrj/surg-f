@@ -1,38 +1,228 @@
 import './style.css';
-import { searchClips, fixtureMode } from './api.js';
+import { searchClips, getTimeline, getQuiz, instrumentLabels } from './api.js';
 import { videoForCase } from './cases.js';
 
 const app = document.querySelector('#app');
-const state = { page: 'home', caseId: 'VID01', title: 'Sample surgery · VID01', videoUrl: videoForCase('VID01'), query: '', results: [], history: [], active: null, loading: false, error: '', uploadName: '', localUrl: null, playing: false };
-const fmt = seconds => { const s = Math.floor(Number(seconds) || 0); return `${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`; };
-const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const state = {
+  page: 'home', caseId: 'VID01', title: 'VID01 · Cholecystectomy', videoUrl: videoForCase('VID01'),
+  localVideo: false, localUrl: null, query: '', results: [], history: [], active: null,
+  loading: false, error: '', pendingSeek: null, duration: 0, outputs: [], timeline: null, timelineError: '', quiz: null, quizAnswers: {},
+};
+const formatTime = seconds => {
+  const n = Math.floor(Number(seconds) || 0);
+  return `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+};
+const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+}[c]));
 const logo = `<span class="wordmark" aria-label="Surg+F">Surg<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="m15.3 15.3 6 6M10 6v8M6 10h8"/></svg>F</span>`;
 
 function render() {
-  app.innerHTML = `<header class="topbar">${logo}${state.page === 'dash' ? `<div class="top-title">${esc(state.title)}</div><button class="top-action" id="change-video">Change video <span>↗</span></button>` : '<span class="top-spacer"></span><span class="top-caption">SURGICAL VIDEO INTELLIGENCE</span>'}</header>${state.page === 'home' ? home() : dashboard()}`;
+  const previousVideo = document.querySelector('#player');
+  if (previousVideo?.dataset.caseId === state.caseId && previousVideo.readyState >= 1 && state.pendingSeek == null) {
+    state.pendingSeek = previousVideo.currentTime;
+  }
+  app.innerHTML = `<header class="topbar">${logo}${state.page === 'dash'
+    ? `<div class="top-title">${escapeHtml(state.title)}</div><button class="top-action" id="change-video">Choose another video <span>↗</span></button>`
+    : '<span class="top-spacer"></span>'}</header>${state.page === 'home' ? home() : dashboard()}`;
   wire();
 }
-function home() { return `<main class="home"><div class="hero"><div class="eyebrow"><span class="pulse"></span> VIDEO SEARCH, MADE HUMAN</div><div class="hero-logo">${logo}</div><h1>Find the moments that<br><em>matter.</em></h1><p>Explore surgical footage with precise, searchable moments. Ask a question, find an event, and jump straight to it.</p><div class="steps"><span>01 &nbsp; Choose video</span><b>→</b><span>02 &nbsp; Search events</span><b>→</b><span>03 &nbsp; Jump to moment</span></div><div class="upload-card" id="drop-zone" tabindex="0" role="button" aria-label="Choose an MP4 or MOV video"><div class="upload-icon">↑</div><strong>Drop a surgical video here</strong><span>or click to browse your files</span><small>MP4 or MOV</small></div><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden><button class="sample-btn" id="sample">Explore sample surgery <span>→</span></button>${state.error ? `<p class="home-error" role="alert">${esc(state.error)}</p>` : ''}<p class="home-foot">For the live demo, use the prepared sample. Uploaded videos can be played locally; searchable annotations require a matching case in the backend.</p></div><div class="hero-art" aria-hidden="true"><div class="art-ring a"></div><div class="art-ring b"></div><div class="art-ring c"></div><div class="art-line"></div><div class="art-point p1"></div><div class="art-point p2"></div><div class="art-point p3"></div><div class="art-label l1">CLIPPER <b>11:14</b></div><div class="art-label l2">HOOK <b>06:32</b></div><div class="art-label l3">GRASPER <b>02:48</b></div></div></main>`; }
-function resultCard(result, index) { const active = state.active === index; return `<button class="result ${active ? 'active' : ''}" data-result="${index}"><span class="result-num">${String(index + 1).padStart(2,'0')}</span><span class="result-main"><strong>${esc(result.label)}</strong><small>${esc(result.case_id)} · ${esc(result.source)}</small></span><span class="result-time">${fmt(result.start_sec)}–${fmt(result.end_sec)}</span><span class="result-arrow">↗</span></button>`; }
-function dashboard() { const results = state.results; const duration = Math.max(1, Number(document.querySelector('video')?.duration) || 1800); return `<main class="dashboard"><section class="workbench"><div class="section-heading"><div><span class="kicker">NOW ANALYZING</span><h1>${esc(state.title)}</h1></div><span class="case-pill">${esc(state.caseId)}</span></div><div class="video-frame"><video id="player" controls preload="metadata" ${state.videoUrl ? `src="${esc(state.videoUrl)}"` : ''}></video><div class="video-fallback" id="video-fallback" hidden><strong>Video unavailable</strong><span>Add ${esc(state.caseId)}.mp4 to frontend/public/videos or configure VITE_VIDEO_BASE_URL.</span></div></div><div class="timeline-panel"><div class="timeline-header"><div><span class="kicker">EVENT TIMELINE</span><h2>Explore the footage</h2></div><span class="timeline-hint">Select a moment to jump there</span></div><div class="timeline-track" id="timeline" aria-label="Video event timeline"><div class="timeline-line"></div>${results.map((r,i) => { const left = Math.min(99,Math.max(0,Number(r.start_sec)/duration*100)); const width = Math.max(0.65,Math.min(100-left,(Number(r.end_sec)-Number(r.start_sec))/duration*100)); return `<button class="timeline-event ${state.active === i ? 'selected' : ''}" data-result="${i}" style="left:${left}%;width:${width}%" title="${esc(r.label)} · ${fmt(r.start_sec)}–${fmt(r.end_sec)}" aria-label="${esc(r.label)} at ${fmt(r.start_sec)}"></button>`; }).join('')}<span class="timeline-end">${fmt(duration)}</span></div><div class="legend"><span><i></i> Search matches</span><span class="timeline-meta">${results.length} ${results.length === 1 ? 'moment' : 'moments'} found</span></div></div><section class="moments"><div class="moments-heading"><div><span class="kicker">SEARCH RESULTS</span><h2>Matching moments</h2></div><span class="count">${String(results.length).padStart(2,'0')}</span></div>${state.loading ? '<p class="empty">Searching annotated clips…</p>' : state.error ? `<p class="empty error" role="alert">${esc(state.error)}</p>` : results.length ? `<div class="results">${results.map(resultCard).join('')}</div>` : `<div class="empty"><span class="empty-icon">⌕</span><strong>${state.query ? 'No matching moments found' : 'Your moments will appear here'}</strong><p>${state.query ? 'Try another annotated instrument name, such as clipper or hook.' : 'Search for an instrument to see its timestamps.'}</p></div>`}</section></section><aside class="chat"><div class="chat-header"><span class="kicker">SURG+F ASSISTANT</span><h2>Ask the footage<span class="chat-spark">✳</span></h2><p>Search annotated events and jump to the moments that matter.</p></div><div class="history"><div class="aside-label">RECENT QUESTIONS</div>${state.history.length ? state.history.map((h,i) => `<button class="history-item" data-history="${i}"><span>⌕</span>${esc(h.query)}<b>↗</b></button>`).join('') : '<p class="history-empty">Your searches will appear here.</p>'}</div><div class="chat-body" id="chat-body">${state.query ? `<div class="chat-message user">${esc(state.query)}</div><div class="chat-message assistant"><span class="mini-logo">✳</span><div>${state.loading ? 'Searching the video…' : state.error ? esc(state.error) : results.length ? `Found ${results.length} matching ${results.length === 1 ? 'moment' : 'moments'}. Select a timestamp to watch.` : 'No supported match found in the available annotations.'}</div></div>${results.length ? `<div class="chat-results">${results.map((r,i) => `<button data-result="${i}"><span>${esc(r.label)} · ${fmt(r.start_sec)}–${fmt(r.end_sec)}</span><b>↗</b></button>`).join('')}</div>` : ''}` : `<div class="chat-intro"><div class="intro-symbol">✳</div><strong>What would you like to find?</strong><p>Ask about a surgical instrument to locate its annotated appearances.</p></div>`}</div><div class="chat-compose"><div class="suggestions"><button data-prompt="clipper">Find clipper</button><button data-prompt="hook">Show hook events</button><button data-prompt="grasper">Find grasper</button></div><form id="search-form"><label for="query" class="sr-only">Search video events</label><input id="query" name="q" placeholder="Ask about events in this video…" autocomplete="off" required><button type="submit" aria-label="Search" ${state.loading ? 'disabled' : ''}>↑</button></form><small>Answers come from available annotated events.</small></div></aside></main>`; }
-function wire() {
-  document.querySelector('#change-video')?.addEventListener('click', () => { state.page='home'; state.query=''; state.results=[]; state.active=null; render(); });
-  document.querySelector('#sample')?.addEventListener('click', () => { state.page='dash'; state.caseId='VID01'; state.title='Sample surgery · VID01'; state.videoUrl=videoForCase('VID01'); state.error=''; state.results=[]; state.query=''; render(); });
-  const zone = document.querySelector('#drop-zone'), input = document.querySelector('#file-input');
-  zone?.addEventListener('click', () => input.click()); zone?.addEventListener('keydown', e => { if (e.key==='Enter' || e.key===' ') { e.preventDefault(); input.click(); } });
-  zone?.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); }); zone?.addEventListener('dragleave', () => zone.classList.remove('drag'));
-  zone?.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); openFile(e.dataTransfer.files[0]); });
-  input?.addEventListener('change', () => openFile(input.files[0]));
-  document.querySelector('#search-form')?.addEventListener('submit', e => { e.preventDefault(); runSearch(new FormData(e.currentTarget).get('q')); });
-  document.querySelectorAll('[data-prompt]').forEach(el => el.addEventListener('click', () => runSearch(el.dataset.prompt)));
-  document.querySelectorAll('[data-result]').forEach(el => el.addEventListener('click', () => selectResult(Number(el.dataset.result))));
-  document.querySelectorAll('[data-history]').forEach(el => el.addEventListener('click', () => runSearch(state.history[Number(el.dataset.history)].query, false)));
-  const video = document.querySelector('#player');
-  video?.addEventListener('error', () => { document.querySelector('#video-fallback').hidden=false; });
-  video?.addEventListener('loadedmetadata', () => { if (state.pendingSeek != null) { video.currentTime = state.pendingSeek; state.pendingSeek=null; } updateTimeline(video.duration); });
+
+function home() {
+  return `<main class="home"><div class="hero"><div class="hero-logo">${logo}</div>
+    <h1>Find the moments that<br><em>matter.</em></h1>
+    <p>Search annotated surgical footage by instrument and jump directly to matching moments.</p>
+    <button class="sample-btn" id="sample">Open sample surgery <span>→</span></button>
+    <div class="upload-card" id="drop-zone" tabindex="0" role="button" aria-label="Open a local MP4 or MOV for playback only">
+      <div class="upload-icon">↑</div><strong>Open your own video</strong><span>Play a local MP4 or MOV. Event search is available for indexed cases only.</span>
+    </div><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>
+    ${state.error ? `<p class="home-error" role="alert">${escapeHtml(state.error)}</p>` : ''}
+    </div><aside class="sample-preview"><div class="preview-label">AVAILABLE DEMO CASE</div>
+      <div class="preview-video"><video src="${escapeHtml(videoForCase('VID01'))}" muted playsinline preload="auto" aria-label="Preview of VID01 surgery footage"></video></div>
+      <div class="preview-details"><div><span class="preview-kicker">VID01 · CHOLECYSTECTOMY</span><h2>Explore a real annotated case</h2><p>Search for clipper, hook, grasper, and other labeled instrument events. Select a result to seek to that moment.</p></div>
+      <div class="preview-event"><span>EXAMPLE ANNOTATION</span><strong>Clipper</strong><b>11:14–11:30</b></div>
+      <button id="sample-event" class="preview-action">View clipper event at 11:14 <span>↗</span></button></div>
+    </aside></main>`;
 }
-function openFile(file) { if (!file) return; if (!['video/mp4','video/quicktime'].includes(file.type) && !/\.(mp4|mov)$/i.test(file.name)) { state.error='Unsupported file. Choose an MP4 or MOV video.'; render(); return; } if (state.localUrl) URL.revokeObjectURL(state.localUrl); state.localUrl=URL.createObjectURL(file); state.page='dash'; state.caseId='Local video'; state.title=file.name; state.videoUrl=state.localUrl; state.query=''; state.results=[]; state.error=''; render(); }
-async function runSearch(raw, addHistory=true) { const query=String(raw ?? '').trim(); if (!query) return; state.query=query; state.loading=true; state.error=''; state.results=[]; state.active=null; if (addHistory) state.history=[{query},...state.history.filter(h => h.query!==query)].slice(0,6); render(); try { state.results=await searchClips(query); } catch (error) { state.error=`${error.message}. Check that the backend is running${fixtureMode ? '' : ' or use fixture mode for development'}.`; } finally { state.loading=false; render(); } }
-function selectResult(index) { const result=state.results[index]; if (!result) return; state.active=index; if (state.caseId !== result.case_id) { state.caseId=result.case_id; state.title=`Surgery video · ${result.case_id}`; state.videoUrl=videoForCase(result.case_id); state.pendingSeek=Number(result.start_sec); render(); } else { const video=document.querySelector('#player'); if (video) { if (video.readyState >= 1) video.currentTime=Number(result.start_sec); else state.pendingSeek=Number(result.start_sec); } document.querySelectorAll('[data-result]').forEach(el => { el.classList.toggle('active', Number(el.dataset.result) === index); el.classList.toggle('selected', el.classList.contains('timeline-event') && Number(el.dataset.result) === index); }); } }
-function updateTimeline(duration) { if (!Number.isFinite(duration) || duration <= 0) return; const track=document.querySelector('#timeline'); if (!track) return; track.querySelectorAll('.timeline-event').forEach((el,i) => { const r=state.results[i]; const left=Math.min(99,Math.max(0,Number(r.start_sec)/duration*100)); el.style.left=`${left}%`; el.style.width=`${Math.max(0.65,Math.min(100-left,(Number(r.end_sec)-Number(r.start_sec))/duration*100))}%`; }); track.querySelector('.timeline-end').textContent=fmt(duration); }
+
+function resultCard(result, index) {
+  return `<button class="result ${state.active === index ? 'active' : ''}" data-result="${index}">
+    <span class="result-num">${String(index + 1).padStart(2, '0')}</span>
+    <span class="result-main"><strong>${escapeHtml(result.label)}</strong><small>${result.source === 'prediction' ? 'Model prediction' : result.source === 'annotation' ? 'Dataset annotation' : 'Fixture'} · ${escapeHtml(result.case_id)}</small></span>
+    <span class="result-time">${formatTime(result.start_sec)}–${formatTime(result.end_sec)}</span><span class="result-arrow">↗</span></button>`;
+}
+
+function detectRequest(input) {
+  const lower = input.toLowerCase();
+  const explicit = [...lower.matchAll(/\/(timestamp|quiz|chart|model)\b/g)].map(match => match[1]);
+  const modes = [...new Set(explicit)];
+  if (!modes.length) {
+    if (/quiz|test me|practice question|study question/.test(lower)) modes.push('quiz');
+    if (/chart|graph|distribution|how many|count|frequency|summary of tools/.test(lower)) modes.push('chart');
+    if (/3d|model|anatomy/.test(lower)) modes.push('model');
+    if (/when|timestamp|show me|find|where|used|occurred|happen/.test(lower) || !modes.length) modes.unshift('timestamp');
+  }
+  const label = instrumentLabels.find(item => new RegExp(`\\b${item}\\b`).test(lower));
+  return { modes, label };
+}
+function outputSections() {
+  if (state.loading) return '<div class="empty">Loading annotations for this video…</div>';
+  if (state.error) return `<div class="empty error" role="alert">${escapeHtml(state.error)}</div>`;
+  if (!state.outputs.length) return '<div class="empty">Choose a feature or ask about an instrument in this video.</div>';
+  return state.outputs.map(mode => {
+    if (mode === 'model') return '<section class="feature-card"><span class="kicker">/model</span><h2>3D model unavailable</h2><p>This video has no linked 3D anatomy model. A model and a part-to-video mapping are needed before this feature can show results.</p></section>';
+    if (mode === 'timestamp') return `<section class="feature-card"><span class="kicker">/timestamp</span><h2>Matching moments</h2><p>${state.results.length} matching ${state.results.length === 1 ? 'interval' : 'intervals'} in ${escapeHtml(state.caseId)}${state.queryLabel ? ` for ${escapeHtml(state.queryLabel)}` : ''}.</p>${state.results.length ? `<div class="results">${state.results.slice(0, 80).map(resultCard).join('')}</div>${state.results.length > 80 ? '<p>Showing the first 80 moments.</p>' : ''}` : '<p>No matching annotations in this video.</p>'}</section>`;
+    if (mode === 'chart') {
+      const counts = state.timeline?.summary ?? [];
+      const max = Math.max(1, ...counts.map(item => item.count));
+      return `<section class="feature-card"><span class="kicker">/chart</span><h2>Instrument events in ${escapeHtml(state.caseId)}</h2><p>Dataset annotation intervals for this video; model predictions are excluded.</p><div class="chart">${counts.map(item => `<div class="chart-row"><span>${escapeHtml(item.label)}</span><div class="chart-track"><div style="width:${item.count / max * 100}%"></div></div><strong>${item.count}</strong></div>`).join('')}</div></section>`;
+    }
+    const quiz = state.quiz;
+    return `<section class="feature-card"><span class="kicker">/quiz</span><h2>Cholecystectomy study quiz</h2><p>This quiz covers the operation generally; it is not generated from ${escapeHtml(state.caseId)}.</p>${quiz?.demo ? '<p class="review-notice">Sample quiz shown because the backend is unavailable.</p>' : ''}${quiz?.reviewed === false ? '<p class="review-notice">Practice content, not yet medically reviewed.</p>' : ''}${quiz?.questions.map((question, index) => `<div class="quiz-question"><h3>${index + 1}. ${escapeHtml(question.prompt)}</h3><div class="quiz-choices">${question.options.map(option => `<button class="quiz-choice" data-question="${index}" data-answer="${escapeHtml(option.id)}">${escapeHtml(option.text)}</button>`).join('')}</div>${state.quizAnswers[index] ? `<p>${state.quizAnswers[index] === question.correct_option_id ? 'Correct.' : 'Not quite.'} ${escapeHtml(question.explanation)}</p>${question.search_q ? `<button class="quiz-jump" data-watch="${escapeHtml(question.search_q)}">Watch ${escapeHtml(question.search_q)} examples in this video →</button>` : ''}` : ''}</div>`).join('') ?? '<p>Quiz unavailable.</p>'}</section>`;
+  }).join('');
+}
+function dashboard() {
+  const currentResults = (state.timeline?.segments ?? []).map((result, index) => ({ result, index }));
+  const duration = state.duration || 1800;
+  return `<main class="dashboard dashboard-features"><section class="workbench"><div class="section-heading"><div><span class="kicker">VIDEO</span><h1>${escapeHtml(state.title)}</h1></div><div class="case-switch" role="group" aria-label="Demo video"><button data-case="VID01" ${state.caseId === 'VID01' ? 'aria-pressed="true"' : ''}>VID01</button><button data-case="VID02" ${state.caseId === 'VID02' ? 'aria-pressed="true"' : ''}>VID02</button></div></div>
+    <div class="video-frame"><video id="player" data-case-id="${escapeHtml(state.caseId)}" controls preload="metadata" ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video><div class="video-fallback" id="video-fallback" hidden><strong>Video unavailable</strong><span>The video for ${escapeHtml(state.caseId)} has not been downloaded or hosted yet.</span></div></div>
+    ${state.localVideo ? '<p class="local-note">Local video playback only. This file has no indexed annotations.</p>' : ''}
+    <div class="timeline-panel"><div class="timeline-header"><div><span class="kicker">CURRENT VIDEO</span><h2>Event timeline</h2></div></div>
+      ${state.localVideo ? '' : '<div class="feature-options"><button data-prompt="/timestamp">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/model">/model</button></div>'}
+      ${state.timelineError ? `<p class="timeline-error" role="status">Timeline unavailable: ${escapeHtml(state.timelineError)}</p>` : ''}<div id="timeline" aria-label="Annotated event timeline">${instrumentLabels.map(label => {
+        const segments = currentResults.filter(item => item.result.label === label);
+        return `<div class="timeline-row"><span class="timeline-row-label">${escapeHtml(label)}</span><div class="timeline-track"><div class="timeline-line"></div>${segments.map(({ result }) => { const left = Math.min(99, Math.max(0, Number(result.start_sec) / duration * 100)); const width = Math.max(.65, Math.min(100 - left, (Number(result.end_sec) - Number(result.start_sec)) / duration * 100)); return `<button class="timeline-event" data-seek="${result.start_sec}" data-label="${escapeHtml(label)}" style="left:${left}%;width:${width}%" title="${escapeHtml(label)} · ${formatTime(result.start_sec)}–${formatTime(result.end_sec)}" aria-label="${escapeHtml(label)} at ${formatTime(result.start_sec)}"></button>`; }).join('')}</div></div>`;
+      }).join('')}</div><div class="legend"><span>Dataset annotations in ${escapeHtml(state.caseId)}</span><span>${currentResults.length} intervals · ${state.duration ? formatTime(duration) : '—'} video</span></div></div>
+    </section><aside class="chat"><div class="chat-header"><span class="kicker">SURG+F ASSISTANT</span><h2>Ask the footage<span class="chat-spark">✳</span></h2><p>Choose an output or ask about this video.</p></div>
+      <div class="history"><div class="aside-label">RECENT QUESTIONS</div>${state.history.length ? state.history.map((query, index) => `<button class="history-item" data-history="${index}"><span>⌕</span>${escapeHtml(query)}<b>↗</b></button>`).join('') : '<p class="history-empty">Your questions will appear here.</p>'}</div>
+      <div class="chat-body">${state.query ? `<div class="chat-message user">${escapeHtml(state.query)}</div><div class="chat-message assistant"><span class="mini-logo">✳</span><div>${state.loading ? 'Finding annotations…' : state.error ? escapeHtml(state.error) : `Showing ${state.outputs.map(mode => `/${mode}`).join(', ')} below the video.`}</div></div>` : '<div class="chat-intro"><strong>What would you like to explore?</strong><p>Try “when was the clipper used?” or choose a feature below.</p></div>'}</div>
+      <div class="chat-compose">${state.localVideo ? '<p>Event features require an indexed video.</p><button class="sample-btn" id="open-sample">Open indexed sample →</button>' : `<div class="suggestions"><button data-prompt="/timestamp">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/model">/model</button></div><form id="search-form"><label class="sr-only" for="query">Ask about this video</label><input id="query" name="q" placeholder="Ask about this video…" required><button type="submit" aria-label="Search">→</button></form><small>Timeline and chart use this video; quiz covers the operation generally.</small>`}</div></aside>
+      <div class="feature-results" aria-live="polite">${outputSections()}</div></main>`;
+}
+
+function openSample(seek = null) {
+  state.page = 'dash'; state.caseId = 'VID01'; state.title = 'VID01 · Cholecystectomy';
+  state.videoUrl = videoForCase('VID01'); state.localVideo = false; state.error = '';
+  state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.query = ''; state.active = null; state.duration = 0; state.pendingSeek = seek;
+  render();
+  loadCurrentTimeline();
+  if (seek != null) runSearch('/timestamp clipper');
+}
+function wire() {
+  document.querySelector('#change-video')?.addEventListener('click', () => { state.page = 'home'; state.error = ''; render(); });
+  const preview = document.querySelector('.preview-video video');
+  preview?.addEventListener('loadedmetadata', () => { preview.currentTime = 674; });
+  document.querySelector('#sample')?.addEventListener('click', () => openSample());
+  document.querySelector('#sample-event')?.addEventListener('click', () => openSample(674));
+  document.querySelector('#open-sample')?.addEventListener('click', () => openSample());
+  document.querySelectorAll('[data-case]').forEach(el => el.addEventListener('click', () => {
+    const next = el.dataset.case;
+    if (next === state.caseId) return;
+    const query = state.query;
+    state.caseId = next; state.title = `${next} · Cholecystectomy`; state.videoUrl = videoForCase(next);
+    state.duration = 0; state.pendingSeek = null; state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.query = ''; state.error = '';
+    render();
+    loadCurrentTimeline();
+    if (query) runSearch(query);
+  }));
+  const zone = document.querySelector('#drop-zone');
+  const input = document.querySelector('#file-input');
+  zone?.addEventListener('click', () => input.click());
+  zone?.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); input.click(); } });
+  zone?.addEventListener('dragover', event => { event.preventDefault(); zone.classList.add('drag'); });
+  zone?.addEventListener('dragleave', () => zone.classList.remove('drag'));
+  zone?.addEventListener('drop', event => { event.preventDefault(); zone.classList.remove('drag'); openFile(event.dataTransfer.files[0]); });
+  input?.addEventListener('change', () => openFile(input.files[0]));
+  document.querySelector('#search-form')?.addEventListener('submit', event => { event.preventDefault(); runSearch(new FormData(event.currentTarget).get('q')); });
+  document.querySelectorAll('[data-prompt]').forEach(el => el.addEventListener('click', () => {
+    const input = document.querySelector('#query');
+    if (!input) return;
+    const command = el.dataset.prompt;
+    const current = input.value.trim();
+    input.value = current ? `${current} ${command}` : command;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }));
+  document.querySelectorAll('[data-history]').forEach(el => el.addEventListener('click', () => runSearch(state.history[Number(el.dataset.history)])));
+  document.querySelectorAll('[data-result]').forEach(el => el.addEventListener('click', () => selectResult(Number(el.dataset.result))));
+  document.querySelectorAll('[data-answer]').forEach(el => el.addEventListener('click', () => { state.quizAnswers[Number(el.dataset.question)] = el.dataset.answer; render(); }));
+  document.querySelectorAll('[data-watch]').forEach(el => el.addEventListener('click', () => runSearch(`/timestamp ${el.dataset.watch}`)));
+  document.querySelectorAll('[data-seek]').forEach(el => el.addEventListener('click', () => { const video = document.querySelector('#player'); if (video) video.currentTime = Number(el.dataset.seek); }));
+  const video = document.querySelector('#player');
+  video?.addEventListener('error', () => { document.querySelector('#video-fallback').hidden = false; });
+  video?.addEventListener('loadedmetadata', () => {
+    state.duration = video.duration;
+    if (state.pendingSeek != null) { video.currentTime = state.pendingSeek; state.pendingSeek = null; }
+    updateTimeline();
+  });
+}
+function openFile(file) {
+  if (!file) return;
+  if (!['video/mp4', 'video/quicktime'].includes(file.type) && !/\.(mp4|mov)$/i.test(file.name)) {
+    state.error = 'Unsupported file. Choose an MP4 or MOV video.'; render(); return;
+  }
+  if (state.localUrl) URL.revokeObjectURL(state.localUrl);
+  state.localUrl = URL.createObjectURL(file);
+  state.page = 'dash'; state.caseId = 'Local video'; state.title = file.name;
+  state.videoUrl = state.localUrl; state.localVideo = true; state.query = '';
+  state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.active = null; state.error = ''; state.duration = 0; state.pendingSeek = null;
+  render();
+}
+async function loadCurrentTimeline() {
+  const caseId = state.caseId;
+  try {
+    const timeline = await getTimeline(caseId);
+    if (state.caseId === caseId) { state.timeline = timeline; render(); }
+  } catch (error) { if (state.caseId === caseId) { state.timelineError = error.message; render(); } }
+}
+async function runSearch(raw) {
+  const query = String(raw ?? '').trim();
+  if (!query || state.localVideo) return;
+  const { modes, label } = detectRequest(query);
+  const caseId = state.caseId;
+  state.query = query; state.queryLabel = label; state.outputs = modes; state.loading = true;
+  state.history = [query, ...state.history.filter(item => item !== query)].slice(0, 6);
+  state.error = ''; state.results = []; state.active = null; state.quizAnswers = {};
+  render();
+  try {
+    const tasks = [];
+    if (modes.includes('timestamp')) tasks.push((async () => { state.results = label ? (await searchClips(label)).filter(hit => hit.case_id === caseId) : []; })());
+    if (modes.includes('chart') && !state.timeline) tasks.push((async () => { state.timeline = await getTimeline(caseId); })());
+    if (modes.includes('quiz')) tasks.push((async () => { state.quiz = await getQuiz(); })());
+    await Promise.all(tasks);
+    if (state.caseId !== caseId) return;
+  } catch (error) { if (state.caseId === caseId) state.error = `${error.message}. Check the backend connection.`; }
+  finally { if (state.caseId === caseId) { state.loading = false; render(); } }
+}
+
+function selectResult(index) {
+  const result = state.results[index];
+  if (!result) return;
+  state.active = index;
+  state.pendingSeek = Number(result.start_sec);
+  if (state.caseId !== result.case_id) {
+    state.caseId = result.case_id; state.title = `${result.case_id} · Cholecystectomy`;
+    state.videoUrl = videoForCase(result.case_id); state.duration = 0;
+    render();
+  } else {
+    const video = document.querySelector('#player');
+    if (video?.readyState >= 1) { video.currentTime = state.pendingSeek; state.pendingSeek = null; }
+    document.querySelectorAll('[data-result]').forEach(el => {
+      const chosen = Number(el.dataset.result) === index;
+      el.classList.toggle('active', chosen); el.classList.toggle('selected', chosen && el.classList.contains('timeline-event'));
+    });
+  }
+}
+function updateTimeline() {
+  const track = document.querySelector('#timeline');
+  if (!track || !Number.isFinite(state.duration) || state.duration <= 0) return;
+  track.querySelectorAll('.timeline-event').forEach(el => {
+    const result = state.timeline?.segments.find(item => Number(item.start_sec) === Number(el.dataset.seek) && item.label === el.dataset.label);
+    if (!result) return;
+    const left = Math.min(99, Math.max(0, Number(result.start_sec) / state.duration * 100));
+    el.style.left = `${left}%`;
+    el.style.width = `${Math.max(.65, Math.min(100 - left, (Number(result.end_sec) - Number(result.start_sec)) / state.duration * 100))}%`;
+  });
+
+}
 render();
