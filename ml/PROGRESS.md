@@ -58,7 +58,7 @@ Scope: playable demo videos and existing Databricks ingestion work. The training
 - [x] Build another demo case: VID02 (25 fps).
 - [x] Add `scripts/gpu_run.py` (2026-11-14) to start, list, and stop extraction runs on serverless compute. Each run has a hard timeout (default 30 min) and bills only while active. It reuses `run_databricks_features.py` deploy/snapshot unchanged. Verified: `start --case-id VID01 --cpu --timeout-min 5` launched run 409734303669408, `list` showed it, `stop` cancelled it, and `list` no longer showed it. Needs `pip install databricks-sdk python-dotenv`.
 - [x] Test serverless compute (2026-11-14). Serverless GPU (`GPU_1xA10`) stayed `PENDING` for 13.5 min with no GPU assigned, then was cancelled. Serverless CPU starts in under 1 min. Details are in agent-kit/PROGRESS.md, open question 4.
-- [ ] Agree with frontend on video hosting and hand over playable URLs.
+- [x] Host the 25 fps VID01 for the frontend (2026-11-14) at `/Volumes/workspace/default/surgf/videos/VID01.mp4`. `python scripts/fetch_videos.py VID01` puts it in `frontend/public/videos/` (md5 matches, git-ignored). VID02 is built locally but not uploaded yet.
 - [ ] Confirm ownership of the Databricks classifier notebook and MLflow runs.
 
 **Blocker / next handoff:** 25 fps `VID01.mp4` and `VID02.mp4` exist on Aadhitya's machine and are not hosted. Frontend needs an accessible video; training needs Shlok's validated features.
