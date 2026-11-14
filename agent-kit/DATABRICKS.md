@@ -18,6 +18,6 @@
 | SurgVLP feature bundles | `/Volumes/workspace/default/surgf/features/<case_id>/` | Team |
 | Classifier runs and model | MLflow in the team workspace | Team |
 | Prediction clips | Same `surgf_clips` table, `source = prediction` | Team |
-| Playable `.mp4` per case | Built by `ml/make_case_video.py`. Hosting not decided: wherever the frontend player can load it, never Git | Open |
+| Playable `.mp4` per case | 25 fps from Cholec80 via `ml/download_cholec80_video.py` (VID01–VID80), otherwise 1 fps via `ml/make_case_video.py`. Hosting not decided: wherever the frontend player can load it, never Git | Open |
 | Code and docs | GitHub | Team |
 | Credentials | Repo-root `.env`, git-ignored | Never shared in Git |
