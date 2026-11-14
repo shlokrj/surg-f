@@ -105,3 +105,15 @@ python ml/audit_tool_coverage.py --samples ~/madhacks2026/data/cholect50/samples
 The saved report includes source SHA-256, per-case counts, dataset totals, and counts for each split. Positive coverage is reported both as frames and surgeries. Missing/null instruments are unknown; an empty classifications list is a known negative. Counts cover observed samples only and do not infer labels for absent frame IDs. Duplicate frames, invalid labels, empty input, overlapping splits and unavailable cases fail validation. This project reserves the previously inspected VID02 for diagnostics.
 
 The fixed split has 12 training, 3 validation, 4 final-test surgeries and diagnostic VID02. Keep membership unchanged during model comparisons. Coverage establishes label availability, not independent-frame sample size or model quality. Use validation for model selection; the other training workstream owns execution.
+
+## Check readiness before expanded training
+
+From the repo root with its existing `.env`, run this read-only check:
+
+```sh
+python scripts/check_training_readiness.py --databricks --output /tmp/surgf-training-readiness.json
+```
+
+It downloads one bundle at a time into temporary storage, validates full-case coverage and file checksums, checks instrument labels and compatible checkpoint/preprocessing/source provenance, and reports all missing or invalid cases. It excludes the diagnostic partition and starts no compute jobs. Exit code 0 means every required bundle passed; 1 means blockers remain. The report also flags tools without both training classes, which the classifier cannot fit. Availability is a snapshot: rerun after extraction finishes.
+
+For an independent source annotation join, add `--samples path/to/samples.json`. Without it, only internal bundle integrity and recorded source provenance are checked. For already mounted/local bundles, omit `--databricks` and use `--features-root /path/to/features`. The training notebook still validates its inputs; this report does not replace those checks.
