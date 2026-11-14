@@ -1,6 +1,6 @@
 # Surg+F frontend
 
-The dashboard keeps the current video, timeline, and search field together. Search output appears below as one or more stacked sections. It is scoped to the open case, using the shared `GET /search?q=...` clip contract.
+The dashboard keeps the video and timeline on the left and the chat, recent questions, and search field on the right. Search output appears below both as one or more stacked sections. It is scoped to the open case, using the shared `GET /search?q=...` clip contract.
 
 ## Run
 

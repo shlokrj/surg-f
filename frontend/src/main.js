@@ -90,10 +90,14 @@ function dashboard() {
   return `<main class="dashboard dashboard-features"><section class="workbench"><div class="section-heading"><div><span class="kicker">VIDEO</span><h1>${escapeHtml(state.title)}</h1></div><span class="case-pill">${escapeHtml(state.caseId)}</span></div>
     <div class="video-frame"><video id="player" data-case-id="${escapeHtml(state.caseId)}" controls preload="metadata" ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video><div class="video-fallback" id="video-fallback" hidden><strong>Video unavailable</strong><span>The video for ${escapeHtml(state.caseId)} has not been downloaded or hosted yet.</span></div></div>
     ${state.localVideo ? '<p class="local-note">Local video playback only. This file has no indexed annotations.</p>' : ''}
-    <div class="timeline-panel"><div class="timeline-header timeline-search-heading"><div><span class="kicker">CURRENT VIDEO</span><h2>Event timeline</h2></div>${state.localVideo ? '' : `<form id="search-form" class="inline-search"><label class="sr-only" for="query">Ask about this video</label><input id="query" name="q" placeholder="Try /timestamp clipper, /quiz, /chart…" required><button type="submit" ${state.loading ? 'disabled' : ''}>Search</button></form>`}</div>
+    <div class="timeline-panel"><div class="timeline-header"><div><span class="kicker">CURRENT VIDEO</span><h2>Event timeline</h2></div></div>
       ${state.localVideo ? '' : '<div class="feature-options"><button data-prompt="/timestamp clipper">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/model">/model</button></div>'}
       <div class="timeline-track" id="timeline" aria-label="Matches in current video"><div class="timeline-line"></div>${currentResults.map(({ result, index }) => { const left = Math.min(99, Math.max(0, Number(result.start_sec) / duration * 100)); const width = Math.max(.65, Math.min(100 - left, (Number(result.end_sec) - Number(result.start_sec)) / duration * 100)); return `<button class="timeline-event ${state.active === index ? 'selected' : ''}" data-result="${index}" style="left:${left}%;width:${width}%" title="${escapeHtml(result.label)} · ${formatTime(result.start_sec)}–${formatTime(result.end_sec)}" aria-label="${escapeHtml(result.label)} at ${formatTime(result.start_sec)}"></button>`; }).join('')}<span class="timeline-end">${state.duration ? formatTime(duration) : '—'}</span></div><div class="legend"><span><i></i> Matches in ${escapeHtml(state.caseId)}</span><span>${currentResults.length} shown</span></div></div>
-    <div class="feature-results" aria-live="polite">${outputSections()}</div></section></main>`;
+    </section><aside class="chat"><div class="chat-header"><span class="kicker">SURG+F ASSISTANT</span><h2>Ask the footage<span class="chat-spark">✳</span></h2><p>Choose an output or ask about this video.</p></div>
+      <div class="history"><div class="aside-label">RECENT QUESTIONS</div>${state.history.length ? state.history.map((query, index) => `<button class="history-item" data-history="${index}"><span>⌕</span>${escapeHtml(query)}<b>↗</b></button>`).join('') : '<p class="history-empty">Your questions will appear here.</p>'}</div>
+      <div class="chat-body">${state.query ? `<div class="chat-message user">${escapeHtml(state.query)}</div><div class="chat-message assistant"><span class="mini-logo">✳</span><div>${state.loading ? 'Finding annotations…' : state.error ? escapeHtml(state.error) : `Showing ${state.outputs.map(mode => `/${mode}`).join(', ')} below the video.`}</div></div>` : '<div class="chat-intro"><strong>What would you like to explore?</strong><p>Try “when was the clipper used?” or choose a feature below.</p></div>'}</div>
+      <div class="chat-compose">${state.localVideo ? '<p>Event features require an indexed video.</p><button class="sample-btn" id="open-sample">Open indexed sample →</button>' : `<div class="suggestions"><button data-prompt="/timestamp clipper">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/model">/model</button></div><form id="search-form"><label class="sr-only" for="query">Ask about this video</label><input id="query" name="q" placeholder="Ask about this video…" required><button type="submit" aria-label="Search">→</button></form><small>Outputs use available annotations for this video.</small>`}</div></aside>
+      <div class="feature-results" aria-live="polite">${outputSections()}</div></main>`;
 }
 
 function openSample(seek = null) {
@@ -120,6 +124,7 @@ function wire() {
   input?.addEventListener('change', () => openFile(input.files[0]));
   document.querySelector('#search-form')?.addEventListener('submit', event => { event.preventDefault(); runSearch(new FormData(event.currentTarget).get('q')); });
   document.querySelectorAll('[data-prompt]').forEach(el => el.addEventListener('click', () => runSearch(el.dataset.prompt)));
+  document.querySelectorAll('[data-history]').forEach(el => el.addEventListener('click', () => runSearch(state.history[Number(el.dataset.history)])));
   document.querySelectorAll('[data-result]').forEach(el => el.addEventListener('click', () => selectResult(Number(el.dataset.result))));
   document.querySelectorAll('[data-answer]').forEach(el => el.addEventListener('click', () => { state.quizRevealed = true; const sample = state.caseClips.find(hit => hit.label === 'clipper') ?? state.caseClips[0]; document.querySelector('#quiz-feedback').textContent = `${el.dataset.answer === sample.label ? 'Correct.' : 'Not quite.'} The annotation labels ${sample.label} at ${formatTime(sample.start_sec)}–${formatTime(sample.end_sec)}.`; }));
   document.querySelectorAll('[data-quiz-time]').forEach(el => el.addEventListener('click', () => { const video = document.querySelector('#player'); if (video) video.currentTime = Number(el.dataset.quizTime); }));
@@ -148,6 +153,7 @@ async function runSearch(raw) {
   if (!query || state.localVideo) return;
   const { modes, label } = detectRequest(query);
   state.query = query; state.queryLabel = label; state.outputs = modes; state.loading = true;
+  state.history = [query, ...state.history.filter(item => item !== query)].slice(0, 6);
   state.error = ''; state.results = []; state.active = null; state.quizRevealed = false;
   render();
   try {
