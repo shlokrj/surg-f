@@ -1,6 +1,6 @@
 # Surg+F frontend
 
-Two-page video chooser and search/playback dashboard. The home page previews the real VID01 demo case and its verified clipper annotation. Search calls the shared `GET /search?q=...` API. Selecting a result switches to its `case_id` video and seeks to `start_sec`. The timeline displays matches for the currently loaded case; the result list covers all returned cases.
+The dashboard keeps the current video, timeline, and search field together. Search output appears below as one or more stacked sections. It is scoped to the open case, using the shared `GET /search?q=...` clip contract.
 
 ## Run
 
@@ -10,19 +10,17 @@ npm install
 npm run dev
 ```
 
-Run the backend from `backend/` as described in [backend/README.md](../backend/README.md). `VITE_BACKEND_URL` defaults to `http://localhost:8000`. For local UI work without Databricks, set `VITE_USE_FIXTURE=true` in `frontend/.env.local`; this reads `shared/search.fixture.json`. Remove that setting to use the real backend. The fixture only matches `clip applier`; real annotation labels include `clipper`, `hook`, and `grasper`.
+Run the backend as described in [backend/README.md](../backend/README.md). `VITE_BACKEND_URL` defaults to `http://localhost:8000`; `VITE_USE_FIXTURE=true` in `frontend/.env.local` reads `shared/search.fixture.json` instead. The video owner hosts prepared footage in the Databricks Volume. From the repo root with the team `.env`, run `python scripts/fetch_videos.py VID01` to download the Git-ignored demo video into `frontend/public/videos/`. You can also set `VITE_VIDEO_BASE_URL` to a host with `VID01.mp4` and `VID02.mp4`.
 
-The video owner hosts the prepared case in the Databricks Volume. From the repo root, with the team `.env` present, download it locally with:
+## Search features
 
-```sh
-pip install databricks-sdk python-dotenv
-python scripts/fetch_videos.py VID01
-```
+- `/timestamp clipper` lists annotated clipper intervals for the current video. A click seeks to the interval start.
+- `/chart` counts annotated intervals by instrument for the current video. It queries the six known instrument labels through the existing API.
+- `/quiz` makes an instrument-identification study question from one real annotation in the current video. The answer links to its video moment.
+- `/3d_model` explains that a linked model is unavailable. It does not fabricate an anatomy model or video mapping.
 
-The script places `VID01.mp4` in `frontend/public/videos/`, which is Git ignored. Alternatively, set `VITE_VIDEO_BASE_URL` to a host with `VID01.mp4` and `VID02.mp4`. The case manifest currently maps those two IDs. A local MP4/MOV can be opened for playback, but it is not uploaded or indexed; the app disables event search for it.
+Combine commands, such as `/timestamp clipper /quiz`, to stack sections. Without commands, simple keyword rules route phrases such as “when was the clipper used” to timestamps and “how many” to a chart. This is local routing, not an LLM. The backend still exposes only exact label search. Local MP4/MOV playback has no indexed annotations, so these features are unavailable for a locally opened file.
 
-The right panel is an exact instrument-label search, not a general question-answering model. Recent searches are session-only. General Q&A, counts, arbitrary upload processing, and bleeding detection require separate backend support.
+## Check
 
-## Integration check
-
-With the Databricks backend and VID01 video available, search `clipper`. The backend should return first result `VID01` at `674–690` seconds. Click it and confirm that VID01 seeks to `11:14` with the clip applier visible. Search a label with no matches and check the empty state. Run `npm run build` for a production build.
+Run `npm run build`. With the Databricks backend and VID01 video available, enter `/timestamp clipper`; the first known interval is `674–690` seconds. Select it and confirm the video seeks to 11:14. `/chart` and `/quiz` require the six instrument-label queries to succeed. A cold warehouse may take time to respond.
