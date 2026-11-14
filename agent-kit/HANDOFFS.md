@@ -12,7 +12,7 @@ Record the branch or PR, what runs, the exact verification command or demo steps
 
 ## Shared `ml-dev` branch (Aadhitya + Shlok)
 
-Both people and their agents commit and push to `ml-dev`. Update `main` only when Shlok explicitly requests it. Track separate work in [ML progress](../ml/PROGRESS.md): Shlok owns SurgVLP/features, and Aadhitya owns videos.
+Both people and their agents commit and push to `ml-dev`. Update `main` only when Shlok explicitly requests it. Track separate work in [ML progress](../ml/PROGRESS.md): Shlok owns SurgVLP/features, coverage analysis, dataset splits, classifier training, and MLflow. Aadhitya owns videos, prediction export/import, and clip-level evaluation.
 
 **One-time setup**
 1. Run `git fetch && git checkout ml-dev`.
@@ -25,11 +25,13 @@ Both people and their agents commit and push to `ml-dev`. Update `main` only whe
 - Make small commits that touch only your task's files. Announce in chat before you edit a file the other person is working on.
 - Before ending a session, update `PROGRESS.md` (Databricks row for Aadhitya, Data and ML row for Shlok) with what was verified and what's next.
 
-**First tasks** (see "Open questions and proposals" in PROGRESS.md)
-1. ~~Import annotation clips~~ Done 2026-11-14, 3620 rows (see PROGRESS.md). To redo it:
-   - Run `python3 databricks/make_clips_csv.py path/to/samples.json clips.csv`.
-   - In Databricks, go to Catalog → `workspace` → `default` → Create → Table and upload `clips.csv` as `surgf_clip_staging`.
-   - Run `databricks/import_clips.sql` with catalog `workspace` and schema `default`.
-   - Check that `SELECT count(*) FROM workspace.default.surgf_clips WHERE source = 'annotation'` returns 3620, then record it.
-2. Aadhitya (proposed): build `.mp4` files for 2 demo cases (VID01 done 2026-11-14 with `ml/make_case_video.py`; needs ffmpeg or `pip install imageio-ffmpeg`) from the frames at 1 fps, and build a Databricks training notebook with MLflow under `ml/`.
-3. Shlok: Databricks serverless CPU adopted on 2026-11-14. Follow [ML setup](../ml/README.md) and run [the extraction notebook](../ml/extract_databricks.py) using `scripts/gpu_run.py start --cpu`. Don't download the full 64 GB. Work one case at a time: download frames, extract features, upload, delete frames. Fetch one case's frames with `python3 ml/download_case.py samples.json VID01 out_dir/`. Add `START END` seconds to fetch only one clip. Then set up frozen SurgVLP and extract bundles for 2–3 cases into `/Volumes/workspace/default/surgf/features/<case_id>/`, using the format in CONTRACTS.md.
+## Current ML tasks
+
+Use the [assigned parallel work](../ml/PROGRESS.md#assigned-parallel-work-2026-11-14) as the current task list and acceptance criteria.
+
+- **Shlok starts with:** annotation coverage audit and a fixed surgery-level split, then configurable Databricks training. Own training/model changes and the first extraction group listed in the ML tracker.
+- **Aadhitya starts with:** export/import of the available baseline predictions, a standalone clip evaluator with synthetic checks, and VID02 video hosting. Own the second extraction group listed in the ML tracker.
+- **Handoff:** Shlok supplies the split and model artifacts; Aadhitya supplies prediction import evidence, clip metrics, and frontend video instructions. The baseline model path and environment are in Shlok's progress section.
+- **While tests run:** use separate worktrees/checkouts, preserve the tested revision, and check existing runs/bundles before launching extraction. Coordinate changes to model formats or shared files. Do not tune on the final test surgeries.
+
+The annotation import and two-case baseline are recorded as complete. The expanded model and clip evaluation are assigned work, not verified results.
