@@ -1,5 +1,5 @@
 import './style.css';
-import { searchClips, getTimeline, getQuiz, interpretQuery, instrumentLabels } from './api.js';
+import { searchClips, getTimeline, getQuiz, interpretQuery, getActionRows, instrumentLabels } from './api.js';
 import { quizCard, wireQuiz } from './quiz.js';
 import { videoForCase } from './cases.js';
 
@@ -7,7 +7,7 @@ const app = document.querySelector('#app');
 const state = {
   page: 'home', caseId: 'VID01', title: 'VID01 · Cholecystectomy', videoUrl: videoForCase('VID01'),
   localVideo: false, localUrl: null, query: '', results: [], history: [], active: null,
-  loading: false, error: '', pendingSeek: null, duration: 0, outputs: [], timeline: null, timelineError: '', quiz: null, quizAnswers: {}, quizSubmitted: false, reply: '', chartRequest: null,
+  loading: false, error: '', pendingSeek: null, duration: 0, outputs: [], timeline: null, timelineError: '', quiz: null, quizAnswers: {}, quizSubmitted: false, reply: '', chartRequest: null, actionRows: [],
 };
 const formatTime = seconds => {
   const n = Math.floor(Number(seconds) || 0);
@@ -83,9 +83,17 @@ function chartSection(category, request) {
     const max = Math.max(1, ...counts.map(item => item.count));
     return `<div class="chart-block"><h3>Instruments</h3><p>Annotated intervals by instrument in ${escapeHtml(state.caseId)}. The current dataset exposes six instrument labels.</p><div class="chart">${counts.map(item => `<div class="chart-row"><span>${escapeHtml(item.label)}</span><div class="chart-track"><div style="width:${item.count / max * 100}%"></div></div><strong>${item.count}</strong></div>`).join('')}</div></div>`;
   }
-  const title = category === 'instruments' ? 'Instrument breakdown' : category === 'verbs' ? 'Verbs' : 'Targets';
-  const detail = request.instrument ? ` for ${escapeHtml(request.instrument)}` : '';
-  return `<div class="chart-block chart-unavailable"><h3>${title}${detail}</h3><p>No ${category === 'instruments' ? 'instrument-to-action breakdown' : category} annotations are available from the current API${detail}. This chart needs per-event instrument, verb, and target labels for the open video.</p></div>`;
+  const rows = state.actionRows.filter(row => !request.instrument || row.instrument === request.instrument);
+  const field = category === 'verbs' ? 'verb' : 'target';
+  const counts = new Map();
+  for (const row of rows) {
+    const key = row[field].startsWith('null_') ? 'Idle / no annotated action' : row[field].replaceAll('_', ' ');
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const entries = [...counts].sort((a, b) => b[1] - a[1]);
+  const max = Math.max(1, ...entries.map(([, count]) => count));
+  const title = category === 'verbs' ? 'Verbs' : 'Targets';
+  return `<div class="chart-block"><h3>${title}${request.instrument ? ` for ${escapeHtml(request.instrument)}` : ''}</h3><p>Number of annotated action intervals in ${escapeHtml(state.caseId)}. Intervals can overlap.</p><div class="chart">${entries.map(([label, count]) => `<div class="chart-row"><span>${escapeHtml(label)}</span><div class="chart-track"><div style="width:${count / max * 100}%"></div></div><strong>${count}</strong></div>`).join('')}</div></div>`;
 }
 function outputSections() {
   if (state.loading) return '<div class="empty">Loading annotations for this video…</div>';
@@ -123,7 +131,7 @@ function dashboard() {
 function openSample(seek = null) {
   state.page = 'dash'; state.caseId = 'VID01'; state.title = 'VID01 · Cholecystectomy';
   state.videoUrl = videoForCase('VID01'); state.localVideo = false; state.error = '';
-  state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.chartRequest = null; state.query = ''; state.active = null; state.duration = 0; state.pendingSeek = seek;
+  state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.chartRequest = null; state.actionRows = []; state.query = ''; state.active = null; state.duration = 0; state.pendingSeek = seek;
   render();
   loadCurrentTimeline();
   if (seek != null) runSearch('/timestamp clipper');
@@ -140,7 +148,7 @@ function wire() {
     if (next === state.caseId) return;
     const query = state.query;
     state.caseId = next; state.title = `${next} · Cholecystectomy`; state.videoUrl = videoForCase(next);
-    state.duration = 0; state.pendingSeek = null; state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.chartRequest = null; state.query = ''; state.error = '';
+    state.duration = 0; state.pendingSeek = null; state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.chartRequest = null; state.actionRows = []; state.query = ''; state.error = '';
     render();
     loadCurrentTimeline();
     if (query) runSearch(query);
@@ -211,9 +219,11 @@ async function runSearch(raw) {
     if (state.caseId !== caseId) return;
     const actions = plan?.actions ?? local.modes.map(type => ({ type, label: type === 'timestamp' ? local.label : null }));
     const modes = [...new Set(actions.map(action => action.type))];
+    if (local.modes.includes('chart') && !modes.includes('chart')) modes.push('chart');
     const stamps = actions.filter(action => action.type === 'timestamp');
     state.outputs = modes;
     state.chartRequest = modes.includes('chart') ? parseChartRequest(query) : null;
+    state.actionRows = modes.includes('chart') ? getActionRows(caseId) : [];
     state.queryLabel = stamps.map(action => action.label).filter(Boolean).join(', ');
     state.reply = (plan?.message ?? '').replaceAll('**', '');
     const tasks = stamps.map(async action => action.results
