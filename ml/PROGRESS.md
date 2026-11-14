@@ -216,3 +216,9 @@ Commit each feature or major change on `ml-dev` with a lowercase Conventional Co
 See [Stage 3 localization plan](LOCALIZATION_PLAN.md) for the complete context and primary sources.
 
 Documentation verification (2026-11-14, `docs/stage-three-localization`, target `main`): `git diff --check` passed; local Markdown link and stage-3 coverage checks passed across all 21 Markdown files including the new plan. Primary model/dataset documentation was checked online. No application tests or model inference were needed for these documentation-only changes. Next: team reads the plan and resolves taxonomy/data access when stage 3 begins.
+
+## Stage 3 detector feature (2026-11-14, Shlok)
+
+`feat/spatial-overlays`: added isolated `ml/localization/` runner and artifact validator. Installed a separate `.venv-spatial` without modifying stage-2 dependencies. Grounding DINO-T Transformers checkpoint revision `a2bb814dd30d776dcf7e30523b00659f4f141c71` processed actual VID01 frames 674/680/689 on CPU in 4.28/2.15/2.13 s (inference+postprocessing, excluding model download/load). Output has 4/3/3 boxes and source/checkpoint hashes. `python -m unittest discover -s ml/localization -p 'test_*.py'` passed 3 tests. The 100,863-sample mirror audit found six instrument names, ten verbs, fifteen targets and no top-level spatial annotation fields.
+
+Quality limitation: predictions include scissors/irrigator on a clipper example and large suspicious boxes. This establishes runnable inference and artifact output, not surgical localization accuracy. The player must mark this output experimental. Box ground truth and a held-out localization evaluation are still required before any quality claim. Next: finish toggle/coordinate/expiry integration and browser verification on the real hosted VID01 asset. No stage-2 job or clip table was touched.
