@@ -36,7 +36,7 @@ This downloads a temporary verification copy and checks hashes, frame coverage, 
 | Case | Full feature matrix | Extraction time | Notebook time | Status |
 |---|---|---|---|---|
 | VID01 | 1,734 x 768 | 263.91 s | 382.92 s | Uploaded and independently verified |
-| VID02 | Expected 2,840 x 768 | Pending | Pending | Full run in progress |
+| VID02 | 2,840 x 768 | 429.60 s | 580.45 s | Uploaded and independently verified |
 
 ## Train the classifier
 
@@ -49,6 +49,8 @@ python scripts/train_databricks_tools.py
 The 20-minute-capped Databricks CPU job trains per-tool logistic regressions on VID01 and holds out VID02. Scaling is fitted only on training frames; the threshold is fixed at 0.5. Missing annotations are excluded. Tools without both training classes are marked not trained.
 
 Parameters, per-tool precision/recall/F1/average precision, and fitted classifier artifacts are logged to MLflow. A checksum-verified copy is stored at `/Volumes/workspace/default/surgf/models/tool-presence/<mlflow-run-id>/`. The report records package versions and feature hashes. Use the same environment when loading the joblib artifact.
+
+Verified run: [MLflow results](https://dbc-48252777-1798.cloud.databricks.com/?o=7474644357435752#mlflow/experiments/1933783029716480/runs/54659bc60d734052927dadf80ea16e13). Training took 16.43 s. F1 was grasper 0.721, hook 0.618, irrigator 0.308, clipper 0.154, bipolar 0.125, and scissors 0.000. Load the artifact using Databricks ML v6: NumPy 2.3.4, scikit-learn 1.7.2, joblib 1.5.2.
 
 This is a two-case engineering baseline, not a reliable estimate across surgeries. It does not tune on the test case or insert predictions into the live search table. Aadhitya owns the next step using [export_predictions.py](export_predictions.py).
 
