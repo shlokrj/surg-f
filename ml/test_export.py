@@ -52,6 +52,9 @@ class ExportTests(unittest.TestCase):
                              [('VID02', 10, 13, 'hook', 'prediction'), ('VID02', 20, 21, 'hook', 'prediction')])
             self.assertEqual(predict_clips(self.model, self.bundle, max_gap=7),
                              [('VID02', 10, 21, 'hook', 'prediction')])
+            all_groups = predict_clips(self.model, self.bundle, groups=('instruments', 'verbs', 'targets'))
+            self.assertIn(('VID02', 10, 13, 'cut', 'prediction'), all_groups)  # plain name, its own 0.1 threshold
+            self.assertEqual(len(all_groups), 4)
         joblib.dump({'model': MultiProb(), 'labels': ['instruments:hook', 'verbs:cut'],
                      'thresholds': [0.95, 0.1], 'window': 0}, self.model / 'multilabel_mlp.joblib')
         with patch('export_predictions.validate_bundle', return_value=self.metadata):
