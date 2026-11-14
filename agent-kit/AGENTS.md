@@ -1,0 +1,7 @@
+# Agent workflow
+
+1. At the start of every agent task, check git status and the current branch. Pull its upstream with `git pull --ff-only`. For new branches, pull the base branch before branching. In a shared checkout, coordinate one pull and verify the resulting revision before anyone edits.
+2. If the pull fails, diagnose it before starting work. For divergence, inspect both sides and coordinate with the branch owner before merging or rebasing. Resolve existing and incoming merge conflicts before proceeding. Preserve teammates' work. Never reset, force-push, or silently stash changes to make synchronization succeed. If synchronization or a conflict cannot be resolved, report the blocker and pause implementation.
+3. Read SPEC.md and PROGRESS.md. Coordinate ownership before editing another teammate's area or changing a shared interface. Give each coding agent the same contract and its assigned paths.
+4. Update only your assigned progress row and any directly affected milestone. Record what was actually verified and the next handoff. Merge progress edits by preserving each teammate's latest entry.
+5. Before committing, check the diff and run the relevant verification. Stage only intended paths. Use lowercase Conventional Commit subjects, for example `docs: add agent kit` or `feat(search): query clip intervals`. Use the configured Git identity and omit all co-author trailers. Recheck upstream before pushing and rerun checks after conflict resolution.
