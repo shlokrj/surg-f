@@ -23,6 +23,16 @@ Videos for VID01 and VID02 are hosted. Fetch them with `python scripts/fetch_vid
 
 Mihir: everything needed to wire up search, the instrument chart, and the quiz is in [backend/docs/FRONTEND_GUIDE.md](../backend/docs/FRONTEND_GUIDE.md). It covers URLs, curl examples, real responses, TypeScript types, errors, and which UI element uses which endpoint. On branch `backend`, start the API with `cd backend; python -m uv run uvicorn app.main:app --port 8000`. Use `GET /cases/{case_id}/timeline` for the chart instead of six `/search` calls; it leaves predictions out by default. Use `GET /quiz` for five general questions instead of the per-video quiz, and show a "not yet medically reviewed" notice while `reviewed` is false. The timeline and quiz shapes are a [proposal](../backend/docs/CONTRACT_PROPOSAL.md) until the team agrees. Offline copies are in `backend/fixtures/`.
 
+## Frontend → Data/ML and Backend: chart data needed (2026-11-14)
+
+Mihir's `/chart` UI can count the **six instrument labels** currently returned by `GET /cases/{case_id}/timeline`. It cannot produce verb, target, or tool-specific action charts from that response. The user requested all three categories for the open video, plus prompts such as “what was the grasper doing?” Do not infer verbs or targets from tool presence.
+
+- **Data/ML (Aadhitya and Shlok):** identify whether real per-event instrument–verb–target annotations exist for playable VID01 and VID02. Confirm the actual taxonomy and category counts (the request mentions seven instruments, ten verbs, and fifteen targets, while the current API exposes six instrument labels). Provide a small verified sample with `case_id`, video-relative `start_sec`, exclusive `end_sec`, `instrument`, `verb`, and `target`, plus provenance and any missing-label semantics. If unavailable, state that explicitly and identify the next feasible data source or model handoff.
+- **Backend (Rohan), after Data/ML confirms the rows:** propose a video-scoped endpoint and fixture for those events, with filtering by instrument and a summary suitable for counts by instrument, verb, and target. Coordinate the schema in `agent-kit/CONTRACTS.md` before implementation; retain the existing `/search` and timeline responses.
+- **Frontend (Mihir):** wire the new response into `/chart` once the contract and verified fixture arrive. Until then, the UI shows the instrument chart and explicitly unavailable verb/target sections. Prompt routing is local keyword matching; an LLM interpretation service has not been supplied.
+
+Please record the sample or blocker and next owner in the relevant progress row, then point Mihir to the commit or fixture path.
+
 ## Shared `ml-dev` branch (Aadhitya + Shlok)
 
 Both people and their agents commit and push to `ml-dev`. Update `main` only when Shlok explicitly requests it. Track separate work in [ML progress](../ml/PROGRESS.md): Shlok owns SurgVLP/features, coverage analysis, dataset splits, classifier training, and MLflow. Aadhitya owns videos, prediction export/import, and clip-level evaluation.
