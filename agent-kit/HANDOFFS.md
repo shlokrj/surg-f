@@ -12,7 +12,7 @@ Record the branch or PR, what runs, the exact verification command or demo steps
 
 ## Shared `ml-dev` branch (Aadhitya + Shlok)
 
-Both people and their agents commit to `ml-dev` and update `main` using the normal pushes below. Track separate work in [ML progress](../ml/PROGRESS.md): Shlok owns SurgVLP/features, and Aadhitya owns videos.
+Both people and their agents commit and push to `ml-dev`. Update `main` only when Shlok explicitly requests it. Track separate work in [ML progress](../ml/PROGRESS.md): Shlok owns SurgVLP/features, and Aadhitya owns videos.
 
 **One-time setup**
 1. Run `git fetch && git checkout ml-dev`.
@@ -21,7 +21,7 @@ Both people and their agents commit to `ml-dev` and update `main` using the norm
 
 **Every session on the shared branch**
 - **Start:** run `git checkout ml-dev && git pull --ff-only && git fetch origin && git merge origin/main`, so `ml-dev` has everything on `main`. If the pull or merge fails, stop and talk to each other. Never force-push, reset, or stash the other person's work.
-- **Finish:** commit, run `git pull --ff-only`, then `git push`. Keep `main` current with `git push origin ml-dev:main`. If that is rejected because `main` moved, fetch, merge `origin/main` into `ml-dev`, and push both again.
+- **Finish:** commit, fetch and reconcile incoming changes, then push with `git push origin ml-dev`. If the shared branch advanced, inspect and merge its changes before retrying; preserve both teammates' work. Do not push to `main` unless Shlok explicitly requests it.
 - Make small commits that touch only your task's files. Announce in chat before you edit a file the other person is working on.
 - Before ending a session, update `PROGRESS.md` (Databricks row for Aadhitya, Data and ML row for Shlok) with what was verified and what's next.
 

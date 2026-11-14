@@ -17,6 +17,8 @@ Scope: frozen SurgVLP setup, one-case-at-a-time feature extraction, annotation a
 - [ ] Reload and validate the bundle and annotation joins, then upload it to the shared Volume.
 - [ ] Repeat for 2-3 cases after the first bundle passes validation.
 
+**Workflow update (2026-11-14):** Shlok requested pushes to `ml-dev` only; publishing to `main` now requires his explicit request.
+
 **Verification:** documentation only: `git diff --check` and local Markdown link-target validation passed. No SurgVLP execution or GPU availability has been verified.
 
 **Blocker / next handoff:** Shlok and Aadhitya choose the extraction environment. Shlok then supplies a reloadable VID01 bundle to Aadhitya for classifier training.
@@ -46,4 +48,4 @@ Work one case at a time; do not download the entire dataset. Keep credentials, f
 
 Before each task, inspect `git status --short --branch`, fetch, pull `ml-dev`, and merge `origin/main` following the exact commands in the handoff guide. Preserve uncommitted teammate work.
 
-Commit each feature or major change on `ml-dev` with a lowercase Conventional Commit subject, the configured author identity, and no co-authors. Update this tracker and affected project docs in the same push. Fetch and reconcile remote changes before pushing `ml-dev`, then update `main` with a normal fast-forward push as described in the handoff guide. Never force-push.
+Commit each feature or major change on `ml-dev` with a lowercase Conventional Commit subject, the configured author identity, and no co-authors. Update this tracker and affected project docs in the same push. Fetch and reconcile remote changes before pushing `ml-dev`, leave `main` unchanged unless Shlok explicitly requests a push to it. Never force-push.
