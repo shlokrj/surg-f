@@ -25,7 +25,7 @@ Both people and their agents commit to `ml-dev`. Merge to `main` through a PR.
 - Before ending a session, update `PROGRESS.md` (Databricks row for Aadhitya, Data and ML row for the ML owner) with what was verified and what's next.
 
 **First tasks** (see "Open questions and proposals" in PROGRESS.md)
-1. Import annotation clips. Either person can do it.
+1. ~~Import annotation clips~~ Done 2026-11-14, 3620 rows (see PROGRESS.md). To redo it:
    - Run `python3 databricks/make_clips_csv.py path/to/samples.json clips.csv`.
    - In Databricks, go to Catalog → `workspace` → `default` → Create → Table and upload `clips.csv` as `surgf_clip_staging`.
    - Run `databricks/import_clips.sql` with catalog `workspace` and schema `default`.
