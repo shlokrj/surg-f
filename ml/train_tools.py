@@ -38,6 +38,7 @@ def load_cases(root, case_ids):
 
 def fit_baseline(features_root, train_cases, test_cases, output):
     import joblib
+    import sklearn
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import average_precision_score, precision_recall_fscore_support
     from sklearn.pipeline import make_pipeline
@@ -86,6 +87,9 @@ def fit_baseline(features_root, train_cases, test_cases, output):
               'checkpoint_sha256': first_train['checkpoint_sha256'],
               'preprocessing': first_train['preprocessing'],
               'samples_sha256': first_train['samples_sha256'],
+              'versions': {'numpy': np.__version__, 'sklearn': sklearn.__version__, 'joblib': joblib.__version__},
+              'feature_bundle_hashes': {case: metadata.get('file_sha256', {})
+                                       for case, metadata in {**train_meta, **test_meta}.items()},
               'limitations': 'Two-case engineering baseline, not a generalization claim. No test-set tuning.'}
     output.mkdir(parents=True)
     joblib.dump({'models': models, 'threshold': 0.5, 'tools': TOOLS}, output / 'tool_classifiers.joblib')
