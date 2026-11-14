@@ -32,6 +32,10 @@ Update your own section after each feature or major change with the date, branch
 
 **Workflow:** pull before work, commit each major change with updated docs, and push only `ml-dev` unless Shlok explicitly requests `main`.
 
+### Assigned extraction batch (2026-11-14)
+
+Shlok is processing VID04, VID05, VID06, VID08, VID10, VID12, VID13, VID14, and VID15 in this chat. `scripts/process_ml_cases.py` runs one case at a time on Databricks CPU, with a smoke gate, a pinned committed snapshot, and independent source-label validation. A local state file outside Git records run IDs and allows resuming. Failed jobs stop for review. Aadhitya's active jobs are left running.
+
 ## Aadhitya - videos and Databricks
 
 **Status (2026-11-14):** video work owned by Aadhitya, confirmed by Shlok. Existing results below are reported in project progress, not rerun in this session. Branch: `ml-dev`.
