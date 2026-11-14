@@ -7,6 +7,7 @@ FastAPI service for the Surg+F study tool. **Frontend developers: start with [do
 | `GET /search?q=<label>` | Search. Shared contract in [CONTRACTS.md](../agent-kit/CONTRACTS.md), shape of [shared/search.fixture.json](../shared/search.fixture.json) |
 | `GET /cases/{case_id}/timeline` | Chart: instrument segments and per-label summary for one video |
 | `GET /quiz?seed=<int>` | Quiz: 5 general questions about the operation |
+| `GET /interpret?q=<text>&case_id=<id>` | Turns typed text into actions (`timestamp`, `chart`, `quiz`, `model`). Rules first; Databricks Genie for free-form questions when `DATABRICKS_GENIE_SPACE_ID` is set. See [docs/GENIE_PLAN.md](docs/GENIE_PLAN.md) |
 | `GET /health` | Shows `mode`: `databricks` or `fixture` |
 
 The timeline and quiz endpoints are proposals until the team agrees: see [docs/CONTRACT_PROPOSAL.md](docs/CONTRACT_PROPOSAL.md).
@@ -51,6 +52,8 @@ python -m uv run python scripts/export_fixtures.py
 - `app/routes.py`: thin routes and OpenAPI docs.
 - `app/service.py`: search and timeline.
 - `app/quiz.py`: quiz builder.
+- `app/interpret.py`: typed text to actions (rules, then Genie).
+- `app/genie.py`: Databricks Genie Conversation API client.
 - `app/repository.py`: Databricks and fixture repositories.
 - `app/models.py`: response shapes.
 - `data/quiz_bank.json`: quiz content.
