@@ -6,7 +6,7 @@ Update your own section after each feature or major change with the date, branch
 
 ## Shlok - features, classifier training, and MLflow
 
-**Status (2026-11-14, `ml-dev`):** Databricks serverless CPU works. VID01 is complete and independently verified; VID02 full extraction is running. Classifier code is ready; real training waits for both bundles.
+**Status (2026-11-14, `ml-dev`):** Databricks serverless CPU works. VID01 and VID02 are complete and independently verified. The CPU classifier trained successfully and its model and metrics are saved in MLflow and the shared Volume.
 
 | Step | Evidence | Status |
 |---|---|---|
@@ -15,14 +15,18 @@ Update your own section after each feature or major change with the date, branch
 | VID01 smoke | Run `918098132910738`: `[16,768]`, 2.36 s extraction | Passed |
 | VID01 full | Run `1014355595133232`: `[1734,768]`, 263.91 s extraction, 382.92 s notebook time | Uploaded and independently verified |
 | VID02 smoke | Run `574066955461279`: `[16,768]`, 2.49 s extraction | Passed |
-| VID02 full | Run `1008298473978504`, 30-minute cap; expected `[2840,768]` | Running |
-| Classifier | `train_tools.py`: train VID01, test VID02, train-only scaling, threshold 0.5, unknown annotations excluded; provenance and package versions recorded | Implemented, real run pending |
+| VID02 full | Run `1008298473978504`: `[2840,768]`, 429.60 s extraction, 580.45 s notebook time | Uploaded and independently verified |
+| Classifier | `train_tools.py`: train VID01, test VID02, train-only scaling, threshold 0.5, unknown annotations excluded; provenance and package versions recorded | Passed on Databricks; training took 16.43 s |
 
 **Verification:** `python scripts/verify_databricks_features.py --case-id VID01 --samples ~/madhacks2026/data/cholect50/samples.json` downloaded all four Volume files and passed full-case, checksum, and source annotation checks. The local check performs no extraction. Unit suites cover bundle integrity, publication, surgery separation, train-only scaling, provenance, and launcher gates. Official SurgVLP image encoder/preprocessing parity on real frame 680 was exact.
 
 **Compute decision:** all full extraction stays on Databricks. Classic T4 creation failed because the workspace has no associated worker environments. Aadhitya's serverless A10 probe stayed pending and was cancelled. The first CPU attempt (`886657513377262`) failed during manual dependency installation; managed ML v6 resolved it. No GPU cluster was created. Measured CPU throughput is about 6.4-6.8 frames/s on the current cases.
 
-**Next handoff:** independently verify VID02, run `scripts/train_databricks_tools.py`, and give Aadhitya the model Volume path and MLflow run for held-out prediction export/import. Keep the model's two-case evaluation limits explicit. Do not fit or tune on VID02.
+**Training result:** `python scripts/train_databricks_tools.py` launched successful Databricks run `875405233998464` from `36f35d0`. MLflow run `54659bc60d734052927dadf80ea16e13` is FINISHED, with both baseline artifacts and all per-tool metrics independently listed through the API. Training used 1,734 VID01 frames and testing used 2,840 VID02 frames, with threshold 0.5. F1: bipolar 0.125, clipper 0.154, grasper 0.721, hook 0.618, irrigator 0.308, scissors 0.000. This is an engineering smoke test; rare-tool predictions are weak.
+
+**Next handoff to Aadhitya:** model directory `/Volumes/workspace/default/surgf/models/tool-presence/54659bc60d734052927dadf80ea16e13/` contains `tool_classifiers.joblib` and `metrics.json`. Use Databricks ML v6 (NumPy 2.3.4, scikit-learn 1.7.2, joblib 1.5.2) for prediction export. Both files were downloaded independently for verification; model SHA-256 is `b3d2a5d3dd5c211605091517f6ee0fc9cd806febd5915771a8b7fec9dc6e6c5e`. Predictions have not been imported by Shlok. Aadhitya owns export/import. Expand training cases next, with a fixed surgery split before training; keep this two-case run as the smoke baseline and do not tune on VID02.
+
+**Final checks:** `python -m unittest discover -s ml -p 'test_*.py'` passed 17 tests; the scripts suite passed 10 tests. `git diff --check` passed. Independent Volume validation passed for both cases against source labels. Saved VID01 frames 674-689 matched the earlier local smoke features within `rtol=1e-4, atol=1e-5` (maximum absolute difference 0.00000161). All full extraction ran on Databricks.
 
 **Local assets:** environment `~/madhacks2026/.venv-surgf`; labels and smoke frames in `~/madhacks2026/data/cholect50/`; official weights in `~/madhacks2026/models/`; local partial smoke output in `~/madhacks2026/features-smoke/VID01/`. No data or credentials are committed.
 
