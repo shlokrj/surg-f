@@ -43,11 +43,9 @@ def start(case_id, full_case, timeout_min, cpu, smoke_run_id=None):
         run_name=f'surg-f-{case_id}-{"full" if full_case else "smoke"}-{"cpu" if cpu else "gpu"}-{revision[:7]}',
         timeout_seconds=timeout_min * 60,
         environments=[JobEnvironment(environment_key='extraction', spec=Environment(
-            environment_version='4', dependencies=[
-                '--extra-index-url https://download.pytorch.org/whl/cpu' if cpu else '--extra-index-url https://download.pytorch.org/whl/cu124',
-                'torch==2.6.0+cpu' if cpu else 'torch==2.6.0',
-                'torchvision==0.21.0+cpu' if cpu else 'torchvision==0.21.0',
-                'numpy==1.26.4', 'Pillow==11.3.0', 'ijson==3.6.0']))],
+            base_environment='workspace-base-environments/databricks_ml_v6' if cpu
+            else 'workspace-base-environments/databricks_ai_v6',
+            dependencies=['ijson==3.6.0']))],
         tasks=[SubmitTask(task_key='extract', environment_key='extraction',
                           compute=None if cpu else Compute(hardware_accelerator=HardwareAcceleratorType.GPU_1X_A10),
                           notebook_task=NotebookTask(notebook_path=remote + '/extract_databricks',

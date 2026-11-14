@@ -2,7 +2,7 @@
 
 ## Current Databricks serverless CPU workflow
 
-From the repo root, activate `~/madhacks2026/.venv-surgf`. The launcher deploys committed code and installs pinned CPU packages in Databricks. Run each case separately:
+From the repo root, activate `~/madhacks2026/.venv-surgf`. The launcher deploys committed code and uses the Databricks ML v6 CPU environment and installs ijson 3.6.0. Run each case separately:
 
 ```sh
 python scripts/gpu_run.py start --case-id VID01 --cpu --timeout-min 15
