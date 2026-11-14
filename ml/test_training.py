@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import joblib
 import numpy as np
-from train_tools import fit_baseline
+from train_tools import fit_baseline, fit_selected, validate_split
 
 
 class TrainingTests(unittest.TestCase):
@@ -29,6 +29,25 @@ class TrainingTests(unittest.TestCase):
             self.assertEqual(result['threshold'], 0.5)
             self.assertEqual(result['train_cases'], ['VID01'])
             self.assertEqual(result['test_cases'], ['VID02'])
+
+    def test_selection_never_uses_test_to_choose_weight(self):
+        split = {'train': ['VID01'], 'validation': ['VID04'], 'test': ['VID05'],
+                 'diagnostic': ['VID02']}
+        reports = [{'tools': {'bipolar': {'f1': 0.2}}},
+                   {'tools': {'bipolar': {'f1': 0.8}}}, {'tools': {}}]
+        with tempfile.TemporaryDirectory() as tmp, patch('train_tools.fit_baseline', side_effect=reports) as fit:
+            result = fit_selected('/unused', split, tmp)
+            self.assertEqual(result['selected_weighting'], 'unweighted')
+            self.assertEqual([c.args[2] for c in fit.call_args_list],
+                             [['VID04'], ['VID04'], ['VID05']])
+            self.assertIsNone(fit.call_args_list[-1].kwargs['class_weight'])
+
+    def test_split_rejects_empty_duplicate_and_diagnostic_overlap(self):
+        for split in [dict(train=[], validation=['VID04'], test=['VID05']),
+                      dict(train=['VID01', 'VID01'], validation=['VID04'], test=['VID05']),
+                      dict(train=['VID01'], validation=['VID04'], test=['VID05'], diagnostic=['VID05'])]:
+            with self.assertRaises(ValueError):
+                validate_split(split)
 
     def test_cross_split_provenance_rejected(self):
         meta = {'checkpoint_sha256': 'one', 'samples_sha256': 'same', 'preprocessing': {}}

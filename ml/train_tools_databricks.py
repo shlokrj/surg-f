@@ -17,11 +17,12 @@ import mlflow
 dbutils.widgets.text('module_dir', '')
 dbutils.widgets.text('experiment_path', '')
 dbutils.widgets.text('source_revision', '')
+dbutils.widgets.text('split_json', '')
 ml_dir = Path(dbutils.widgets.get('module_dir'))
 if not (ml_dir / 'train_tools.py').is_file():
     raise RuntimeError('Set module_dir to the absolute workspace snapshot path')
 sys.path.insert(0, str(ml_dir))
-from train_tools import fit_baseline
+from train_tools import fit_baseline, fit_selected, validate_split
 
 experiment_path = dbutils.widgets.get('experiment_path')
 if not experiment_path.startswith('/Users/'):
@@ -29,15 +30,19 @@ if not experiment_path.startswith('/Users/'):
 mlflow.set_experiment(experiment_path)
 features_root = Path('/Volumes/workspace/default/surgf/features')
 started = time.perf_counter()
-with mlflow.start_run(run_name='vid01-train-vid02-test') as run:
+split_text = dbutils.widgets.get('split_json')
+split = validate_split(json.loads(split_text)) if split_text else None
+with mlflow.start_run(run_name=split['name'] if split else 'vid01-train-vid02-test') as run:
     local_output = Path(tempfile.mkdtemp(prefix='surgf-train-')) / 'baseline'
-    report = fit_baseline(features_root, ['VID01'], ['VID02'], local_output)
-    mlflow.log_params({'train_cases': 'VID01', 'test_cases': 'VID02', 'threshold': 0.5,
+    report = (fit_selected(features_root, split, local_output) if split
+              else fit_baseline(features_root, ['VID01'], ['VID02'], local_output))
+    mlflow.log_params({'train_cases': ','.join(report['train_cases']), 'test_cases': ','.join(report['test_cases']),
+                      'validation_cases': ','.join(report.get('validation_cases', [])), 'threshold': 0.5,
                       'checkpoint_sha256': report['checkpoint_sha256'],
                       'source_revision': dbutils.widgets.get('source_revision'),
                       'preprocessing': json.dumps(report['preprocessing']),
                       'classifier': 'standard_scaler_logistic_regression', 'C': 1.0,
-                      'class_weight': 'balanced', 'random_state': 0})
+                      'class_weight': str(report['class_weight']), 'random_state': 0})
     for tool, values in report['tools'].items():
         for metric in ['precision', 'recall', 'f1', 'average_precision']:
             if values.get(metric) is not None:
