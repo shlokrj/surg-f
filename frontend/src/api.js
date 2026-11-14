@@ -34,5 +34,11 @@ export async function getQuiz() {
     throw error;
   }
 }
+// Ask the backend what the typed text means. Returns null in fixture mode, so the caller
+// falls back to its local rules. See backend/docs/FRONTEND_GUIDE.md (Interpret).
+export async function interpretQuery(query, caseId) {
+  if (fixtureMode) return null;
+  return getJson(`/interpret?q=${encodeURIComponent(query)}&case_id=${encodeURIComponent(caseId)}`);
+}
 export { fixtureMode, backendUrl };
 export const instrumentLabels = ['clipper', 'hook', 'grasper', 'irrigator', 'bipolar', 'scissors'];
