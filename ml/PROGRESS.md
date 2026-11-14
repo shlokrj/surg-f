@@ -23,6 +23,17 @@ Shlok requested this split for both teammates to start while existing tests and 
 
 **Documentation verification:** this assignment update changes Markdown only. `git diff --check` and a relative Markdown link-target check across all four updated documents passed on branch `docs/ml-task-split`; publication target is `main`. No new ML test, training, extraction, or import result is claimed here.
 
+## Reporting and error-review assignments (2026-11-14)
+
+Shlok requested this follow-on split while extraction continues. It does not reassign active extraction cases; follow the latest extraction handoffs below.
+
+| Owner | Task / files | Completion and handoff |
+|---|---|---|
+| Shlok | Per-surgery model reports and training-only reference baselines in `ml/train_tools.py`, `ml/train_tools_databricks.py`, and `ml/test_model_reporting.py`. | Implemented and locally verified below. Each candidate reports tool support, confusion counts, precision/recall/F1/AP per surgery; save a readable `comparison.md` and detailed `metrics.json` with both validation candidates. Reference baselines must use training labels only. No changes to the selection criterion or final-test membership. |
+| Aadhitya | Validation error-review export in new `ml/review_prediction_errors.py` and `ml/test_prediction_errors.py`, alongside existing prediction export/evaluation. | Start with synthetic predictions. Produce a bounded CSV of false-positive/false-negative timestamps with case ID, tool, frame/second, expected label, probability, threshold, error type and model run ID. Exclude unknown labels; verify 1 fps timestamp mapping, threshold boundaries, deterministic sampling, and no duplicate review rows. Use validation cases for model review, VID02 only for diagnostics, and exclude final-test cases from iterative review. Keep this separate from the search-table CSV and coordinate any artifact-format change with Shlok. |
+
+**Handoff:** Shlok supplies the selected model run and report when validation training runs. Aadhitya can implement and test the review-file format now, then generate a real review file and record which examples were visually inspected once predictions and videos are available. Do not claim synthetic tests establish model performance. Each owner records their own verification and preserves the other's progress.
+
 ## Shlok - features, classifier training, and MLflow
 
 **Status (2026-11-14, `ml-dev`):** Databricks serverless CPU works. VID01 and VID02 are complete and independently verified. The CPU classifier trained successfully and its model and metrics are saved in MLflow and the shared Volume.
@@ -80,6 +91,12 @@ Verification: `python -m unittest discover -s ml -p 'test_*.py'` passed 35 tests
 `python scripts/check_training_readiness.py --databricks --validation-only --output /tmp/surgf-validation-readiness.json` returned exit 1: **8/15 training/validation cases ready**. Missing bundle files: VID06, VID08, VID10, VID12, VID13, VID14 (train), VID15 (validation). The check accessed no final-test bundles and did not recheck source annotation joins. At this observation, active Databricks jobs listed only VID27 full run `429498081916540` and VID31 smoke `581397573944072`; no active run for the seven missing cases was listed. This is a point-in-time observation, not a diagnosis of the other controller.
 
 Added `--validation-only` to the readiness command; `python -m unittest discover -s scripts -p 'test_*.py'` passed 17 tests, including final-test exclusion; `git diff --check` passed. Published to `ml-dev` and `main` with user authorization. No model comparison was launched because its required inputs are incomplete. Next handoff: Shlok's extraction chat checks/resumes its assigned missing cases; then rerun validation readiness and launch `python scripts/train_databricks_tools.py --split ml/case_split.json --validation-only`. Preserve the fixed split and existing runs.
+
+### Per-surgery reporting and reference baselines (2026-11-14)
+
+Implemented on `feat/ml-surgery-report` for publication to `ml-dev` and `main`. `fit_baseline` now records per-surgery known-frame support, confusion counts, precision/recall/F1/AP and two reference baselines (always absent and constant training prevalence). Unknown annotations remain excluded before slicing cases. Untrained tools retain null model metrics and available baseline metrics. `fit_selected` keeps each weighting candidate's validation report and generates `comparison.md`; the notebook logs it to MLflow and copies it into the model Volume directory. The joblib format, 0.5 threshold, validation macro-F1 selection and case split are unchanged.
+
+Verification: `python -m unittest discover -s ml -p 'test_*.py'` passed 39 tests; `python -m unittest discover -s scripts -p 'test_*.py'` passed 17. Tests check hand-calculated confusion counts/AP, training-only prevalence, single-class labels, two-surgery reporting with actual synthetic logistic regression, unsupported tools and Markdown output. `git diff --check` and Python compilation passed. Real-data reporting awaits a new training run; no remote job was submitted here. Next: Shlok uses the existing validation-only command when inputs are ready; Aadhitya implements the assigned timestamp review export above.
 
 ### Assigned extraction batch (2026-11-14)
 
