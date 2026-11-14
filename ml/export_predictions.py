@@ -26,30 +26,52 @@ from make_clips_csv import to_intervals  # noqa: E402
 
 def smooth(intervals, max_gap=0, min_len=1):
     """Sorted [start, end) clips -> merge clips with <= max_gap seconds between them, then drop clips < min_len."""
-    if max_gap < 0 or min_len < 1:
+    if type(max_gap) is not int or type(min_len) is not int or max_gap < 0 or min_len < 1:
         raise ValueError('need max_gap >= 0 and min_len >= 1')
     merged = []
+    previous_start = -1
     for start, end in intervals:
+        if not 0 <= start < end or start < previous_start:
+            raise ValueError('intervals must be sorted and nonempty')
+        previous_start = start
         if merged and start - merged[-1][1] <= max_gap:
-            merged[-1][1] = end
+            merged[-1][1] = max(merged[-1][1], end)
         else:
             merged.append([start, end])
     return [(start, end) for start, end in merged if end - start >= min_len]
 
 
 def predict_clips(model_dir, bundle, max_gap=0, min_len=1):
+    smooth([], max_gap, min_len)  # Validate settings before reading model or features.
     model_dir, bundle = Path(model_dir), Path(bundle)
     metadata = validate_bundle(bundle, require_complete=True)
     case_id = metadata['case_id']
-    if case_id in json.loads((model_dir / 'metrics.json').read_text())['train_cases']:
+    report = json.loads((model_dir / 'metrics.json').read_text())
+    if case_id in report['train_cases']:
         raise ValueError(f'{case_id} was used for training; export predictions only for held-out cases')
+    for key in ['checkpoint_sha256', 'preprocessing', 'samples_sha256']:
+        if key not in report or key not in metadata or report[key] != metadata[key]:
+            raise ValueError(f'model/bundle provenance mismatch: {key}')
     saved = joblib.load(model_dir / 'tool_classifiers.joblib')
+    threshold = saved['threshold']
+    if (not isinstance(threshold, (int, float)) or not np.isfinite(threshold)
+            or not 0 <= threshold <= 1 or threshold != report.get('threshold')):
+        raise ValueError('invalid or inconsistent model/report threshold')
+    if not saved['models'] or set(saved['models']) - {'bipolar', 'clipper', 'grasper', 'hook', 'irrigator', 'scissors'}:
+        raise ValueError('expected at least one recognized tool model')
     features = np.load(bundle / 'features.npy', allow_pickle=False)
     with open(bundle / 'manifest.csv') as f:
         frames = np.array([int(r['frame_id']) for r in csv.DictReader(f)])
     rows = []
     for tool, model in sorted(saved['models'].items()):  # untrained tools are absent
-        hits = frames[model.predict_proba(features)[:, 1] >= saved['threshold']]
+        if list(model.classes_) != [0, 1]:
+            raise ValueError('expected binary model classes [0, 1]')
+        probabilities = np.asarray(model.predict_proba(features))
+        if (probabilities.shape != (len(frames), 2) or not np.isfinite(probabilities).all()
+                or np.any((probabilities < 0) | (probabilities > 1))
+                or not np.allclose(probabilities.sum(axis=1), 1.0)):
+            raise ValueError('invalid model probabilities')
+        hits = frames[probabilities[:, 1] >= threshold]
         rows += [(case_id, start, end, tool, 'prediction') for start, end in smooth(to_intervals(sorted(hits)), max_gap, min_len)]
     return rows
 
