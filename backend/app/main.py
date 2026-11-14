@@ -12,6 +12,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import Settings, load_settings
+from .genie import GenieClient
+from .interpret import InterpretService
 from .quiz import QuizBank, QuizService
 from .repository import ClipRepository, DatabricksClipRepository, FixtureClipRepository
 from .routes import router
@@ -24,6 +26,7 @@ API_DESCRIPTION = """Study-tool API for laparoscopic cholecystectomy videos.
 - **Search:** `GET /search?q=clipper` finds instrument clips.
 - **Chart:** `GET /cases/VID01/timeline` returns segments and a per-instrument summary.
 - **Quiz:** `GET /quiz?seed=1` returns 5 general questions about the operation.
+- **Interpret:** `GET /interpret?q=...` turns typed input into actions for the three above.
 
 Without Databricks credentials the API serves local fixtures; `GET /health` shows the mode.
 Errors use `{"detail": "..."}`. Frontend guide: `backend/docs/FRONTEND_GUIDE.md`.
@@ -58,11 +61,21 @@ def build_repository(settings: Settings) -> ClipRepository:
     return DatabricksClipRepository(settings.databricks)
 
 
+def build_genie(settings: Settings) -> GenieClient | None:
+    """Genie is optional: it needs Databricks credentials and a Genie space ID."""
+    if settings.databricks is None or settings.genie_space_id is None:
+        return None
+    return GenieClient(settings.databricks, settings.genie_space_id, settings.genie_timeout_sec)
+
+
 def create_app(
-    settings: Settings | None = None, repository: ClipRepository | None = None
+    settings: Settings | None = None,
+    repository: ClipRepository | None = None,
+    genie: GenieClient | None = None,
 ) -> FastAPI:
     settings = settings or load_settings()
     repository = repository or build_repository(settings)
+    genie = genie or build_genie(settings)
     _configure_logging()
 
     @asynccontextmanager
@@ -78,6 +91,7 @@ def create_app(
     app.state.search_service = SearchService(repository)
     app.state.timeline_service = TimelineService(repository)
     app.state.quiz_service = QuizService(QuizBank.load(settings.quiz_bank_file))
+    app.state.interpret_service = InterpretService(genie)
     app.include_router(router)
 
     @app.middleware("http")
