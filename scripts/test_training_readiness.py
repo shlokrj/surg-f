@@ -22,6 +22,18 @@ class ReadinessTests(unittest.TestCase):
         self.assertNotIn('clipper', result['unsupported_training_tools'])
         self.assertIn('scissors', result['unsupported_training_tools'])
 
+    def test_validation_only_does_not_inspect_final_test(self):
+        seen = []
+        def inspect(case):
+            seen.append(case)
+            if case == 'VID05':
+                self.fail('final test must not be accessed')
+            return self.inspect(case)
+        result = check_split(self.split, inspect, validation_only=True)
+        self.assertTrue(result['ready'])
+        self.assertEqual(result['required_cases'], 2)
+        self.assertEqual(seen, ['VID01', 'VID04'])
+
     def test_collects_missing_and_incompatible_without_stopping(self):
         def inspect(case):
             if case == 'VID04':

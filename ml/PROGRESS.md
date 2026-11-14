@@ -75,6 +75,12 @@ Implemented on `feat/ml-selection-audit` for publication to `ml-dev` and `main`,
 
 Verification: `python -m unittest discover -s ml -p 'test_*.py'` passed 35 tests, including actual synthetic logistic-regression training/serialization, final-test exclusion, tie-breaking, validation hashes, and existing-output rejection. Script tests and syntax checks also passed. No real training was launched: extraction remains in the other chat. Next: use validation-only mode once the training/validation bundles are ready; reserve the final-test command for the fixed model decision.
 
+### Validation launch readiness (2026-11-14)
+
+`python scripts/check_training_readiness.py --databricks --validation-only --output /tmp/surgf-validation-readiness.json` returned exit 1: **8/15 training/validation cases ready**. Missing bundle files: VID06, VID08, VID10, VID12, VID13, VID14 (train), VID15 (validation). The check accessed no final-test bundles and did not recheck source annotation joins. At this observation, active Databricks jobs listed only VID27 full run `429498081916540` and VID31 smoke `581397573944072`; no active run for the seven missing cases was listed. This is a point-in-time observation, not a diagnosis of the other controller.
+
+Added `--validation-only` to the readiness command; `python -m unittest discover -s scripts -p 'test_*.py'` passed 17 tests, including final-test exclusion; `git diff --check` passed. Published to `ml-dev` and `main` with user authorization. No model comparison was launched because its required inputs are incomplete. Next handoff: Shlok's extraction chat checks/resumes its assigned missing cases; then rerun validation readiness and launch `python scripts/train_databricks_tools.py --split ml/case_split.json --validation-only`. Preserve the fixed split and existing runs.
+
 ### Assigned extraction batch (2026-11-14)
 
 Shlok is processing VID04, VID05, VID06, VID08, VID10, VID12, VID13, VID14, and VID15 in this chat. `scripts/process_ml_cases.py` runs one case at a time on Databricks CPU, with a smoke gate, a pinned committed snapshot, and independent source-label validation. A local state file outside Git records run IDs and allows resuming. Failed jobs stop for review. Aadhitya's active jobs are left running.
