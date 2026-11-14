@@ -6,7 +6,7 @@ Update your own section after each feature or major change with the date, branch
 
 ## Shlok - SurgVLP and feature extraction
 
-**Status (2026-11-14):** extraction pipeline and Databricks notebook implemented; real CPU smoke check passed. Local Databricks authentication verified; full GPU run pending compute. Branch: `ml-dev`.
+**Status (2026-11-14):** extraction pipeline and Databricks notebook implemented; real CPU smoke check passed. Local Databricks authentication verified; GPU launch blocked by workspace provisioning. Branch: `ml-dev`.
 
 Scope: frozen SurgVLP setup, one-case-at-a-time feature extraction, annotation alignment, and validated feature uploads. Aadhitya owns the video script; his shared `download_case.py` is reused unchanged.
 
@@ -25,7 +25,9 @@ Scope: frozen SurgVLP setup, one-case-at-a-time feature extraction, annotation a
 
 **Authentication (2026-11-14):** `~/madhacks2026/.venv-surgf/bin/python scripts/check_databricks_auth.py` passed using the existing Git-ignored `.env` (permissions 0600). Authenticated as Aadhitya's account; `workspace.default.surgf` Volume metadata accessible; 0 visible clusters. No token committed or printed by the check. Volume file writes and GPU availability remain unverified.
 
-**Blocker / next handoff:** configure suitable GPU compute and run [extract_databricks.py](extract_databricks.py), first smoke mode then full VID01. After a full run, hand Aadhitya a validated Volume bundle for classifier training. The current 16-frame local bundle is only a smoke check.
+**Remote launch update (2026-11-14):** Personal Compute allows `g4dn.xlarge` and runtime `17.3.x-gpu-ml-scala2.13` is available, but the single-node request failed with `Current organization ... does not have any associated worker environments`. Stopped the SDK retry loop; no cluster created. Added `scripts/run_databricks_features.py` for snapshot deployment, bounded job submission, and status. Seven launcher tests passed. Deployed committed snapshot `f39266b` into `/Users/<token-owner>/surg-f-ml/f39266b0a4ca7ad171da7843432042a5c66adacb/ml`; module readback matched Git. No CUDA job submitted.
+
+**Blocker / next handoff:** workspace owner must resolve compute provisioning (or confirm an available serverless GPU path). Shlok has been asked whether to extract locally and upload while that is resolved; no full local fallback started. Once GPU compute is available, run [extract_databricks.py](extract_databricks.py), first smoke mode then full VID01. After a full run, hand Aadhitya a validated Volume bundle for classifier training. The current 16-frame local bundle is only a smoke check.
 
 **Workflow:** pull before work, commit each feature or major change and update docs, then push only `ml-dev`. Update `main` only at Shlok's explicit request.
 

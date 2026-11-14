@@ -4,7 +4,7 @@ Shlok owns this pipeline; Aadhitya owns videos. See [progress](PROGRESS.md) for 
 
 ## Databricks GPU run
 
-Shlok selected Databricks GPU on 2026-11-14. No cluster has been launched or Volume upload verified by this pipeline yet.
+Shlok selected Databricks GPU on 2026-11-14. The launch attempt was rejected because this workspace has no associated worker environments. No cluster was created, and Volume publication remains unverified. A policy listing a GPU does not establish that the workspace can provision one.
 
 1. Open this repository as a Databricks Git folder on `ml-dev` and pull its latest changes.
 2. Attach `extract_databricks.py` to GPU ML compute with Dedicated access and permission to use `workspace.default.surgf`. The team's documented candidate is a single-node `g4dn.xlarge` with 30-minute auto-termination; availability and quota still need verification. Use a runtime with PyTorch >= 2.6 and its matching torchvision. Keep the runtime's CUDA packages rather than installing the Mac's CPU setup.
@@ -68,3 +68,23 @@ The first two files preserve the [shared contract](../agent-kit/CONTRACTS.md); t
 Upstream checkpoint SHA-256: `4db3eb9dc53aa46f69a8adaeffa115fa75c9a15c08e60638011b812a6b128b3d`. Asset preparation checks this and the verified labels hash; changed upstream assets stop the run for review.
 
 Databricks references: [ML runtime and Dedicated access](https://docs.databricks.com/aws/en/machine-learning/databricks-runtime-ml), [Unity Catalog Volumes](https://docs.databricks.com/aws/en/volumes).
+
+## Remote launcher and current compute blocker
+
+The Personal Compute policy allows `g4dn.xlarge`, and runtime `17.3.x-gpu-ml-scala2.13` is listed. However, the single-node launch request returned `Current organization ... does not have any associated worker environments`. The SDK retried this error; the retrying request was stopped and the cluster list remained empty. This is a workspace compute provisioning issue, not a token failure. Ask the workspace/account owner to resolve classic compute provisioning or confirm that supported serverless GPU compute is available. No account configuration was changed.
+
+The committed notebook and its four modules were uploaded to an isolated workspace snapshot under `/Users/<token-owner>/surg-f-ml/<commit>/ml`. Module readback was verified against Git. This deploys code only; it does not prove CUDA execution.
+
+```sh
+# From the repo root in the ML Python environment:
+python scripts/run_databricks_features.py deploy
+# Once a working GPU cluster exists:
+python scripts/run_databricks_features.py submit --cluster-id CLUSTER_ID --case-id VID01
+python scripts/run_databricks_features.py status RUN_ID
+# Use the successful smoke run ID; keep HEAD unchanged between smoke and full runs:
+python scripts/run_databricks_features.py submit --cluster-id CLUSTER_ID --case-id VID01 \
+  --full-case --smoke-run-id SMOKE_RUN_ID
+python -m unittest discover -s scripts -p 'test_*.py' -v
+```
+
+The launcher uploads only files from the current Git commit, never `.env`, raw data, or uncommitted code. It uses existing compute, sets a 20-minute task / 30-minute run timeout and zero task retries, and requires smoke success for the same case, cluster, and revision before a full run. It does not terminate an existing cluster that another teammate might be using. Stop your dedicated extraction compute when finished.
