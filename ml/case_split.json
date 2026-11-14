@@ -1,0 +1,8 @@
+{
+  "name": "expanded-v1",
+  "train": ["VID01", "VID04", "VID05", "VID06", "VID08", "VID10", "VID12", "VID13", "VID14", "VID18", "VID22", "VID23"],
+  "validation": ["VID15", "VID25", "VID26"],
+  "test": ["VID27", "VID29", "VID31", "VID32"],
+  "diagnostic": ["VID02"],
+  "note": "Frozen before expanded model comparisons. VID02 was inspected in the smoke baseline and is excluded from model selection and final testing."
+}
