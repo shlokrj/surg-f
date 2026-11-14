@@ -55,10 +55,7 @@ def test_fixture_search_matches_shared_fixture(client):
 def test_label_is_case_and_whitespace_insensitive(client):
     response = client.get("/search", params={"q": "  CLIPPER "})
     assert response.json() == FIXTURE
-
-
-def test_normalize_label_collapses_inner_whitespace():
-    assert normalize_label("  Clip   APPLIER ") == "clip applier"
+    assert normalize_label(" Clip   APPLIER ") == "clip applier"  # multi-word labels still collapse
 
 
 def test_no_match_returns_empty_results(client):

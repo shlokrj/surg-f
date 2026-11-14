@@ -58,6 +58,7 @@ def start(case_id, full_case, timeout_min, cpu, smoke_run_id=None):
     ).response
     print(f'started run {run.run_id} (auto-stops after {timeout_min} min)')
     print(w.jobs.get_run(run.run_id).run_page_url)
+    return run.run_id
 
 
 def list_active():
