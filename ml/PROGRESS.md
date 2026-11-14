@@ -4,44 +4,29 @@ The project has three teams: backend, frontend, and ML. Shlok and Aadhitya share
 
 Update your own section after each feature or major change with the date, branch or commit, exact verification command and result, blockers, and next handoff. Preserve the other person's entries. Coordinate before editing shared files.
 
-## Shlok - SurgVLP and feature extraction
+## Shlok - features, classifier training, and MLflow
 
-**Status (2026-11-14):** extraction pipeline and Databricks notebook implemented; real CPU smoke check passed. Local Databricks authentication verified; GPU launch blocked by workspace provisioning. Branch: `ml-dev`.
+**Status (2026-11-14, `ml-dev`):** Databricks serverless CPU works. VID01 is complete and independently verified; VID02 full extraction is running. Classifier code is ready; real training waits for both bundles.
 
-Scope: frozen SurgVLP setup, one-case-at-a-time feature extraction, annotation alignment, and validated feature uploads. Aadhitya owns the video script; his shared `download_case.py` is reused unchanged.
+| Step | Evidence | Status |
+|---|---|---|
+| Authentication | Existing team token authenticates as Aadhitya; repo-root `.env` is ignored and mode 0600 | Verified |
+| CPU notebook and launcher | Explicit CPU selection, managed ML v6, absolute module paths, temporary storage, timed extraction, smoke gate | Implemented |
+| VID01 smoke | Run `918098132910738`: `[16,768]`, 2.36 s extraction | Passed |
+| VID01 full | Run `1014355595133232`: `[1734,768]`, 263.91 s extraction, 382.92 s notebook time | Uploaded and independently verified |
+| VID02 smoke | Run `574066955461279`: `[16,768]`, 2.49 s extraction | Passed |
+| VID02 full | Run `1008298473978504`, 30-minute cap; expected `[2840,768]` | Running |
+| Classifier | `train_tools.py`: train VID01, test VID02, train-only scaling, threshold 0.5, unknown annotations excluded; provenance and package versions recorded | Implemented, real run pending |
 
-- [x] Claim Data and ML ownership and create this tracker.
-- [x] Shlok selected Databricks GPU for full extraction on 2026-11-14. Authentication verified with the existing team token; no clusters visible and no cluster launched.
-- [x] Set up isolated Python 3.12 environment outside Git, download labels and official weights, and fetch VID01 frames 674-689.
-- [x] Implement extraction, source annotation joins, bundle validation, and guarded publication; add a Databricks source notebook.
-- [x] Validate a real partial VID01 bundle: 16 rows x 768 features, float32, IDs 674-689, matched source labels, complete_case=false.
-- [ ] Run the notebook on Databricks GPU, first in smoke mode, then on all 1,734 VID01 frames.
-- [ ] Reload the complete uploaded bundle from `/Volumes/workspace/default/surgf/features/VID01/`.
-- [ ] Repeat for 2-3 cases after the first complete bundle passes validation.
+**Verification:** `python scripts/verify_databricks_features.py --case-id VID01 --samples ~/madhacks2026/data/cholect50/samples.json` downloaded all four Volume files and passed full-case, checksum, and source annotation checks. The local check performs no extraction. Unit suites cover bundle integrity, publication, surgery separation, train-only scaling, provenance, and launcher gates. Official SurgVLP image encoder/preprocessing parity on real frame 680 was exact.
 
-**Verification:** `~/madhacks2026/.venv-surgf/bin/python -m unittest discover -s ml -p 'test_*.py' -v`: 12 tests passed, including bad joins, duplicate IDs, corrupt checksums, incomplete publication, and overwrite rejection. `python -m compileall -q ml` passed. The [README smoke command](README.md) ran with local paths under `~/madhacks2026/data/cholect50/`, `models/`, and `features-smoke/VID01/`, producing a validated `[16,768]` matrix. Official upstream image encoder and preprocessing at revision `85e8589` matched our output exactly on real frame 680 (max absolute difference 0). CUDA execution and Volume publication have not been verified.
+**Compute decision:** all full extraction stays on Databricks. Classic T4 creation failed because the workspace has no associated worker environments. Aadhitya's serverless A10 probe stayed pending and was cancelled. The first CPU attempt (`886657513377262`) failed during manual dependency installation; managed ML v6 resolved it. No GPU cluster was created. Measured CPU throughput is about 6.4-6.8 frames/s on the current cases.
 
-**Local assets:** environment `~/madhacks2026/.venv-surgf`; labels/frames `~/madhacks2026/data/cholect50/`; weights `~/madhacks2026/models/SurgVLP.pth`; partial bundle `~/madhacks2026/features-smoke/VID01/`. No data or credentials committed. The direct upstream package install encountered old setuptools/tokenizer requirements; the image-only loader uses the official weights with torch/torchvision and does not require that package.
+**Next handoff:** independently verify VID02, run `scripts/train_databricks_tools.py`, and give Aadhitya the model Volume path and MLflow run for held-out prediction export/import. Keep the model's two-case evaluation limits explicit. Do not fit or tune on VID02.
 
-**Authentication (2026-11-14):** `~/madhacks2026/.venv-surgf/bin/python scripts/check_databricks_auth.py` passed using the existing Git-ignored `.env` (permissions 0600). Authenticated as Aadhitya's account; `workspace.default.surgf` Volume metadata accessible; 0 visible clusters. No token committed or printed by the check. Volume file writes and GPU availability remain unverified.
+**Local assets:** environment `~/madhacks2026/.venv-surgf`; labels and smoke frames in `~/madhacks2026/data/cholect50/`; official weights in `~/madhacks2026/models/`; local partial smoke output in `~/madhacks2026/features-smoke/VID01/`. No data or credentials are committed.
 
-**Remote launch update (2026-11-14):** Personal Compute allows `g4dn.xlarge` and runtime `17.3.x-gpu-ml-scala2.13` is available, but the single-node request failed with `Current organization ... does not have any associated worker environments`. Stopped the SDK retry loop; no cluster created. Added `scripts/run_databricks_features.py` for snapshot deployment, bounded job submission, and status. Seven launcher tests passed. Deployed committed snapshot `f39266b` into `/Users/<token-owner>/surg-f-ml/f39266b0a4ca7ad171da7843432042a5c66adacb/ml`; module readback matched Git. No CUDA job submitted.
-
-**Blocker / next handoff:** workspace owner must resolve compute provisioning (or confirm an available serverless GPU path). Shlok confirmed on 2026-11-14 that full extraction must remain on Databricks; do not run a full local fallback. Documentation check: `git diff --check` passed; compute remains blocked. Once GPU compute is available, run [extract_databricks.py](extract_databricks.py), first smoke mode then full VID01. After a full run, hand Aadhitya a validated Volume bundle for classifier training. The current 16-frame local bundle is only a smoke check.
-
-**CPU/GPU review (2026-11-14):** recommend Databricks serverless CPU for the first two demo cases, with a timed real-data smoke run before full extraction. This keeps all full extraction on Databricks. Live `jobs.get_run` / `jobs.get_run_output` checks show CPU probe `41666230252779` reached Python (2-3 s setup, 14 s execution per attempt) and failed only on missing `torch`; these are probe timings, not extraction throughput. GPU probe `375497629116767` remained pending at the task level about 17 minutes after submission, with a cancellation/timeout flag; this does not prove GPU capacity is unavailable. Neither run was started or changed during this review. `environments.list_workspace_base_environments` lists CPU ML Latest/ML v6 with torch 2.12.0 and torchvision 0.27.0, and GPU AI environments. Listed packages and environments still require an actual run to validate. Classic GPU remains blocked by the missing worker environment.
-
-**Recommended next change:** reuse Aadhitya's newly pulled `scripts/gpu_run.py --cpu` launcher and add explicit CPU/serverless support to the notebook, use the managed ML CPU environment plus ijson, replace the fixed `/local_disk0` path and working-directory assumptions, and time a 16-128 frame extraction. The current notebook requires CUDA; the older `run_databricks_features.py submit` path requires an existing classic cluster. Aadhitya's `gpu_run.py start --cpu` supplies the serverless path but the notebook still needs adaptation. If the measured full-case estimate is acceptable for the hackathon, process VID01 then VID02 and validate Volume readback. Use CPU for the classifier on cached features. Revisit serverless A10 GPU for larger batches or if CPU timings are too slow. No GPU-versus-CPU extraction benchmark or price comparison has been measured, and no compute choice was silently changed in code.
-
-**Serverless CPU implementation (2026-11-14):** Shlok approved the CPU next steps. Updated the notebook and Aadhitya's shared launcher with pinned torch/torchvision dependencies, explicit device and absolute workspace paths, portable temporary storage, extraction timing, and same-case/revision smoke gating before full runs. `python -m compileall -q ml scripts` and both unittest suites passed (12 bundle tests, 7 launcher tests). Next: execute a timed serverless smoke test, then VID01 and VID02 if it passes. Full extraction remains on Databricks.
-
-**CPU dependency correction (2026-11-14):** smoke run `886657513377262` failed during library installation before model execution. Replaced manually pinned torch/torchvision packages with the listed managed ML v6 CPU base environment and ijson 3.6.0. Launcher tests now cover CPU environment selection, explicit paths/device, timeout, and rejection of missing or wrong-device smoke evidence; 10 launcher tests passed. Retry pending.
-
-**CPU smoke verified (2026-11-14):** run `918098132910738` succeeded on Databricks serverless CPU using managed ML v6. Real VID01 frames 674-689 produced `[16,768]`; model load 1.46 s, extraction 2.36 s (6.79 frames/s), assets 81.19 s, frame download 4.58 s, notebook elapsed 111.63 s. Full VID01 run `1014355595133232` is in progress with a 30-minute cap. Full-case timing and upload are not yet verified.
-
-**Classifier implementation (2026-11-14):** Shlok is implementing the CPU baseline under the approved next steps. `train_tools.py` uses per-tool logistic regression on frozen features, trains on VID01, holds out VID02, fits scaling on training rows only, excludes missing annotations, and fixes the threshold at 0.5. Tools without both training classes are marked not trained. The Databricks notebook logs params, per-tool metrics, and fitted classifier artifacts to MLflow and the Volume. Three synthetic-data tests cover surgery separation, train-only scaling, and matching provenance; 15 ML tests pass in total. Training has not run on real bundles yet.
-
-**Workflow:** pull before work, commit each feature or major change and update docs, then push only `ml-dev`. Update `main` only at Shlok's explicit request.
+**Workflow:** pull before work, commit each major change with updated docs, and push only `ml-dev` unless Shlok explicitly requests `main`.
 
 ## Aadhitya - videos and Databricks
 
@@ -61,11 +46,17 @@ Scope: playable demo videos, Databricks ingestion, and exporting classifier pred
 - [x] Host the 25 fps VID01 for the frontend (2026-11-14) at `/Volumes/workspace/default/surgf/videos/VID01.mp4`. `python scripts/fetch_videos.py VID01` puts it in `frontend/public/videos/` (md5 matches, git-ignored). VID02 is built locally but not uploaded yet.
 - [x] Ownership settled (2026-11-14): Shlok owns training and MLflow; Aadhitya owns prediction export and import.
 - [x] Add `ml/export_predictions.py` (2026-11-14). It loads `tool_classifiers.joblib` and `metrics.json` from `train_tools.py` and a complete bundle (checked with `validate_bundle`). It thresholds each frame at the saved threshold, merges consecutive positive frames with `to_intervals()`, and writes `case_id,start_sec,end_sec,label,source=prediction` rows. It refuses cases listed in `train_cases`. Verified: `python -m unittest discover -s ml -p 'test_*.py'` ran 17 tests, all OK, including 2 new ones (frames 10–12 and 20 become `10–13` and `20–21`; a training case is rejected). It has not run on real bundles yet: the Volume had no `features/` directory when checked, and VID01 full run `1014355595133232` was in progress.
-- [ ] Once the model is trained on VID01 and tested on VID02: run `python ml/export_predictions.py MODEL_DIR /Volumes/.../features/VID02 pred.csv`, load it into `surgf_clip_staging`, run `import_clips.sql`, then record the row counts and a sample `/search` result with `source = prediction`.
+- [ ] Once the model is trained on VID01 and tested on VID02: run `python ml/export_predictions.py MODEL_DIR /Volumes/.../features/VID02 pred.csv`, upload `pred.csv` to `/Volumes/workspace/default/surgf/` and run `python scripts/clips_job.py run --csv /Volumes/workspace/default/surgf/pred.csv` (Lakeflow job, verified 2026-11-14), then record the row counts and a sample `/search` result with `source = prediction`.
 
 **Blocker / next handoff:** 25 fps `VID01.mp4` and `VID02.mp4` exist on Aadhitya's machine and are not hosted. Frontend needs an accessible video; training needs Shlok's validated features.
 
 **For Shlok (2026-11-14):** serverless GPU never got a GPU, but serverless CPU runs. To run `extract_databricks.py` on serverless CPU with `python scripts/gpu_run.py start --case-id VID01 --cpu`, the notebook needs three changes. It's your file, so make them or tell Aadhitya to: (1) allow `device='cpu'` when CUDA is absent, instead of raising; (2) `%pip install` torch>=2.6 and torchvision, since the base serverless environment has no torch; (3) replace `/local_disk0`, which likely doesn't exist on serverless, with `tempfile.mkdtemp()`. ResNet-50 on about 1.7k frames should take minutes on CPU. This is unmeasured.
+
+**For Shlok: scale up training data (2026-11-14, Aadhitya).** One training surgery is a smoke test, not a result. Frames within a surgery are highly correlated, and the rare tools barely appear in VID01: labeled frames there are grasper 1141, hook 788, irrigator 133, bipolar 124, clipper 102, scissors 17. Across all 50 cases: clipper 3429, scissors 2134. Proposal:
+1. **Extract 20 cases**, the first 20 CholecT50 IDs ≤ 80 in order (all have 25 fps video): VID01, 02, 04, 05, 06, 08, 10, 12, 13, 14, 15, 18, 22, 23, 25, 26, 27, 29, 31, 32. At the measured ~6.4 min per case, 18 cases are about 2 h serially, or much less in parallel.
+2. **Split extraction to avoid collisions.** `publish_features.py` refuses existing destinations anyway. **Shlok:** VID04, 05, 06, 08, 10, 12, 13, 14, 15. **Aadhitya:** VID18, 22, 23, 25, 26, 27, 29, 31, 32, starting now with `gpu_run.py start --cpu`: smoke first, then `--full-case --smoke-run-id`.
+3. **Make train and test cases notebook parameters.** `train_tools_databricks.py` currently hardcodes `['VID01']` / `['VID02']` and run name `vid01-train-vid02-test`, while `fit_baseline` already accepts lists. Suggested split: about 15 train / 5 test by surgery. Your call on which cases; picking them before seeing results avoids tuning on test.
+4. Keep VID01→VID02 as the first end-to-end smoke test. Rerun with the larger split as a new MLflow run so the two can be compared.
 
 ## Shared feature handoff
 
