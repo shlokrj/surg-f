@@ -17,7 +17,7 @@ FILES = ('metadata.json', 'features.npy', 'manifest.csv', 'annotations.json')
 PROVENANCE = ('checkpoint_sha256', 'preprocessing', 'samples_sha256')
 
 
-def check_split(split, inspect):
+def check_split(split, inspect, validation_only=False):
     """Inspect every required case, collecting errors instead of failing at the first."""
     import re
     seen = set()
@@ -33,7 +33,8 @@ def check_split(split, inspect):
     if 'VID02' in seen and 'VID02' not in split.get('diagnostic', []):
         raise ValueError('VID02 must remain diagnostic')
     records, reference = [], None
-    for group in ('train', 'validation', 'test'):
+    groups = ('train', 'validation') if validation_only else ('train', 'validation', 'test')
+    for group in groups:
         for case in split[group]:
             row = {'case_id': case, 'group': group}
             try:
@@ -69,7 +70,7 @@ def check_split(split, inspect):
         n = sum(row['known_frames'] for row in train)
         unsupported = [tool for tool in TOOLS if sum(row['positive_frames'][tool] for row in train) in (0, n)]
     return {'checked_at_utc': datetime.now(timezone.utc).isoformat(), 'ready': ready,
-            'split': split, 'cases': records, 'required_cases': len(records),
+            'split': split, 'validation_only': validation_only, 'cases': records, 'required_cases': len(records),
             'ready_cases': sum(row['status'] == 'ready' for row in records),
             'unsupported_training_tools': unsupported,
             'reference_provenance': reference,
@@ -87,6 +88,7 @@ def main():
     parser.add_argument('--split', default=str(ROOT / 'ml/case_split.json'))
     parser.add_argument('--features-root', default='/Volumes/workspace/default/surgf/features')
     parser.add_argument('--databricks', action='store_true', help='Download temporary verification copies through the Files API')
+    parser.add_argument('--validation-only', action='store_true', help='Check only training and validation bundles')
     parser.add_argument('--samples', help='Optional source labels for independent annotation joins')
     parser.add_argument('--output', required=True, help='Report path outside Git, e.g. /tmp/surgf-readiness.json')
     args = parser.parse_args()
@@ -106,7 +108,7 @@ def main():
     else:
         def inspect(case):
             return inspect_local(Path(args.features_root) / case, args.samples)
-    report = check_split(split, inspect)
+    report = check_split(split, inspect, validation_only=args.validation_only)
     report['source_annotation_check'] = args.samples is not None
     Path(args.output).write_text(json.dumps(report, indent=2) + '\n')
     print(f"{report['ready_cases']}/{report['required_cases']} required cases ready; report: {args.output}")
