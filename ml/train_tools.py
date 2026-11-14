@@ -27,13 +27,70 @@ def load_cases(root, case_ids):
             raise ValueError(f'{case} has no annotated frames')
         matrices.append(np.load(path / 'features.npy', allow_pickle=False)[keep])
         labels.extend([annotations[i]['instruments'] for i in keep])
-        provenance[case] = metadata
+        provenance[case] = dict(metadata, annotated_frames=len(keep))
     first = next(iter(provenance.values()))
     for metadata in provenance.values():
         for key in ['checkpoint_sha256', 'preprocessing', 'samples_sha256']:
             if metadata[key] != first[key]:
                 raise ValueError(f'incompatible bundle provenance: {key}')
     return np.concatenate(matrices), np.array([[tool in row for tool in TOOLS] for row in labels], dtype=np.int32), provenance
+
+
+def binary_report(target, probabilities, threshold=0.5):
+    """Frame metrics with explicit support; undefined AP stays null."""
+    from sklearn.metrics import average_precision_score
+    target = np.asarray(target)
+    probabilities = np.asarray(probabilities)
+    if (target.ndim != 1 or not len(target) or target.shape != probabilities.shape
+            or not np.isin(target, [0, 1]).all() or not np.isfinite(probabilities).all()
+            or np.any((probabilities < 0) | (probabilities > 1))):
+        raise ValueError('expected aligned nonempty binary labels and probabilities')
+    predicted = probabilities >= threshold
+    positive = target == 1
+    tp = int(np.sum(predicted & positive))
+    fp = int(np.sum(predicted & ~positive))
+    fn = int(np.sum(~predicted & positive))
+    tn = int(np.sum(~predicted & ~positive))
+    return {'frames': len(target), 'positive_frames': int(positive.sum()),
+            'negative_frames': int((~positive).sum()), 'tp': tp, 'fp': fp, 'fn': fn, 'tn': tn,
+            'precision': tp / (tp + fp) if tp + fp else 0.0,
+            'recall': tp / (tp + fn) if tp + fn else 0.0,
+            'f1': 2 * tp / (2 * tp + fp + fn) if 2 * tp + fp + fn else 0.0,
+            'average_precision': float(average_precision_score(target, probabilities))
+            if 0 < positive.sum() < len(target) else None}
+
+
+def reference_reports(train_target, target):
+    prevalence = float(np.mean(train_target))
+    return {'training_prevalence': prevalence,
+            'always_absent': binary_report(target, np.zeros(len(target))),
+            'constant_training_prevalence': binary_report(target, np.full(len(target), prevalence))}
+
+
+def write_comparison(report, output):
+    """Render saved metrics without evaluating additional cases."""
+    lines = ['# Tool-presence comparison', '',
+             'Evaluation partition: ' + report.get('evaluation_partition', 'test'), '',
+             'Zero-denominator precision/recall/F1 are 0; AP is unavailable for single-class labels.',
+             'Reference probabilities use training labels only; all decisions use threshold 0.5.', '']
+    if 'validation_macro_f1' in report:
+        lines += ['| Weighting | Validation macro F1 |', '|---|---:|']
+        lines += [f'| {name} | {score:.4f} |' for name, score in report['validation_macro_f1'].items()]
+        lines += ['', 'Selected weighting: ' + report['selected_weighting'], '']
+    evaluations = report.get('validation_case_metrics', {report.get('class_weight') or 'unweighted': report.get('case_metrics', {})})
+    lines += ['| Candidate | Surgery | Tool | Positive / known frames | Model F1 | Absent F1 | Prevalence F1 |',
+              '|---|---|---|---:|---:|---:|---:|']
+    for candidate, cases in evaluations.items():
+        for case, tools in cases.items():
+            for tool, values in tools.items():
+                model = values.get('model')
+                f1 = f"{model['f1']:.4f}" if model else 'not trained'
+                baseline = values['baselines']
+                support = baseline['always_absent']
+                lines.append(f"| {candidate} | {case} | {tool} | {support['positive_frames']} / {support['frames']} | {f1} | {baseline['always_absent']['f1']:.4f} | {baseline['constant_training_prevalence']['f1']:.4f} |")
+    if 'validation_case_metrics' in report and report.get('final_test_evaluated'):
+        lines += ['', 'The table above describes validation candidates. Final-test per-surgery metrics are in metrics.json under case_metrics.']
+    Path(output).write_text('\n'.join(lines) + '\n')
 
 
 def fit_baseline(features_root, train_cases, test_cases, output, class_weight="balanced"):
@@ -59,10 +116,23 @@ def fit_baseline(features_root, train_cases, test_cases, output, class_weight="b
     for key in ['checkpoint_sha256', 'preprocessing', 'samples_sha256']:
         if first_train[key] != first_test[key]:
             raise ValueError(f'train/test provenance mismatch: {key}')
-    models, metrics = {}, {}
+    case_slices, offset = {}, 0
+    for case in test_cases:
+        count = test_meta[case].get('annotated_frames', len(x_test) if len(test_cases) == 1 else None)
+        if count is None or count <= 0:
+            raise ValueError('missing annotated frame count for case reporting')
+        case_slices[case] = slice(offset, offset + count)
+        offset += count
+    if offset != len(x_test):
+        raise ValueError('case frame counts do not match evaluation rows')
+    models, metrics, baselines = {}, {}, {}
+    case_metrics = {case: {} for case in test_cases}
     for index, tool in enumerate(TOOLS):
         target = y_train[:, index]
         test_target = y_test[:, index]
+        baselines[tool] = reference_reports(target, test_target)
+        for case, rows in case_slices.items():
+            case_metrics[case][tool] = {'model': None, 'baselines': reference_reports(target, test_target[rows])}
         if len(np.unique(target)) != 2:
             metrics[tool] = {'status': 'not_trained', 'reason': 'training case lacks both classes',
                              'train_positive_frames': int(target.sum())}
@@ -79,10 +149,13 @@ def fit_baseline(features_root, train_cases, test_cases, output, class_weight="b
                          if 0 < test_target.sum() < len(test_target) else None,
                          'train_positive_frames': int(target.sum()), 'test_positive_frames': int(test_target.sum()),
                          'test_frames': len(test_target)}
+        for case, rows in case_slices.items():
+            case_metrics[case][tool]['model'] = binary_report(test_target[rows], probabilities[rows])
         models[tool] = model
     if not models:
         raise ValueError('no tool has both classes in the training set')
     report = {'train_cases': train_cases, 'test_cases': test_cases, 'threshold': 0.5,
+              'baselines': baselines, 'case_metrics': case_metrics,
               'class_weight': class_weight, 'train_frames': len(x_train), 'test_frames': len(x_test), 'tools': metrics,
               'checkpoint_sha256': first_train['checkpoint_sha256'],
               'preprocessing': first_train['preprocessing'],
@@ -94,6 +167,7 @@ def fit_baseline(features_root, train_cases, test_cases, output, class_weight="b
     output.mkdir(parents=True)
     joblib.dump({'models': models, 'threshold': 0.5, 'tools': TOOLS}, output / 'tool_classifiers.joblib')
     (output / 'metrics.json').write_text(json.dumps(report, indent=2) + '\n')
+    write_comparison(report, output / 'comparison.md')
     # Confirm serialization preserves outputs on the held-out features.
     reloaded = joblib.load(output / 'tool_classifiers.joblib')
     for tool in models:
@@ -159,8 +233,11 @@ def fit_selected(features_root, split, output, validation_only=False):
                    'selection_tie_break': 'balanced',
                    'validation_macro_f1': scores, 'validation_tools': reports,
                    'validation_provenance': validation_provenance,
+                   'validation_case_metrics': {name: candidate.get('case_metrics', {}) for name, candidate in candidate_reports.items()},
+                   'validation_baselines': {name: candidate.get('baselines', {}) for name, candidate in candidate_reports.items()},
                    'selected_weighting': chosen})
     (Path(output) / 'metrics.json').write_text(json.dumps(report, indent=2) + '\n')
+    write_comparison(report, Path(output) / 'comparison.md')
     return report
 
 

@@ -39,3 +39,7 @@ Use the [assigned parallel work](../ml/PROGRESS.md#assigned-parallel-work-2026-1
 - **While tests run:** use separate worktrees/checkouts, preserve the tested revision, and check existing runs/bundles before launching extraction. Coordinate changes to model formats or shared files. Do not tune on the final test surgeries.
 
 The annotation import and two-case baseline are recorded as complete. The expanded model and clip evaluation are assigned work, not verified results.
+
+## ML reporting follow-on
+
+See [reporting and error-review assignments](../ml/PROGRESS.md#reporting-and-error-review-assignments-2026-11-14). Shlok owns per-surgery comparisons and training-only reference baselines; Aadhitya owns a bounded validation timestamp review file for false positives/negatives. Both can be tested with synthetic inputs while extraction runs. Model artifact changes require coordination; final-test cases stay out of iterative review.
