@@ -1,6 +1,6 @@
 # Stage 3: localized video overlays
 
-Status: **future work, documented 2026-11-14 at Shlok's request; implementation has not started**. This adds spatial localization to the current search and tool-presence pipeline. No detector has been installed, run, benchmarked or approved for production in this task.
+Status: **implementation started 2026-11-14 at Shlok's explicit request; owner Shlok, branch `feat/spatial-overlays`**. Aadhitya independently continues stage 2 on `ml-dev`. This adds spatial localization to the current search and tool-presence pipeline. The initial deliverable is an offline detector-to-player prototype. Verification results will be recorded as work completes; this is not a production-accuracy claim.
 
 ## Intended experience
 
@@ -67,4 +67,4 @@ Acceptance later: per-class box AP/recall and localization IoU on held-out surge
 
 ## Current stopping point
 
-Documentation and model research only. No model downloads, new training jobs, annotation purchases, API changes, tables, fixtures or UI implementation are part of this update. Resume this stage when the team chooses to begin it; current validation, smoothing and prediction work remain the active ML milestone.
+Shlok is implementing a versioned artifact, bounded offline Grounding DINO inference and a player toggle. No stage-2 jobs or shared clip-table schemas are changed. Initial labels use the six existing instrument names plus explicitly experimental anatomy prompts; no seventh instrument or verb detector is invented. Separate masks/tracking and action relations remain deferred.
