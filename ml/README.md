@@ -54,6 +54,19 @@ Verified run: [MLflow results](https://dbc-48252777-1798.cloud.databricks.com/?o
 
 This is a two-case engineering baseline, not a reliable estimate across surgeries. It does not tune on the test case or insert predictions into the live search table. Aadhitya owns the next step using [export_predictions.py](export_predictions.py).
 
+## Expanded training
+
+The frozen split is [case_split.json](case_split.json); VID02 remains diagnostic. [tool_coverage.json](tool_coverage.json) records annotation coverage for all cases. Reproduce it with:
+
+```sh
+python ml/audit_tool_coverage.py --samples ~/madhacks2026/data/cholect50/samples.json --output ml/tool_coverage.json
+python scripts/train_databricks_tools.py --split ml/case_split.json
+```
+
+The expanded run chooses balanced or unweighted training by validation macro F1, then evaluates the final test once. Threshold remains 0.5. All required bundles must exist and pass validation. Use the existing ML v6 environment to load the saved model; its format remains compatible with prediction export.
+
+For assigned extractions, `scripts/process_ml_cases.py --cases VID04 VID05 --samples PATH --state PATH_OUTSIDE_GIT` processes cases serially, keeps a fixed code revision, and saves run IDs plus independent verification results. Resume with the same arguments. A failed job stops for review.
+
 ## Feature contract
 
 Each `/Volumes/workspace/default/surgf/features/<case_id>/` bundle contains:

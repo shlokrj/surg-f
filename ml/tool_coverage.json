@@ -1,0 +1,605 @@
+{
+  "samples_sha256": "c4791109d467ec59a05500aa3ef0b3215e9747881d97e4db9bffd135bcbe1b76",
+  "cases": {
+    "VID01": {
+      "known_frames": 1734,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 124,
+        "clipper": 102,
+        "grasper": 1141,
+        "hook": 788,
+        "irrigator": 133,
+        "scissors": 17
+      }
+    },
+    "VID02": {
+      "known_frames": 2840,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 148,
+        "clipper": 67,
+        "grasper": 1638,
+        "hook": 1536,
+        "irrigator": 191,
+        "scissors": 242
+      }
+    },
+    "VID04": {
+      "known_frames": 1523,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 83,
+        "clipper": 41,
+        "grasper": 880,
+        "hook": 766,
+        "irrigator": 0,
+        "scissors": 45
+      }
+    },
+    "VID05": {
+      "known_frames": 2345,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 98,
+        "clipper": 103,
+        "grasper": 1489,
+        "hook": 932,
+        "irrigator": 106,
+        "scissors": 35
+      }
+    },
+    "VID06": {
+      "known_frames": 2154,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 147,
+        "clipper": 84,
+        "grasper": 1977,
+        "hook": 1216,
+        "irrigator": 100,
+        "scissors": 34
+      }
+    },
+    "VID08": {
+      "known_frames": 1520,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 159,
+        "clipper": 45,
+        "grasper": 850,
+        "hook": 757,
+        "irrigator": 40,
+        "scissors": 27
+      }
+    },
+    "VID10": {
+      "known_frames": 1750,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 9,
+        "clipper": 47,
+        "grasper": 1522,
+        "hook": 1105,
+        "irrigator": 41,
+        "scissors": 13
+      }
+    },
+    "VID103": {
+      "known_frames": 2220,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 102,
+        "clipper": 63,
+        "grasper": 1295,
+        "hook": 1083,
+        "irrigator": 0,
+        "scissors": 33
+      }
+    },
+    "VID110": {
+      "known_frames": 2177,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 101,
+        "clipper": 78,
+        "grasper": 1110,
+        "hook": 1054,
+        "irrigator": 88,
+        "scissors": 23
+      }
+    },
+    "VID111": {
+      "known_frames": 2146,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 108,
+        "clipper": 36,
+        "grasper": 1234,
+        "hook": 923,
+        "irrigator": 27,
+        "scissors": 24
+      }
+    },
+    "VID12": {
+      "known_frames": 1091,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 100,
+        "clipper": 48,
+        "grasper": 781,
+        "hook": 571,
+        "irrigator": 0,
+        "scissors": 29
+      }
+    },
+    "VID13": {
+      "known_frames": 982,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 15,
+        "clipper": 37,
+        "grasper": 875,
+        "hook": 698,
+        "irrigator": 0,
+        "scissors": 35
+      }
+    },
+    "VID14": {
+      "known_frames": 1709,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 246,
+        "clipper": 19,
+        "grasper": 1187,
+        "hook": 653,
+        "irrigator": 291,
+        "scissors": 35
+      }
+    },
+    "VID15": {
+      "known_frames": 2059,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 83,
+        "clipper": 33,
+        "grasper": 1532,
+        "hook": 899,
+        "irrigator": 104,
+        "scissors": 28
+      }
+    },
+    "VID18": {
+      "known_frames": 1943,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 124,
+        "clipper": 126,
+        "grasper": 1215,
+        "hook": 1217,
+        "irrigator": 91,
+        "scissors": 40
+      }
+    },
+    "VID22": {
+      "known_frames": 1533,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 107,
+        "clipper": 91,
+        "grasper": 1131,
+        "hook": 725,
+        "irrigator": 224,
+        "scissors": 23
+      }
+    },
+    "VID23": {
+      "known_frames": 1636,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 228,
+        "clipper": 53,
+        "grasper": 1019,
+        "hook": 884,
+        "irrigator": 50,
+        "scissors": 94
+      }
+    },
+    "VID25": {
+      "known_frames": 2130,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 204,
+        "clipper": 47,
+        "grasper": 1645,
+        "hook": 1242,
+        "irrigator": 143,
+        "scissors": 38
+      }
+    },
+    "VID26": {
+      "known_frames": 1774,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 112,
+        "clipper": 61,
+        "grasper": 861,
+        "hook": 1060,
+        "irrigator": 124,
+        "scissors": 42
+      }
+    },
+    "VID27": {
+      "known_frames": 2085,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 106,
+        "clipper": 78,
+        "grasper": 1862,
+        "hook": 1145,
+        "irrigator": 0,
+        "scissors": 48
+      }
+    },
+    "VID29": {
+      "known_frames": 2351,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 44,
+        "clipper": 93,
+        "grasper": 1266,
+        "hook": 1267,
+        "irrigator": 389,
+        "scissors": 43
+      }
+    },
+    "VID31": {
+      "known_frames": 3946,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 49,
+        "clipper": 183,
+        "grasper": 3622,
+        "hook": 2536,
+        "irrigator": 69,
+        "scissors": 52
+      }
+    },
+    "VID32": {
+      "known_frames": 2117,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 422,
+        "clipper": 64,
+        "grasper": 1710,
+        "hook": 788,
+        "irrigator": 441,
+        "scissors": 25
+      }
+    },
+    "VID35": {
+      "known_frames": 2107,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 98,
+        "clipper": 80,
+        "grasper": 1819,
+        "hook": 1179,
+        "irrigator": 298,
+        "scissors": 29
+      }
+    },
+    "VID36": {
+      "known_frames": 2388,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 103,
+        "clipper": 78,
+        "grasper": 1423,
+        "hook": 1683,
+        "irrigator": 0,
+        "scissors": 17
+      }
+    },
+    "VID40": {
+      "known_frames": 2223,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 0,
+        "clipper": 105,
+        "grasper": 1775,
+        "hook": 1011,
+        "irrigator": 43,
+        "scissors": 37
+      }
+    },
+    "VID42": {
+      "known_frames": 3713,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 27,
+        "clipper": 67,
+        "grasper": 2538,
+        "hook": 2517,
+        "irrigator": 92,
+        "scissors": 118
+      }
+    },
+    "VID43": {
+      "known_frames": 2363,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 659,
+        "clipper": 48,
+        "grasper": 1096,
+        "hook": 639,
+        "irrigator": 94,
+        "scissors": 89
+      }
+    },
+    "VID47": {
+      "known_frames": 2260,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 206,
+        "clipper": 136,
+        "grasper": 1645,
+        "hook": 1066,
+        "irrigator": 43,
+        "scissors": 142
+      }
+    },
+    "VID48": {
+      "known_frames": 1835,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 56,
+        "clipper": 51,
+        "grasper": 1442,
+        "hook": 1045,
+        "irrigator": 0,
+        "scissors": 17
+      }
+    },
+    "VID49": {
+      "known_frames": 1672,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 298,
+        "clipper": 36,
+        "grasper": 860,
+        "hook": 702,
+        "irrigator": 271,
+        "scissors": 12
+      }
+    },
+    "VID50": {
+      "known_frames": 1095,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 0,
+        "clipper": 22,
+        "grasper": 880,
+        "hook": 756,
+        "irrigator": 0,
+        "scissors": 7
+      }
+    },
+    "VID51": {
+      "known_frames": 2945,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 149,
+        "clipper": 216,
+        "grasper": 2293,
+        "hook": 1187,
+        "irrigator": 179,
+        "scissors": 75
+      }
+    },
+    "VID52": {
+      "known_frames": 1967,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 72,
+        "clipper": 111,
+        "grasper": 1827,
+        "hook": 702,
+        "irrigator": 263,
+        "scissors": 54
+      }
+    },
+    "VID56": {
+      "known_frames": 1837,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 82,
+        "clipper": 28,
+        "grasper": 1189,
+        "hook": 980,
+        "irrigator": 0,
+        "scissors": 10
+      }
+    },
+    "VID57": {
+      "known_frames": 2633,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 266,
+        "clipper": 71,
+        "grasper": 1729,
+        "hook": 1191,
+        "irrigator": 0,
+        "scissors": 93
+      }
+    },
+    "VID60": {
+      "known_frames": 2533,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 351,
+        "clipper": 44,
+        "grasper": 1474,
+        "hook": 967,
+        "irrigator": 186,
+        "scissors": 16
+      }
+    },
+    "VID62": {
+      "known_frames": 2033,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 32,
+        "clipper": 27,
+        "grasper": 1393,
+        "hook": 1524,
+        "irrigator": 33,
+        "scissors": 21
+      }
+    },
+    "VID65": {
+      "known_frames": 1874,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 13,
+        "clipper": 64,
+        "grasper": 1345,
+        "hook": 1132,
+        "irrigator": 73,
+        "scissors": 27
+      }
+    },
+    "VID66": {
+      "known_frames": 1825,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 114,
+        "clipper": 66,
+        "grasper": 1212,
+        "hook": 1174,
+        "irrigator": 52,
+        "scissors": 45
+      }
+    },
+    "VID68": {
+      "known_frames": 1973,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 48,
+        "clipper": 94,
+        "grasper": 935,
+        "hook": 1044,
+        "irrigator": 125,
+        "scissors": 27
+      }
+    },
+    "VID70": {
+      "known_frames": 1195,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 54,
+        "clipper": 66,
+        "grasper": 928,
+        "hook": 701,
+        "irrigator": 0,
+        "scissors": 24
+      }
+    },
+    "VID73": {
+      "known_frames": 1357,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 101,
+        "clipper": 47,
+        "grasper": 974,
+        "hook": 767,
+        "irrigator": 93,
+        "scissors": 23
+      }
+    },
+    "VID74": {
+      "known_frames": 1635,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 190,
+        "clipper": 54,
+        "grasper": 1160,
+        "hook": 632,
+        "irrigator": 233,
+        "scissors": 44
+      }
+    },
+    "VID75": {
+      "known_frames": 1924,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 0,
+        "clipper": 35,
+        "grasper": 1096,
+        "hook": 1065,
+        "irrigator": 0,
+        "scissors": 15
+      }
+    },
+    "VID78": {
+      "known_frames": 740,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 33,
+        "clipper": 34,
+        "grasper": 607,
+        "hook": 382,
+        "irrigator": 0,
+        "scissors": 16
+      }
+    },
+    "VID79": {
+      "known_frames": 3415,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 335,
+        "clipper": 60,
+        "grasper": 2525,
+        "hook": 2279,
+        "irrigator": 92,
+        "scissors": 31
+      }
+    },
+    "VID80": {
+      "known_frames": 1725,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 53,
+        "clipper": 59,
+        "grasper": 908,
+        "hook": 1223,
+        "irrigator": 0,
+        "scissors": 66
+      }
+    },
+    "VID92": {
+      "known_frames": 2124,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 281,
+        "clipper": 85,
+        "grasper": 1164,
+        "hook": 717,
+        "irrigator": 128,
+        "scissors": 26
+      }
+    },
+    "VID96": {
+      "known_frames": 1707,
+      "unknown_frames": 0,
+      "positive_frames": {
+        "bipolar": 126,
+        "clipper": 46,
+        "grasper": 962,
+        "hook": 656,
+        "irrigator": 7,
+        "scissors": 28
+      }
+    }
+  }
+}

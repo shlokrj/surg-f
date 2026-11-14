@@ -51,6 +51,12 @@ Shlok requested this split for both teammates to start while existing tests and 
 
 **Workflow:** pull before work, commit each major change with updated docs, and push only `ml-dev` unless Shlok explicitly requests `main`.
 
+### Expanded training setup (2026-11-14)
+
+Coverage audit: `python ml/audit_tool_coverage.py --samples ~/madhacks2026/data/cholect50/samples.json --output ml/tool_coverage.json` streamed all 50 cases. The report records the source checksum, known/unknown counts, and positive frames for each tool. All selected cases have zero unknown frames. The fixed split in `ml/case_split.json` has 12 training cases (19,920 frames), 3 validation cases (5,963), 4 final test cases (10,499), and diagnostic VID02 (2,840). Training has 796 clipper and 427 scissors positives; validation has 141/108 and final test 418/168. This is frozen before expanded model comparisons.
+
+`python scripts/train_databricks_tools.py --split ml/case_split.json` compares balanced and unweighted logistic regression using validation macro F1 only, then runs the selected setting on the final test set once. Threshold stays 0.5 and the exported model format is unchanged. Omit `--split` to reproduce the two-case smoke baseline. Training waits for complete compatible bundles. Tests cover split overlap/duplicates and verify final test cases are not used for weight selection. All 19 ML tests passed; Python compilation passed. Expanded training has not run yet.
+
 ### Assigned extraction batch (2026-11-14)
 
 Shlok is processing VID04, VID05, VID06, VID08, VID10, VID12, VID13, VID14, and VID15 in this chat. `scripts/process_ml_cases.py` runs one case at a time on Databricks CPU, with a smoke gate, a pinned committed snapshot, and independent source-label validation. A local state file outside Git records run IDs and allows resuming. Failed jobs stop for review. Aadhitya's active jobs are left running.

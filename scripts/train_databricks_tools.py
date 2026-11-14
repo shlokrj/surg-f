@@ -1,4 +1,5 @@
 """Run the fixed VID01/VID02 classifier baseline on Databricks serverless CPU."""
+import argparse
 import json
 import subprocess
 
@@ -9,6 +10,9 @@ from run_databricks_features import ROOT, client, snapshot
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--split", help="Committed split JSON path, e.g. ml/case_split.json; omit for smoke baseline")
+    args = parser.parse_args()
     w = client()
     revision, remote = snapshot(w)
     w.workspace.mkdirs(remote)
@@ -18,6 +22,12 @@ def main():
         w.workspace.upload(remote + '/' + (name.removesuffix('.py') if notebook else name), content,
                            format=ImportFormat.SOURCE if notebook else ImportFormat.RAW,
                            language=Language.PYTHON if notebook else None, overwrite=True)
+    split_json = subprocess.check_output(['git', 'show', f'{revision}:{args.split}'], cwd=ROOT, text=True) if args.split else ''
+    if split_json:
+        import sys
+        sys.path.insert(0, str(ROOT / 'ml'))
+        from train_tools import validate_split
+        validate_split(json.loads(split_json))
     owner = w.current_user.me().user_name
     response = w.jobs.submit(
         run_name=f'surg-f-tool-baseline-{revision[:7]}', timeout_seconds=1200,
@@ -28,7 +38,7 @@ def main():
                               source=Source.WORKSPACE, base_parameters={
                                   'module_dir': '/Workspace' + remote,
                                   'experiment_path': f'/Users/{owner}/surg-f-tool-baseline',
-                                  'source_revision': revision}))],
+                                  'source_revision': revision, 'split_json': split_json}))],
     ).response
     print(json.dumps({'run_id': response.run_id, 'revision': revision,
                       'url': w.jobs.get_run(response.run_id).run_page_url}, indent=2))
