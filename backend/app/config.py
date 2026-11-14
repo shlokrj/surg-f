@@ -7,9 +7,12 @@ from pathlib import Path
 
 from dotenv import dotenv_values
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = BACKEND_ROOT.parent
 ENV_FILE = REPO_ROOT / ".env"
 FIXTURE_FILE = REPO_ROOT / "shared" / "search.fixture.json"
+FIXTURES_DIR = BACKEND_ROOT / "fixtures"
+QUIZ_BANK_FILE = BACKEND_ROOT / "data" / "quiz_bank.json"
 CLIPS_TABLE = "workspace.default.surgf_clips"
 DEFAULT_CORS_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173")
 
@@ -26,6 +29,9 @@ class Settings:
     databricks: DatabricksCredentials | None
     cors_origins: tuple[str, ...]
     fixture_file: Path = FIXTURE_FILE
+    fixtures_dir: Path = FIXTURES_DIR
+    quiz_bank_file: Path = QUIZ_BANK_FILE
+    warmup: bool = True
 
 
 def _hostname(values: Mapping[str, str | None]) -> str:
@@ -48,7 +54,10 @@ def settings_from(values: Mapping[str, str | None]) -> Settings:
     )
     origins_raw = values.get("SURGF_CORS_ORIGINS") or ""
     origins = tuple(o.strip() for o in origins_raw.split(",") if o.strip())
-    return Settings(databricks=databricks, cors_origins=origins or DEFAULT_CORS_ORIGINS)
+    warmup = (values.get("SURGF_WARMUP") or "1").strip().lower() not in ("0", "false", "no")
+    return Settings(
+        databricks=databricks, cors_origins=origins or DEFAULT_CORS_ORIGINS, warmup=warmup
+    )
 
 
 def load_settings(env_file: Path = ENV_FILE) -> Settings:
