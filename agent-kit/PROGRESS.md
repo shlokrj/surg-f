@@ -17,6 +17,6 @@ Agent kit prepared and Markdown links checked. The first integration target is *
 2. **No video files:** HF `Voxel51/cholect50` has 1 fps PNG frames only. Playable `.mp4` files for the demo cases must be stitched from frames (frame N = second N) and hosted where the player can load them. Frontend and Data decide where.
 3. **Timebase:** frame_number = seconds is assumed and unverified against playback.
 4. **Proposal: run SurgVLP extraction in Databricks** on a single-node `g4dn.xlarge` ML GPU cluster with 30-minute auto-terminate, writing bundles straight to the Volume. This would reverse the "extraction off Databricks" part of the 2026-11-14 decision. Untested: cluster launch, AWS quota, pip install from GitHub, HF download. The cluster costs money while running. Needs agreement from Aadhitya and the ML owner.
-5. **Proposal: work split.** After the import, Aadhitya builds the demo videos and the Databricks training notebook with MLflow. The ML owner sets up SurgVLP and extracts features. Needs agreement from the ML owner.
+5. **Shared branch agreed (2026-11-14):** Aadhitya and the ML owner work together on branch `ml-dev`. **Proposed work split:** After the import, Aadhitya builds the demo videos and the Databricks training notebook with MLflow. The ML owner sets up SurgVLP and extracts features. Needs agreement from the ML owner.
 
 Replace proposed owners with names when confirmed. At each handoff, update your row with status, a verified command or PR link, blockers, and the next step. Keep teammates' entries when resolving conflicts.
