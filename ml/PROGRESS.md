@@ -63,6 +63,12 @@ Completed in isolated branch `feat/ml-coverage-audit`, published to `ml-dev`, bu
 
 `python -m unittest discover -s ml -p 'test_*.py'` passed 22 tests, including missing-versus-negative labels, duplicate/malformed samples and split validation. `git diff --check` passed. No extraction, training, or import was launched here. Next: Aadhitya can use the saved coverage report and fixed split for evaluation; Shlok's other chat continues extraction/training. No coverage blocker remains.
 
+### Training readiness handoff (2026-11-14)
+
+Added `scripts/check_training_readiness.py` on `feat/ml-training-readiness` for publication to `ml-dev`. It checks the fixed split without changing training or submitting jobs. `python scripts/check_training_readiness.py --databricks --output /tmp/surgf-training-readiness.json` returned exit 1 as intended: **5/19 required bundles ready** (VID01, VID22, VID23, VID26, VID32); 14 had missing files. Available bundles passed full integrity/completeness checks and matching checkpoint, preprocessing and source provenance. This run did not pass `--samples`, so source annotation joins were not independently rechecked. The result is a snapshot, not a claim that any extraction job failed. Diagnostic VID02 is excluded.
+
+`python -m unittest discover -s scripts -p 'test_*.py'` passed 16 tests, including collection of multiple blockers, provenance mismatch, inspected-case exclusion, missing labels, and a real corrupted-bundle checksum check. `git diff --check` passed. Next: the extraction owners finish publishing their assigned bundles; rerun this command, optionally with source labels, before the existing expanded-training command. No training was launched here.
+
 ### Assigned extraction batch (2026-11-14)
 
 Shlok is processing VID04, VID05, VID06, VID08, VID10, VID12, VID13, VID14, and VID15 in this chat. `scripts/process_ml_cases.py` runs one case at a time on Databricks CPU, with a smoke gate, a pinned committed snapshot, and independent source-label validation. A local state file outside Git records run IDs and allows resuming. Failed jobs stop for review. Aadhitya's active jobs are left running.
