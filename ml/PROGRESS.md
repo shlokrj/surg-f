@@ -6,22 +6,26 @@ Update your own section after each feature or major change with the date, branch
 
 ## Shlok - SurgVLP and feature extraction
 
-**Status (2026-11-14):** ownership confirmed; extraction setup pending. Branch: `ml-dev`.
+**Status (2026-11-14):** extraction pipeline and Databricks notebook implemented; real CPU smoke check passed. Full Databricks run pending workspace access. Branch: `ml-dev`.
 
-Scope: frozen SurgVLP setup, one-case-at-a-time feature extraction, annotation alignment, and validated feature uploads. Aadhitya owns the video script; coordinate before changing it.
+Scope: frozen SurgVLP setup, one-case-at-a-time feature extraction, annotation alignment, and validated feature uploads. Aadhitya owns the video script; his shared `download_case.py` is reused unchanged.
 
 - [x] Claim Data and ML ownership and create this tracker.
-- [ ] Agree with Aadhitya on the GPU environment: Databricks or another GPU machine. The Databricks proposal is not yet adopted.
-- [ ] Verify dependencies, checkpoint access, and one-case frame access. Aadhitya reports VID01 frames on his machine; availability on Shlok's machine is unverified.
-- [ ] Extract VID01 features and record checkpoint, preprocessing, matrix shape, and frame count.
-- [ ] Reload and validate the bundle and annotation joins, then upload it to the shared Volume.
-- [ ] Repeat for 2-3 cases after the first bundle passes validation.
+- [x] Shlok selected Databricks GPU for full extraction on 2026-11-14. Cluster availability and credentials remain unverified; no cluster launched.
+- [x] Set up isolated Python 3.12 environment outside Git, download labels and official weights, and fetch VID01 frames 674-689.
+- [x] Implement extraction, source annotation joins, bundle validation, and guarded publication; add a Databricks source notebook.
+- [x] Validate a real partial VID01 bundle: 16 rows x 768 features, float32, IDs 674-689, matched source labels, complete_case=false.
+- [ ] Run the notebook on Databricks GPU, first in smoke mode, then on all 1,734 VID01 frames.
+- [ ] Reload the complete uploaded bundle from `/Volumes/workspace/default/surgf/features/VID01/`.
+- [ ] Repeat for 2-3 cases after the first complete bundle passes validation.
 
-**Workflow update (2026-11-14):** Shlok requested pushes to `ml-dev` only; publishing to `main` now requires his explicit request.
+**Verification:** `~/madhacks2026/.venv-surgf/bin/python -m unittest discover -s ml -p 'test_*.py' -v`: 12 tests passed, including bad joins, duplicate IDs, corrupt checksums, incomplete publication, and overwrite rejection. `python -m compileall -q ml` passed. The [README smoke command](README.md) ran with local paths under `~/madhacks2026/data/cholect50/`, `models/`, and `features-smoke/VID01/`, producing a validated `[16,768]` matrix. Official upstream image encoder and preprocessing at revision `85e8589` matched our output exactly on real frame 680 (max absolute difference 0). CUDA execution and Volume publication have not been verified.
 
-**Verification:** documentation only: `git diff --check` and local Markdown link-target validation passed. No SurgVLP execution or GPU availability has been verified.
+**Local assets:** environment `~/madhacks2026/.venv-surgf`; labels/frames `~/madhacks2026/data/cholect50/`; weights `~/madhacks2026/models/SurgVLP.pth`; partial bundle `~/madhacks2026/features-smoke/VID01/`. No data or credentials committed. The direct upstream package install encountered old setuptools/tokenizer requirements; the image-only loader uses the official weights with torch/torchvision and does not require that package.
 
-**Blocker / next handoff:** Shlok and Aadhitya choose the extraction environment. Shlok then supplies a reloadable VID01 bundle to Aadhitya for classifier training.
+**Blocker / next handoff:** workspace authentication is not configured on Shlok's Mac (no `.env`, Databricks environment variables, or profile). Open [extract_databricks.py](extract_databricks.py) on the team's GPU compute, or configure local workspace authentication to launch remotely. After a full run, hand Aadhitya a validated Volume bundle for classifier training. The current 16-frame local bundle is only a smoke check.
+
+**Workflow:** pull before work, commit each feature or major change and update docs, then push only `ml-dev`. Update `main` only at Shlok's explicit request.
 
 ## Aadhitya - videos and Databricks
 
