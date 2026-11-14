@@ -36,7 +36,7 @@ This writes `frontend/public/videos/VID01.mp4` (692,593,324 bytes, 28:53) and `V
 - `/timestamp clipper` calls `GET /search?q=clipper`, keeps only hits for the open case, and lets users seek to a result. Annotation and prediction sources are labeled separately.
 - The event timeline calls `GET /cases/{case_id}/timeline` and shows annotation intervals in separate instrument rows.
 - `/chart` uses the timeline response's `summary` for annotation counts. It needs one timeline request rather than six searches.
-- `/quiz` calls `GET /quiz` for five operation-wide study questions. It is **not specific to the open video**. Answers are graded locally, explanations appear after selection, and “Watch examples” searches the given `search_q` in the open case. Unreviewed content is labeled.
+- `/quiz` calls `GET /quiz` for five operation-wide study questions. If the backend is unreachable or has no quiz route, it displays the saved seed-1 quiz with a sample-data notice. It is **not specific to the open video**. Answers are graded locally, explanations appear after selection, and “Watch examples” searches the given `search_q` in the open case. Unreviewed content is labeled.
 - `/model` explains that a linked 3D model is unavailable.
 
 The four buttons insert commands into the chat input without sending. Commands can be combined. Simple keyword rules route some phrases locally; there is no LLM interpretation yet. In frontend fixture mode, saved VID01/VID02 timeline and seed-1 quiz responses from `backend/fixtures/` are imported. A locally opened MP4/MOV has no indexed annotations.

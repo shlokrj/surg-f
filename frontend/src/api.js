@@ -10,7 +10,9 @@ async function getJson(path) {
   const response = await fetch(`${backendUrl}${path}`);
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(typeof body.detail === 'string' ? body.detail : `Request failed (${response.status})`);
+    const error = new Error(typeof body.detail === 'string' ? body.detail : `Request failed (${response.status})`);
+    error.status = response.status;
+    throw error;
   }
   return response.json();
 }
@@ -25,7 +27,12 @@ export async function getTimeline(caseId) {
   return getJson(`/cases/${encodeURIComponent(caseId)}/timeline`);
 }
 export async function getQuiz() {
-  return fixtureMode ? quizFixture : getJson('/quiz');
+  if (fixtureMode) return { ...quizFixture, demo: true };
+  try { return await getJson('/quiz'); }
+  catch (error) {
+    if (error instanceof TypeError || error.status === 404) return { ...quizFixture, demo: true };
+    throw error;
+  }
 }
 export { fixtureMode, backendUrl };
 export const instrumentLabels = ['clipper', 'hook', 'grasper', 'irrigator', 'bipolar', 'scissors'];

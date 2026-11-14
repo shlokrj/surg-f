@@ -6,7 +6,7 @@ const app = document.querySelector('#app');
 const state = {
   page: 'home', caseId: 'VID01', title: 'VID01 · Cholecystectomy', videoUrl: videoForCase('VID01'),
   localVideo: false, localUrl: null, query: '', results: [], history: [], active: null,
-  loading: false, error: '', pendingSeek: null, duration: 0, outputs: [], timeline: null, quiz: null, quizAnswers: {},
+  loading: false, error: '', pendingSeek: null, duration: 0, outputs: [], timeline: null, timelineError: '', quiz: null, quizAnswers: {},
 };
 const formatTime = seconds => {
   const n = Math.floor(Number(seconds) || 0);
@@ -78,7 +78,7 @@ function outputSections() {
       return `<section class="feature-card"><span class="kicker">/chart</span><h2>Instrument events in ${escapeHtml(state.caseId)}</h2><p>Dataset annotation intervals for this video; model predictions are excluded.</p><div class="chart">${counts.map(item => `<div class="chart-row"><span>${escapeHtml(item.label)}</span><div class="chart-track"><div style="width:${item.count / max * 100}%"></div></div><strong>${item.count}</strong></div>`).join('')}</div></section>`;
     }
     const quiz = state.quiz;
-    return `<section class="feature-card"><span class="kicker">/quiz</span><h2>Cholecystectomy study quiz</h2><p>This quiz covers the operation generally; it is not generated from ${escapeHtml(state.caseId)}.</p>${quiz?.reviewed === false ? '<p class="review-notice">Practice content, not yet medically reviewed.</p>' : ''}${quiz?.questions.map((question, index) => `<div class="quiz-question"><h3>${index + 1}. ${escapeHtml(question.prompt)}</h3><div class="quiz-choices">${question.options.map(option => `<button class="quiz-choice" data-question="${index}" data-answer="${escapeHtml(option.id)}">${escapeHtml(option.text)}</button>`).join('')}</div>${state.quizAnswers[index] ? `<p>${state.quizAnswers[index] === question.correct_option_id ? 'Correct.' : 'Not quite.'} ${escapeHtml(question.explanation)}</p>${question.search_q ? `<button class="quiz-jump" data-watch="${escapeHtml(question.search_q)}">Watch ${escapeHtml(question.search_q)} examples in this video →</button>` : ''}` : ''}</div>`).join('') ?? '<p>Quiz unavailable.</p>'}</section>`;
+    return `<section class="feature-card"><span class="kicker">/quiz</span><h2>Cholecystectomy study quiz</h2><p>This quiz covers the operation generally; it is not generated from ${escapeHtml(state.caseId)}.</p>${quiz?.demo ? '<p class="review-notice">Sample quiz shown because the backend is unavailable.</p>' : ''}${quiz?.reviewed === false ? '<p class="review-notice">Practice content, not yet medically reviewed.</p>' : ''}${quiz?.questions.map((question, index) => `<div class="quiz-question"><h3>${index + 1}. ${escapeHtml(question.prompt)}</h3><div class="quiz-choices">${question.options.map(option => `<button class="quiz-choice" data-question="${index}" data-answer="${escapeHtml(option.id)}">${escapeHtml(option.text)}</button>`).join('')}</div>${state.quizAnswers[index] ? `<p>${state.quizAnswers[index] === question.correct_option_id ? 'Correct.' : 'Not quite.'} ${escapeHtml(question.explanation)}</p>${question.search_q ? `<button class="quiz-jump" data-watch="${escapeHtml(question.search_q)}">Watch ${escapeHtml(question.search_q)} examples in this video →</button>` : ''}` : ''}</div>`).join('') ?? '<p>Quiz unavailable.</p>'}</section>`;
   }).join('');
 }
 function dashboard() {
@@ -89,7 +89,7 @@ function dashboard() {
     ${state.localVideo ? '<p class="local-note">Local video playback only. This file has no indexed annotations.</p>' : ''}
     <div class="timeline-panel"><div class="timeline-header"><div><span class="kicker">CURRENT VIDEO</span><h2>Event timeline</h2></div></div>
       ${state.localVideo ? '' : '<div class="feature-options"><button data-prompt="/timestamp">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/model">/model</button></div>'}
-      <div id="timeline" aria-label="Annotated event timeline">${instrumentLabels.map(label => {
+      ${state.timelineError ? `<p class="timeline-error" role="status">Timeline unavailable: ${escapeHtml(state.timelineError)}</p>` : ''}<div id="timeline" aria-label="Annotated event timeline">${instrumentLabels.map(label => {
         const segments = currentResults.filter(item => item.result.label === label);
         return `<div class="timeline-row"><span class="timeline-row-label">${escapeHtml(label)}</span><div class="timeline-track"><div class="timeline-line"></div>${segments.map(({ result }) => { const left = Math.min(99, Math.max(0, Number(result.start_sec) / duration * 100)); const width = Math.max(.65, Math.min(100 - left, (Number(result.end_sec) - Number(result.start_sec)) / duration * 100)); return `<button class="timeline-event" data-seek="${result.start_sec}" data-label="${escapeHtml(label)}" style="left:${left}%;width:${width}%" title="${escapeHtml(label)} · ${formatTime(result.start_sec)}–${formatTime(result.end_sec)}" aria-label="${escapeHtml(label)} at ${formatTime(result.start_sec)}"></button>`; }).join('')}</div></div>`;
       }).join('')}</div><div class="legend"><span>Dataset annotations in ${escapeHtml(state.caseId)}</span><span>${currentResults.length} intervals · ${state.duration ? formatTime(duration) : '—'} video</span></div></div>
@@ -103,7 +103,7 @@ function dashboard() {
 function openSample(seek = null) {
   state.page = 'dash'; state.caseId = 'VID01'; state.title = 'VID01 · Cholecystectomy';
   state.videoUrl = videoForCase('VID01'); state.localVideo = false; state.error = '';
-  state.results = []; state.timeline = null; state.quiz = null; state.outputs = []; state.query = ''; state.active = null; state.duration = 0; state.pendingSeek = seek;
+  state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.query = ''; state.active = null; state.duration = 0; state.pendingSeek = seek;
   render();
   loadCurrentTimeline();
   if (seek != null) runSearch('/timestamp clipper');
@@ -120,7 +120,7 @@ function wire() {
     if (next === state.caseId) return;
     const query = state.query;
     state.caseId = next; state.title = `${next} · Cholecystectomy`; state.videoUrl = videoForCase(next);
-    state.duration = 0; state.pendingSeek = null; state.results = []; state.timeline = null; state.quiz = null; state.outputs = []; state.query = ''; state.error = '';
+    state.duration = 0; state.pendingSeek = null; state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.query = ''; state.error = '';
     render();
     loadCurrentTimeline();
     if (query) runSearch(query);
@@ -165,7 +165,7 @@ function openFile(file) {
   state.localUrl = URL.createObjectURL(file);
   state.page = 'dash'; state.caseId = 'Local video'; state.title = file.name;
   state.videoUrl = state.localUrl; state.localVideo = true; state.query = '';
-  state.results = []; state.timeline = null; state.quiz = null; state.active = null; state.error = ''; state.duration = 0; state.pendingSeek = null;
+  state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.active = null; state.error = ''; state.duration = 0; state.pendingSeek = null;
   render();
 }
 async function loadCurrentTimeline() {
@@ -173,7 +173,7 @@ async function loadCurrentTimeline() {
   try {
     const timeline = await getTimeline(caseId);
     if (state.caseId === caseId) { state.timeline = timeline; render(); }
-  } catch (error) { if (state.caseId === caseId) { state.error = error.message; render(); } }
+  } catch (error) { if (state.caseId === caseId) { state.timelineError = error.message; render(); } }
 }
 async function runSearch(raw) {
   const query = String(raw ?? '').trim();
