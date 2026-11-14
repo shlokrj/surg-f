@@ -37,6 +37,10 @@ Scope: frozen SurgVLP setup, one-case-at-a-time feature extraction, annotation a
 
 **CPU dependency correction (2026-11-14):** smoke run `886657513377262` failed during library installation before model execution. Replaced manually pinned torch/torchvision packages with the listed managed ML v6 CPU base environment and ijson 3.6.0. Launcher tests now cover CPU environment selection, explicit paths/device, timeout, and rejection of missing or wrong-device smoke evidence; 10 launcher tests passed. Retry pending.
 
+**CPU smoke verified (2026-11-14):** run `918098132910738` succeeded on Databricks serverless CPU using managed ML v6. Real VID01 frames 674-689 produced `[16,768]`; model load 1.46 s, extraction 2.36 s (6.79 frames/s), assets 81.19 s, frame download 4.58 s, notebook elapsed 111.63 s. Full VID01 run `1014355595133232` is in progress with a 30-minute cap. Full-case timing and upload are not yet verified.
+
+**Classifier implementation (2026-11-14):** Shlok is implementing the CPU baseline under the approved next steps. `train_tools.py` uses per-tool logistic regression on frozen features, trains on VID01, holds out VID02, fits scaling on training rows only, excludes missing annotations, and fixes the threshold at 0.5. Tools without both training classes are marked not trained. The Databricks notebook logs params, per-tool metrics, and fitted classifier artifacts to MLflow and the Volume. Three synthetic-data tests cover surgery separation, train-only scaling, and matching provenance; 15 ML tests pass in total. Training has not run on real bundles yet.
+
 **Workflow:** pull before work, commit each feature or major change and update docs, then push only `ml-dev`. Update `main` only at Shlok's explicit request.
 
 ## Aadhitya - videos and Databricks
