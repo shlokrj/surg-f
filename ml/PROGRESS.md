@@ -124,12 +124,21 @@ Shlok is processing VID04, VID05, VID06, VID08, VID10, VID12, VID13, VID14, and 
 
 **Extraction recovery (2026-11-14):** pulled the Hugging Face 429/5xx retry fix. VID04 smoke `196154580792121` succeeded and full run `532427394711055` remains active on its original snapshot. The local batch controller was restarted without cancelling the remote run. `process_ml_cases.py --refresh-pending` now preserves each started case's revision while moving unstarted cases to current committed code, so VID05 onward receives the downloader fix. It checks existing bundles and active runs before new submissions. All 11 script tests passed, including preservation of the active case's smoke/full snapshot. This chat handles assigned extraction only; coverage and model selection belong to the other chat.
 
-**Live extraction checkpoint:** VID04 and VID05 have passed full independent Volume validation against source labels. VID06 full run `1045908906110666` is active. Remaining cases use the latest committed asset and frame retry fixes; no coverage or model-selection work is being done in this chat.
+**Assigned extraction complete (2026-11-14):** all nine cases passed independent Volume checks against source labels, including complete frame coverage, shapes, and file hashes. The controller finished successfully with `All assigned cases verified`. Shlok's controller extracted VID04, VID05, VID06, VID08, VID10, and VID12. Aadhitya extracted VID13–15 to speed up completion; Shlok's controller independently verified and reused those bundles without overwriting them. Total: 15,133 frames, each with 768 features. All full extraction stayed on Databricks CPU. No assigned extraction remains active.
 
 | Case | Full run | Frames | Extraction seconds |
 |---|---|---|---|
 | VID04 | `532427394711055` | 1523 | 232.69 |
 | VID05 | `510839580767177` | 2345 | 352.48 |
+| VID06 | `1045908906110666` | 2154 | 338.32 |
+| VID08 | `13027626866552` | 1520 | 231.83 |
+| VID10 | `75710213108251` | 1750 | 265.72 |
+| VID12 | `812670622528218` | 1091 | 171.23 |
+| VID13 | `1096948850297120` | 982 | 147.10 |
+| VID14 | `983896996313915` | 1709 | 256.92 |
+| VID15 | `444947913447559` | 2059 | 320.41 |
+
+Evidence: `~/madhacks2026/run-evidence/shlok-assigned-cases.json` and `.log` on Shlok's machine. Final read-only preflight: `python scripts/check_training_readiness.py --databricks --samples ~/madhacks2026/data/cholect50/samples.json --output ~/madhacks2026/run-evidence/all-case-readiness.json` passed **19/19 required train/validation/test cases**, with source-label verification. Diagnostic VID02 was previously verified separately. The model-training chat can now proceed with validation training. Coverage, splits, and model selection were left to that chat during this completion pass.
 
 ## Aadhitya - videos and Databricks
 
