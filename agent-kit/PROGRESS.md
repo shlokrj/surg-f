@@ -1,5 +1,12 @@
 # Surg+F progress
 
+## Stage 3 continuation (2026-11-14)
+
+Shlok, `feat/spatial-overlays`: pulled the branch and merged `origin/main` through `5c65035` in `035ff38`, preserving the new quiz, charts and interpret integration alongside overlays. Added `ml/localization/evaluate.py`: confidence-ordered, class-aware one-to-one IoU matching; reviewed-frame-only precision/recall; explicit complete-review gate; asset/timebase validation. No real accuracy claim without reviewed boxes.
+
+Checks: `python3 -m unittest discover -s ml/localization -p 'test_*.py'` passed 7 tests; `node --test frontend/test/*.test.js` passed 3; `npm --prefix frontend run build` passed with the merged frontend. Browser retry still returned “The browser access host is unavailable.” Next: Shlok obtains reviewed boxes (instructions in localization README) and completes manual browser acceptance; Aadhitya remains on stage 2. No remote training restarted.
+
+
 ## Stage 3 player handoff (2026-11-14)
 
 Shlok, `feat/spatial-overlays`: offline detector and opt-in player integration implemented. The player validates versioned artifacts, separates instrument/anatomy filters, supports sampled-frame seeking, clears expired boxes and computes letterbox coordinates. Separate fullscreen control includes the overlay container. Real VID01 preview: three frames, ten predictions; known incorrect instrument labels mean this is not accuracy-qualified. No tracking, action relations, or new backend routes.

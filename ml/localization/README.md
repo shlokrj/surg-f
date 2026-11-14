@@ -19,3 +19,13 @@ A three-frame CPU smoke run on real VID01 frames succeeded. See `frontend/public
 For the player, place the generated artifact at `frontend/public/overlays/CASE.json`. It must match the versioned asset identifier in `frontend/src/cases.js`. VID01 offset -0.04 s refers to the known 25 fps Cholec80 asset; verify offsets for any replacement asset. The current frontend checks asset ID and dimensions, not video bytes: the deployer must maintain the asset-version binding. Sparse detections expire after 120 ms, never more than 250 ms. This avoids pretending one sampled frame is continuous tracking. Use the sampled-frame selector to inspect paused detections.
 
 Sources: [official model card](https://huggingface.co/IDEA-Research/grounding-dino-tiny), [Transformers usage](https://huggingface.co/docs/transformers/model_doc/grounding-dino). Model code/weights are Apache-2.0. Source frames are CholecT50 (Nwoye et al., Medical Image Analysis 2022, CC BY-NC-SA 4.0); no source images or videos are committed. Preserve the dataset attribution and terms for derived preview artifacts.
+
+## Evaluate reviewed boxes
+
+```sh
+python ml/localization/evaluate.py predictions.json reviewed-annotations.json --iou 0.5 --score 0.3
+```
+
+The reference uses the same artifact schema with `source: annotation` and `provenance.reviewed_complete_frames: true`. Set this flag only after a reviewer has annotated **every visible instance of the supported labels** in each included frame. Include reviewed empty frames explicitly; omit unreviewed frames. Missing prediction frames count as missed objects; prediction-only frames are ignored and counted separately. Preserve identical case, asset, dimensions, frame IDs and player timestamps. Record reviewer, annotation origin and split in provenance. Do not promote model predictions to annotations automatically.
+
+Evaluation uses confidence-ordered one-to-one matches of the same category/label at the requested IoU. It reports per-label and micro TP/FP/FN, precision and recall; undefined ratios are null. This is fixed-threshold evaluation, not COCO mAP. Review data and surgery-disjoint validation are still needed before tuning; no accuracy result has been produced yet. Tests use synthetic boxes only.
