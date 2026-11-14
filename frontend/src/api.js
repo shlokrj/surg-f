@@ -1,3 +1,4 @@
+import tripletCsv from '../../shared/triplets.annotation.csv?raw';
 import fixture from '../../shared/search.fixture.json';
 import timeline01 from '../../backend/fixtures/timeline.VID01.json';
 import timeline02 from '../../backend/fixtures/timeline.VID02.json';
@@ -42,3 +43,11 @@ export async function interpretQuery(query, caseId) {
 }
 export { fixtureMode, backendUrl };
 export const instrumentLabels = ['clipper', 'hook', 'grasper', 'irrigator', 'bipolar', 'scissors'];
+
+// Verified CholecT50 annotation intervals supplied by Data/ML for VID01 and VID02.
+export function getActionRows(caseId) {
+  return tripletCsv.trim().split(/\r?\n/).slice(1).map(line => {
+    const [id, start, end, instrument, verb, target, source] = line.split(',');
+    return { case_id: id, start_sec: Number(start), end_sec: Number(end), instrument, verb, target, source };
+  }).filter(row => row.case_id === caseId);
+}
