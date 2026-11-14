@@ -142,6 +142,16 @@ function openSample(seek = null) {
   loadCurrentTimeline();
   if (seek != null) runSearch('/timestamp clipper');
 }
+function syncFullscreenButton() {
+  const button = document.querySelector('#video-fullscreen');
+  if (!button) return;
+  const expanded = Boolean(document.fullscreenElement);
+  button.textContent = expanded ? '⊟' : '⛶';
+  button.setAttribute('aria-label', expanded ? 'Exit fullscreen' : 'Enter fullscreen');
+  button.title = expanded ? 'Exit fullscreen' : 'Enter fullscreen';
+}
+document.addEventListener('fullscreenchange', syncFullscreenButton);
+
 function wire() {
   document.querySelectorAll('[data-filter-toggle]').forEach(button => button.addEventListener('click', () => {
     state.filterOn = !state.filterOn;
@@ -232,7 +242,13 @@ function wire() {
   muteButton?.addEventListener('click', () => { video.muted = !video.muted; updateControls(); });
   volume?.addEventListener('input', () => { video.volume = Number(volume.value); video.muted = false; updateControls(); });
   speed?.addEventListener('change', () => { video.playbackRate = Number(speed.value); });
-  document.querySelector('#video-fullscreen')?.addEventListener('click', () => document.querySelector('.video-frame')?.requestFullscreen?.());
+  document.querySelector('#video-fullscreen')?.addEventListener('click', async () => {
+    const frame = document.querySelector('.video-frame');
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else if (frame?.requestFullscreen) await frame.requestFullscreen();
+    syncFullscreenButton();
+  });
+  syncFullscreenButton();
   video?.addEventListener('timeupdate', updateControls);
   video?.addEventListener('play', updateControls);
   video?.addEventListener('pause', updateControls);
