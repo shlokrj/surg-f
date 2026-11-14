@@ -3,6 +3,7 @@
 Loads the model from a training MLflow run and logs results as its child run. Then import with
   python scripts/clips_job.py run --csv /Volumes/workspace/default/surgf/predictions/<MODEL_RUN>/<CASE>.csv
 Usage: python scripts/export_databricks_clips.py --model-run-id 54659bc6... --case-id VID02 [--iou 0.5]
+       [--smoothing 0:1,1:2,2:2,3:3]   # max_gap:min_len sweep, one MLflow child run and CSV per setting
 """
 import argparse
 import json
@@ -22,7 +23,12 @@ def main():
     parser.add_argument('--model-run-id', required=True)
     parser.add_argument('--case-id', required=True)
     parser.add_argument('--iou', default='0.5')
+    parser.add_argument('--smoothing', default='0:1', help='comma list of max_gap:min_len (seconds); 0:1 = unsmoothed')
     args = parser.parse_args()
+    for s in args.smoothing.split(','):  # fail here, not after a Databricks job starts
+        max_gap, min_len = (int(v) for v in s.split(':'))
+        if max_gap < 0 or min_len < 1:
+            parser.error(f'bad smoothing setting {s}: need max_gap >= 0 and min_len >= 1')
     w = client()
     revision, remote = snapshot(w)
     w.workspace.mkdirs(remote)
@@ -44,7 +50,8 @@ def main():
                                   'module_dir': '/Workspace' + remote,
                                   'experiment_path': f'/Users/{owner}/surg-f-tool-baseline',
                                   'source_revision': revision, 'model_run_id': args.model_run_id,
-                                  'case_id': args.case_id, 'iou': args.iou}))],
+                                  'case_id': args.case_id, 'iou': args.iou,
+                                  'smoothing': args.smoothing}))],
     ).response
     print(json.dumps({'run_id': response.run_id, 'revision': revision,
                       'url': w.jobs.get_run(response.run_id).run_page_url}, indent=2))

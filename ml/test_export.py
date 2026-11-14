@@ -7,7 +7,7 @@ from unittest.mock import patch
 import joblib
 import numpy as np
 
-from export_predictions import predict_clips
+from export_predictions import predict_clips, smooth
 
 
 class Threshold:
@@ -38,6 +38,25 @@ class ExportTests(unittest.TestCase):
         with patch('export_predictions.validate_bundle', return_value={'case_id': 'VID02'}):
             self.assertEqual(predict_clips(self.model, self.bundle),
                              [('VID02', 10, 13, 'hook', 'prediction'), ('VID02', 20, 21, 'hook', 'prediction')])
+
+    def test_smoothing_in_export(self):
+        # 10-13 and 20-21 are 7 s apart: max_gap 7 joins them; min_len 2 alone drops the 1 s blip at 20.
+        with patch('export_predictions.validate_bundle', return_value={'case_id': 'VID02'}):
+            self.assertEqual(predict_clips(self.model, self.bundle, max_gap=7),
+                             [('VID02', 10, 21, 'hook', 'prediction')])
+            self.assertEqual(predict_clips(self.model, self.bundle, min_len=2),
+                             [('VID02', 10, 13, 'hook', 'prediction')])
+
+    def test_smooth(self):
+        flicker = [(0, 1), (2, 3), (4, 6), (10, 11)]
+        self.assertEqual(smooth(flicker), flicker)  # defaults change nothing
+        self.assertEqual(smooth(flicker, max_gap=1), [(0, 6), (10, 11)])  # 1 s gaps filled, 4 s gap kept
+        self.assertEqual(smooth(flicker, max_gap=1, min_len=2), [(0, 6)])  # merge first, then drop the blip
+        self.assertEqual(smooth(flicker, min_len=2), [(4, 6)])
+        self.assertEqual(smooth([], 3, 3), [])
+        for bad in [(-1, 1), (0, 0)]:
+            with self.assertRaises(ValueError):
+                smooth(flicker, *bad)
 
     def test_training_case_rejected(self):
         with patch('export_predictions.validate_bundle', return_value={'case_id': 'VID01'}):

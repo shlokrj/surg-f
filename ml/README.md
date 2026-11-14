@@ -67,6 +67,16 @@ The expanded run chooses balanced or unweighted training by validation macro F1,
 
 For assigned extractions, `scripts/process_ml_cases.py --cases VID04 VID05 --samples PATH --state PATH_OUTSIDE_GIT` processes cases serially, keeps a fixed code revision, and saves run IDs plus independent verification results. Resume with the same arguments. A failed job stops for review.
 
+## Clip export and smoothing (Aadhitya)
+
+The model labels each second independently, so its output flickers. `smooth()` in [export_predictions.py](export_predictions.py) first fills off-gaps of up to `max_gap` seconds between predicted clips, then drops clips shorter than `min_len` seconds. `0:1` leaves clips unchanged. One serverless CPU job (ML v6) sweeps several settings on one case:
+
+```sh
+python scripts/export_databricks_clips.py --model-run-id <TRAINING_RUN> --case-id <VALIDATION_CASE> --smoothing 0:1,1:1,2:2,3:3,5:3
+```
+
+Each setting becomes its own **MLflow child run** of the training run, named `clips-<CASE>-gap<G>-min<M>`. It logs params `max_gap_sec` and `min_clip_sec`, metrics `<tool>_event_*` and `macro_event_f1`, and artifacts `clips/`. Each setting also writes a CSV to `/Volumes/workspace/default/surgf/predictions/<TRAINING_RUN>/<CASE>-gap<G>-min<M>.csv`; `0:1` keeps the name `<CASE>.csv`. Existing CSVs are never overwritten. Choose the setting by `macro_event_f1` across the **validation** cases only, then import just that setting's CSVs with `scripts/clips_job.py run --csv`.
+
 ## Feature contract
 
 Each `/Volumes/workspace/default/surgf/features/<case_id>/` bundle contains:
@@ -143,3 +153,15 @@ New training runs save `comparison.md` beside `metrics.json` and `tool_classifie
 Reference baselines predict always absent or use the constant positive prevalence calculated only from training labels. Probabilities are thresholded at 0.5, including ties. Missing annotations are excluded. Precision/recall/F1 with zero denominators are recorded as 0; AP is null for single-class evaluation labels. A tool without both training classes has null model metrics, not a zero-quality fitted model. Reference metrics remain available. These reports do not change the existing pooled validation macro-F1 selection criterion.
 
 For final-evaluation runs, the Markdown candidate table remains validation-only; final-test per-surgery results are in `case_metrics` in JSON. Older saved runs are not backfilled. See the [reporting and error-review assignments](PROGRESS.md#reporting-and-error-review-assignments-2026-11-14) for Aadhitya's next task and the handoff.
+
+## Generate timestamp error-review files
+
+```sh
+python scripts/review_databricks_errors.py --model-run-id MODEL_RUN_ID --case-id VID15
+# Existing baseline diagnostics only:
+python scripts/review_databricks_errors.py --model-run-id 54659bc60d734052927dadf80ea16e13 --case-id VID02 --diagnostic
+```
+
+The runner downloads the model from MLflow inside Databricks ML v6, creates up to 20 rows per tool/error type, and saves `review.csv` plus `review.json` in a child MLflow run and `/Volumes/workspace/default/surgf/reviews/<review-run-id>/`. Readback hashes are checked. CSV columns include case, tool, frame/second, expected label, probability, threshold, error type, model run and partition. The sidecar records total error counts before sampling, unknown-frame count, provenance and `visually_reviewed=false`.
+
+Training/final-test cases are rejected; VID02 requires `--diagnostic`. Only known labels are reviewed. Chronologically spaced sampling is reproducible, not an unbiased estimate of model quality. Review rows describe raw frame decisions before smoothing and must not be imported into the clip search table. Local/mounted use: `python ml/review_prediction_errors.py MODEL_DIR BUNDLE_DIR review.csv --split ml/case_split.json` (use the model's package versions).
