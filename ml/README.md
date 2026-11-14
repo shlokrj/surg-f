@@ -131,3 +131,12 @@ python scripts/train_databricks_tools.py
 This submits a 20-minute-capped Databricks serverless CPU job using ML v6. It trains per-tool logistic regressions on VID01 and evaluates on VID02 with a fixed 0.5 threshold. Scaling is fitted only on training frames. Missing annotations are excluded; a tool without both training classes is not trained. Parameters, metrics, and fitted pipelines are saved in MLflow, with a checksum-verified copy under `/Volumes/workspace/default/surgf/models/tool-presence/<mlflow-run-id>/`.
 
 This is a two-case engineering baseline. It is not a reliable estimate of performance across surgeries, and test results are not used for threshold selection. It does not insert predictions into the live search table.
+
+Independent Volume verification (reads files only, no local extraction):
+
+```sh
+python scripts/verify_databricks_features.py --case-id VID01 \
+  --samples ~/madhacks2026/data/cholect50/samples.json
+```
+
+VID01 full extraction was verified on Databricks serverless CPU: 1,734 frames in 263.91 seconds, 382.92 seconds total notebook time, followed by an independent Volume download and source-label check.
