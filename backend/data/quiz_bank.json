@@ -1,0 +1,174 @@
+{
+  "_comment": "NOT MEDICALLY REVIEWED. A person with medical knowledge must verify every question, answer, distractor and explanation before the demo, then set reviewed to true. Step order follows the standard laparoscopic cholecystectomy phases used to annotate the Cholec80/CholecT50 videos. Tool IDs match the instrument labels in workspace.default.surgf_clips. Rule: among the four options of a question exactly one may be plausible, so steps whose real-world order varies (packaging, cleaning, extraction) are never used as distractors for each other.",
+  "reviewed": false,
+  "steps": {
+    "preparation": "Place the ports and insufflate the abdomen",
+    "calot": "Dissect Calot's triangle to expose the cystic duct and cystic artery",
+    "clip": "Clip the cystic duct and cystic artery",
+    "cut": "Cut the cystic duct and cystic artery between the clips",
+    "gb_dissection": "Dissect the gallbladder off the liver bed",
+    "packaging": "Place the gallbladder in a retrieval bag",
+    "cleaning": "Clean and coagulate the operative field",
+    "extraction": "Remove the gallbladder through a port site",
+    "closure": "Remove the ports, release the pneumoperitoneum, and close the incisions"
+  },
+  "tools": {
+    "grasper": {"text": "Grasper", "in_operation": true},
+    "hook": {"text": "Hook (L-hook electrode)", "in_operation": true},
+    "clipper": {"text": "Clipper (clip applier)", "in_operation": true},
+    "scissors": {"text": "Scissors", "in_operation": true},
+    "bipolar": {"text": "Bipolar forceps", "in_operation": true},
+    "irrigator": {"text": "Irrigator (suction-irrigation)", "in_operation": true},
+    "bone_saw": {"text": "Bone saw", "in_operation": false},
+    "dental_drill": {"text": "Dental drill", "in_operation": false},
+    "reflex_hammer": {"text": "Reflex hammer", "in_operation": false}
+  },
+  "next_step": [
+    {
+      "id": "after-preparation",
+      "group": "calot",
+      "prompt": "What comes after this step: placing the ports and insufflating the abdomen?",
+      "answer": "calot",
+      "distractors": ["clip", "packaging", "extraction"],
+      "explanation": "Once the ports are placed and the abdomen is insufflated, the gallbladder is grasped and retracted to expose Calot's triangle, which is then dissected to identify the cystic duct and cystic artery.",
+      "search_q": "grasper"
+    },
+    {
+      "id": "after-retraction",
+      "group": "calot",
+      "prompt": "What comes after this step: grasping the gallbladder and retracting it to expose Calot's triangle?",
+      "answer": "calot",
+      "distractors": ["packaging", "extraction", "closure"],
+      "explanation": "Retracting the gallbladder exposes Calot's triangle so it can be dissected. The cystic duct and cystic artery must be clearly identified before anything is clipped or cut.",
+      "search_q": "hook"
+    },
+    {
+      "id": "after-calot",
+      "group": "clip",
+      "prompt": "What comes after this step: dissecting Calot's triangle until the critical view of safety is achieved?",
+      "answer": "clip",
+      "distractors": ["preparation", "packaging", "extraction"],
+      "explanation": "The critical view of safety means Calot's triangle is cleared of fat and fibrous tissue, the lower part of the gallbladder is separated from the liver bed, and only two structures, the cystic duct and the cystic artery, are seen entering the gallbladder. Only then are they clipped.",
+      "search_q": "clipper"
+    },
+    {
+      "id": "after-clip",
+      "group": "cut",
+      "prompt": "What comes after this step: placing clips on the cystic duct and cystic artery?",
+      "answer": "cut",
+      "distractors": ["preparation", "packaging", "closure"],
+      "explanation": "After the clips are placed, the cystic duct and cystic artery are cut between the clips, usually with scissors.",
+      "search_q": "scissors"
+    },
+    {
+      "id": "after-cut",
+      "group": "gb_dissection",
+      "prompt": "What comes after this step: cutting the cystic duct and cystic artery between the clips?",
+      "answer": "gb_dissection",
+      "distractors": ["preparation", "calot", "closure"],
+      "explanation": "With the cystic duct and cystic artery divided, the gallbladder is still attached only to the liver bed, so it is dissected off the liver, commonly with the hook and electrocautery.",
+      "search_q": "hook"
+    },
+    {
+      "id": "after-gb-dissection",
+      "group": "packaging",
+      "prompt": "What comes after this step: dissecting the gallbladder off the liver bed?",
+      "answer": "packaging",
+      "distractors": ["preparation", "calot", "clip"],
+      "explanation": "In the standard phase order, the detached gallbladder is placed in a retrieval bag next. In practice, the liver bed is often checked for bleeding around this time, so the order of bagging and cleaning can vary.",
+      "search_q": null
+    },
+    {
+      "id": "after-packaging",
+      "group": "cleaning",
+      "prompt": "What comes after this step: placing the gallbladder in a retrieval bag?",
+      "answer": "cleaning",
+      "distractors": ["preparation", "calot", "clip"],
+      "explanation": "In the standard phase order, the operative field is then cleaned and coagulated: it is irrigated and suctioned, and any bleeding is stopped. The order of bagging and cleaning can vary in practice.",
+      "search_q": "irrigator"
+    },
+    {
+      "id": "after-cleaning",
+      "group": "extraction",
+      "prompt": "What comes after this step: cleaning and coagulating the operative field?",
+      "answer": "extraction",
+      "distractors": ["preparation", "calot", "cut"],
+      "explanation": "In the standard phase order, the bagged gallbladder is then removed from the abdomen through one of the port sites. The order of the last steps can vary in practice.",
+      "search_q": null
+    },
+    {
+      "id": "after-extraction",
+      "group": "closure",
+      "prompt": "What comes after this step: removing the gallbladder through a port site?",
+      "answer": "closure",
+      "distractors": ["calot", "clip", "gb_dissection"],
+      "explanation": "Once the gallbladder is out, the ports are removed, the pneumoperitoneum is released, and the incisions are closed.",
+      "search_q": null
+    }
+  ],
+  "which_tool": [
+    {
+      "id": "tool-clip",
+      "group": "clipper",
+      "prompt": "Which of these tools is used for this step: placing clips on the cystic duct and cystic artery?",
+      "answer": "clipper",
+      "distractors": ["scissors", "irrigator", "grasper"],
+      "explanation": "A clip applier (labeled clipper in the dataset) places clips that close the cystic duct and cystic artery before they are cut.",
+      "search_q": "clipper"
+    },
+    {
+      "id": "tool-cut",
+      "group": "scissors",
+      "prompt": "Which of these tools is used for this step: cutting the cystic duct and cystic artery between the clips?",
+      "answer": "scissors",
+      "distractors": ["clipper", "irrigator", "grasper"],
+      "explanation": "Laparoscopic scissors cut the cystic duct and cystic artery between the clips.",
+      "search_q": "scissors"
+    },
+    {
+      "id": "tool-retract",
+      "group": "grasper",
+      "prompt": "Which of these tools is used for this step: holding the gallbladder and retracting it to expose Calot's triangle?",
+      "answer": "grasper",
+      "distractors": ["clipper", "scissors", "irrigator"],
+      "explanation": "Graspers hold and retract the gallbladder throughout the operation, which exposes Calot's triangle and keeps tissue under tension during dissection.",
+      "search_q": "grasper"
+    },
+    {
+      "id": "tool-hook",
+      "group": "hook",
+      "prompt": "Which of these tools is used for this step: dissecting the gallbladder off the liver bed with electrocautery?",
+      "answer": "hook",
+      "distractors": ["clipper", "irrigator", "grasper"],
+      "explanation": "The L-shaped hook electrode (labeled hook) uses monopolar electrocautery to divide the tissue between the gallbladder and the liver. Scissors or a spatula electrode can also be used.",
+      "search_q": "hook"
+    },
+    {
+      "id": "tool-irrigate",
+      "group": "irrigator",
+      "prompt": "Which of these tools is used for this step: rinsing the operative field with fluid and suctioning it away?",
+      "answer": "irrigator",
+      "distractors": ["clipper", "scissors", "hook"],
+      "explanation": "The suction-irrigation device (labeled irrigator) flushes the field with fluid and suctions away fluid and blood so the surgeon can see clearly.",
+      "search_q": "irrigator"
+    },
+    {
+      "id": "tool-bipolar",
+      "group": "bipolar",
+      "prompt": "Which of these tools is used for this step: stopping bleeding by passing electric current between the tool's two jaws?",
+      "answer": "bipolar",
+      "distractors": ["clipper", "irrigator", "hook"],
+      "explanation": "Bipolar forceps pass current only between their two jaws, which coagulates the tissue held between them.",
+      "search_q": "bipolar"
+    },
+    {
+      "id": "tool-general",
+      "group": "grasper",
+      "prompt": "Which of these tools is used in this operation?",
+      "answer": "grasper",
+      "distractors": ["bone_saw", "dental_drill", "reflex_hammer"],
+      "explanation": "Graspers are used throughout a laparoscopic cholecystectomy, mainly to hold and retract the gallbladder. Bone saws, dental drills and reflex hammers are not used in this operation.",
+      "search_q": "grasper"
+    }
+  ]
+}

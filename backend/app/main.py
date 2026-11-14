@@ -1,20 +1,46 @@
-"""FastAPI app: CORS, JSON request logging, and repository selection."""
+"""FastAPI app: CORS, JSON request logging, repository selection, and warm-up."""
 
 import json
 import logging
 import sys
+import threading
 import time
 import uuid
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import Settings, load_settings
+from .quiz import QuizBank, QuizService
 from .repository import ClipRepository, DatabricksClipRepository, FixtureClipRepository
 from .routes import router
-from .service import SearchService
+from .service import SearchService, TimelineService
 
 access_log = logging.getLogger("surgf.access")
+
+API_DESCRIPTION = """Study-tool API for laparoscopic cholecystectomy videos.
+
+- **Search:** `GET /search?q=clipper` finds instrument clips.
+- **Chart:** `GET /cases/VID01/timeline` returns segments and a per-instrument summary.
+- **Quiz:** `GET /quiz?seed=1` returns 5 general questions about the operation.
+
+Without Databricks credentials the API serves local fixtures; `GET /health` shows the mode.
+Errors use `{"detail": "..."}`. Frontend guide: `backend/docs/FRONTEND_GUIDE.md`.
+"""
+
+
+def warm_up(repository: ClipRepository) -> None:
+    """Start the SQL warehouse early. Logs one JSON line and never raises."""
+    start = time.perf_counter()
+    entry = {"event": "warmup", "mode": repository.mode}
+    try:
+        repository.warm_up()
+        entry["status"] = "ok"
+    except Exception as exc:  # warm-up is best effort
+        entry.update(status="error", error=type(exc).__name__)
+    entry["duration_ms"] = round((time.perf_counter() - start) * 1000, 2)
+    access_log.info(json.dumps(entry))
 
 
 def _configure_logging() -> None:
@@ -28,7 +54,7 @@ def _configure_logging() -> None:
 
 def build_repository(settings: Settings) -> ClipRepository:
     if settings.databricks is None:
-        return FixtureClipRepository(settings.fixture_file)
+        return FixtureClipRepository(settings.fixture_file, settings.fixtures_dir)
     return DatabricksClipRepository(settings.databricks)
 
 
@@ -39,8 +65,19 @@ def create_app(
     repository = repository or build_repository(settings)
     _configure_logging()
 
-    app = FastAPI(title="Surg+F search API", version="0.1.0")
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # A daemon thread, so a cold warehouse (about 45 s) never delays startup.
+        if settings.warmup and repository.mode == "databricks":
+            threading.Thread(target=warm_up, args=(repository,), daemon=True).start()
+        yield
+
+    app = FastAPI(
+        title="Surg+F API", version="0.2.0", description=API_DESCRIPTION, lifespan=lifespan
+    )
     app.state.search_service = SearchService(repository)
+    app.state.timeline_service = TimelineService(repository)
+    app.state.quiz_service = QuizService(QuizBank.load(settings.quiz_bank_file))
     app.include_router(router)
 
     @app.middleware("http")
