@@ -4,7 +4,7 @@
       "case_id": "fixture_01",
       "start_sec": 30,
       "end_sec": 35,
-      "label": "clip applier",
+      "label": "clipper",
       "source": "fixture"
     }
   ]
