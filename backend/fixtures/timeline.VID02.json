@@ -1,0 +1,534 @@
+{
+  "case_id": "VID02",
+  "source": "annotation",
+  "segments": [
+    {
+      "label": "scissors",
+      "start_sec": 38.0,
+      "end_sec": 189.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 94.0,
+      "end_sec": 190.0
+    },
+    {
+      "label": "scissors",
+      "start_sec": 190.0,
+      "end_sec": 196.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 199.0,
+      "end_sec": 203.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 213.0,
+      "end_sec": 246.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 247.0,
+      "end_sec": 253.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 255.0,
+      "end_sec": 256.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 258.0,
+      "end_sec": 267.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 276.0,
+      "end_sec": 279.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 282.0,
+      "end_sec": 285.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 286.0,
+      "end_sec": 353.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 355.0,
+      "end_sec": 366.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 368.0,
+      "end_sec": 409.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 440.0,
+      "end_sec": 583.0
+    },
+    {
+      "label": "hook",
+      "start_sec": 481.0,
+      "end_sec": 549.0
+    },
+    {
+      "label": "hook",
+      "start_sec": 550.0,
+      "end_sec": 553.0
+    },
+    {
+      "label": "hook",
+      "start_sec": 569.0,
+      "end_sec": 601.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 586.0,
+      "end_sec": 600.0
+    },
+    {
+      "label": "hook",
+      "start_sec": 602.0,
+      "end_sec": 608.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 605.0,
+      "end_sec": 775.0
+    },
+    {
+      "label": "hook",
+      "start_sec": 609.0,
+      "end_sec": 781.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 777.0,
+      "end_sec": 1002.0
+    },
+    {
+      "label": "irrigator",
+      "start_sec": 796.0,
+      "end_sec": 811.0
+    },
+    {
+      "label": "hook",
+      "start_sec": 827.0,
+      "end_sec": 1166.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1157.0,
+      "end_sec": 1164.0
+    },
+    {
+      "label": "hook",
+      "start_sec": 1167.0,
+      "end_sec": 1243.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1246.0,
+      "end_sec": 1260.0
+    },
+    {
+      "label": "clipper",
+      "start_sec": 1255.0,
+      "end_sec": 1268.0
+    },
+    {
+      "label": "clipper",
+      "start_sec": 1269.0,
+      "end_sec": 1278.0
+    },
+    {
+      "label": "clipper",
+      "start_sec": 1279.0,
+      "end_sec": 1287.0
+    },
+    {
+      "label": "clipper",
+      "start_sec": 1291.0,
+      "end_sec": 1307.0
+    },
+    {
+      "label": "clipper",
+      "start_sec": 1308.0,
+      "end_sec": 1315.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1316.0,
+      "end_sec": 1365.0
+    },
+    {
+      "label": "scissors",
+      "start_sec": 1329.0,
+      "end_sec": 1355.0
+    },
+    {
+      "label": "scissors",
+      "start_sec": 1362.0,
+      "end_sec": 1372.0
+    },
+    {
+      "label": "scissors",
+      "start_sec": 1375.0,
+      "end_sec": 1388.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1394.0,
+      "end_sec": 1396.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1400.0,
+      "end_sec": 1450.0
+    },
+    {
+      "label": "clipper",
+      "start_sec": 1433.0,
+      "end_sec": 1447.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1452.0,
+      "end_sec": 1464.0
+    },
+    {
+      "label": "irrigator",
+      "start_sec": 1462.0,
+      "end_sec": 1486.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1473.0,
+      "end_sec": 1489.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1490.0,
+      "end_sec": 1497.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1499.0,
+      "end_sec": 1504.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1508.0,
+      "end_sec": 1511.0
+    },
+    {
+      "label": "bipolar",
+      "start_sec": 1509.0,
+      "end_sec": 1534.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1540.0,
+      "end_sec": 1549.0
+    },
+    {
+      "label": "scissors",
+      "start_sec": 1544.0,
+      "end_sec": 1580.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1580.0,
+      "end_sec": 1633.0
+    },
+    {
+      "label": "irrigator",
+      "start_sec": 1627.0,
+      "end_sec": 1642.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1644.0,
+      "end_sec": 1656.0
+    },
+    {
+      "label": "hook",
+      "start_sec": 1654.0,
+      "end_sec": 1928.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1675.0,
+      "end_sec": 1684.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1740.0,
+      "end_sec": 1749.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1808.0,
+      "end_sec": 1857.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1923.0,
+      "end_sec": 1927.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1930.0,
+      "end_sec": 1933.0
+    },
+    {
+      "label": "hook",
+      "start_sec": 1934.0,
+      "end_sec": 2218.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 1940.0,
+      "end_sec": 1948.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2043.0,
+      "end_sec": 2075.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2081.0,
+      "end_sec": 2097.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2125.0,
+      "end_sec": 2131.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2191.0,
+      "end_sec": 2194.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2217.0,
+      "end_sec": 2219.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2220.0,
+      "end_sec": 2277.0
+    },
+    {
+      "label": "hook",
+      "start_sec": 2224.0,
+      "end_sec": 2285.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2285.0,
+      "end_sec": 2423.0
+    },
+    {
+      "label": "hook",
+      "start_sec": 2289.0,
+      "end_sec": 2422.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2424.0,
+      "end_sec": 2440.0
+    },
+    {
+      "label": "hook",
+      "start_sec": 2443.0,
+      "end_sec": 2456.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2444.0,
+      "end_sec": 2451.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2457.0,
+      "end_sec": 2476.0
+    },
+    {
+      "label": "hook",
+      "start_sec": 2462.0,
+      "end_sec": 2537.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2481.0,
+      "end_sec": 2498.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2499.0,
+      "end_sec": 2509.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2522.0,
+      "end_sec": 2538.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2566.0,
+      "end_sec": 2625.0
+    },
+    {
+      "label": "irrigator",
+      "start_sec": 2622.0,
+      "end_sec": 2631.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2630.0,
+      "end_sec": 2636.0
+    },
+    {
+      "label": "bipolar",
+      "start_sec": 2632.0,
+      "end_sec": 2662.0
+    },
+    {
+      "label": "irrigator",
+      "start_sec": 2632.0,
+      "end_sec": 2637.0
+    },
+    {
+      "label": "irrigator",
+      "start_sec": 2638.0,
+      "end_sec": 2661.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2647.0,
+      "end_sec": 2661.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2662.0,
+      "end_sec": 2664.0
+    },
+    {
+      "label": "irrigator",
+      "start_sec": 2664.0,
+      "end_sec": 2705.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2668.0,
+      "end_sec": 2676.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2681.0,
+      "end_sec": 2696.0
+    },
+    {
+      "label": "bipolar",
+      "start_sec": 2690.0,
+      "end_sec": 2758.0
+    },
+    {
+      "label": "irrigator",
+      "start_sec": 2708.0,
+      "end_sec": 2712.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2710.0,
+      "end_sec": 2719.0
+    },
+    {
+      "label": "irrigator",
+      "start_sec": 2723.0,
+      "end_sec": 2778.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2741.0,
+      "end_sec": 2742.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2757.0,
+      "end_sec": 2766.0
+    },
+    {
+      "label": "bipolar",
+      "start_sec": 2764.0,
+      "end_sec": 2778.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2769.0,
+      "end_sec": 2772.0
+    },
+    {
+      "label": "bipolar",
+      "start_sec": 2780.0,
+      "end_sec": 2791.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2780.0,
+      "end_sec": 2792.0
+    },
+    {
+      "label": "grasper",
+      "start_sec": 2814.0,
+      "end_sec": 2828.0
+    }
+  ],
+  "summary": [
+    {
+      "label": "grasper",
+      "count": 59,
+      "total_sec": 1638.0,
+      "first_sec": 94.0
+    },
+    {
+      "label": "hook",
+      "count": 13,
+      "total_sec": 1536.0,
+      "first_sec": 481.0
+    },
+    {
+      "label": "scissors",
+      "count": 6,
+      "total_sec": 242.0,
+      "first_sec": 38.0
+    },
+    {
+      "label": "irrigator",
+      "count": 9,
+      "total_sec": 191.0,
+      "first_sec": 796.0
+    },
+    {
+      "label": "bipolar",
+      "count": 5,
+      "total_sec": 148.0,
+      "first_sec": 1509.0
+    },
+    {
+      "label": "clipper",
+      "count": 6,
+      "total_sec": 67.0,
+      "first_sec": 1255.0
+    }
+  ]
+}
