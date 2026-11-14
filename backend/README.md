@@ -16,7 +16,7 @@ Invoke-RestMethod "http://localhost:8000/search?q=clipper" | ConvertTo-Json -Dep
 ## Modes
 
 - **Databricks:** used when the repo-root `.env` (or the process environment) sets `DATABRICKS_SERVER_HOSTNAME` (or `DATABRICKS_HOST`), `DATABRICKS_HTTP_PATH`, and `DATABRICKS_TOKEN`. Queries `workspace.default.surgf_clips` with a bound `:label` parameter, excludes `fixture` rows, and orders by `case_id, start_sec`.
-- **Fixture:** used when any credential is missing. Serves `shared/search.fixture.json`, so only `clip applier` matches.
+- **Fixture:** used when any credential is missing. Serves `shared/search.fixture.json`, whose single row is labeled `clipper` like the real data, so `clipper` works in both modes.
 
 Matching is an exact label match after lowercasing and collapsing whitespace. Use dataset labels such as `clipper`, `grasper`, or `hook`. A blank `q`, or one longer than 100 characters, returns 422. A Databricks failure returns 503.
 
