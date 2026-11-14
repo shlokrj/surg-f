@@ -19,3 +19,9 @@ Dataset annotations and model predictions use the same clip fields. The case ID 
 3. Once a teammate verifies a playable case and its timestamps, load a real annotation and check that search opens the correct video at the correct time.
 
 See the [agent kit](agent-kit/README.md) for the spec and [team progress](agent-kit/PROGRESS.md) for handoffs.
+
+## Planned stage 3: video localization
+
+Our planned third stage adds optional instrument/anatomy bounding boxes over video, followed by supported action-triplet associations. This is future work; the current pipeline supplies clip search and tool-presence predictions.
+
+See [Stage 3 localization plan](ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

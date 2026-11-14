@@ -47,3 +47,9 @@ The annotation import and two-case baseline are recorded as complete. The expand
 ## ML reporting follow-on
 
 See [reporting and error-review assignments](../ml/PROGRESS.md#reporting-and-error-review-assignments-2026-11-14). Shlok owns per-surgery comparisons and training-only reference baselines; Aadhitya owns a bounded validation timestamp review file for false positives/negatives. Both can be tested with synthetic inputs while extraction runs. Model artifact changes require coordination; final-test cases stay out of iterative review.
+
+## Planned stage 3: video localization
+
+Future stage 3 handoff: Shlok evaluates localization models; Aadhitya audits spatial annotations/timebase and exports; Rohan agrees storage/API; Mihir implements the optional overlay toggle. These are proposed lane responsibilities, not active assignments. Agree the schema and taxonomy before building; retain the current search/clip contract.
+
+See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

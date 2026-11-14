@@ -13,3 +13,9 @@
 2. Before pushing, update your assigned row in [PROGRESS.md](PROGRESS.md) and any directly affected milestone. Record the date, status, branch or commit, the exact command or demo step and observed result, outstanding blockers, and the next handoff. If you committed implementation first, commit the documentation as a follow-up in the same push. Update the relevant Markdown when setup, contracts, decisions, data locations, or demo steps change. Preserve teammates' latest entries and distinguish verified results from proposals.
 3. Fetch again before pushing. Check for new upstream commits and relevant changes on `origin/main`. Reconcile them safely and rerun affected checks if the base changed. Push normally, then verify the intended commits and Markdown updates are on GitHub. If a push is rejected, resync and inspect the incoming changes before retrying.
 4. In the handoff, link the commit or PR and report the checks that ran, any remaining blocker, and who takes the next step.
+
+## Planned stage 3: video localization
+
+Project context only: future localization/overlay work is described in the stage-3 plan. Keep proposed detector capabilities separate from verified progress, and agree the new spatial interface with its owners before implementation. The sync, verification and publication rules above still apply.
+
+See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

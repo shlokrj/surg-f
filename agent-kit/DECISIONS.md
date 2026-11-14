@@ -13,3 +13,9 @@
 | 2026-11-14: Use the dataset label `clipper` everywhere, including the fixture, SQL checks, contracts, backend tests, and search queries. Drop `clip applier` | The data, backend search, and frontend suggestions already use `clipper`. One name avoids empty searches. |
 
 Append dated decisions here when a change affects another lane. Record the reason and update affected contracts in the same change.
+
+## Planned stage 3: video localization
+
+2026-11-14: Shlok requested a third-stage localization roadmap and a toggleable overlay experience. Grounding DINO-T is the recommended first experiment, with optional SAM 2.1 tracking/segmentation later. This is a research recommendation, not a validated model selection. The taxonomy audit and explicit proposed interfaces are recorded in the plan.
+
+See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.
