@@ -1,5 +1,7 @@
 # Import clips
 
+Team target: `workspace.default.surgf_clips`. Connect with `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, and `DATABRICKS_TOKEN` in a repo-root `.env`, which is git-ignored. Get the values from Aadhitya privately and never commit them.
+
 1. Run [setup.sql](setup.sql) in your team's Databricks catalog and schema.
 2. Ask the data owner for clip intervals with this CSV header:
 
