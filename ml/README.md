@@ -1,6 +1,6 @@
 # ML workflow
 
-Shlok owns SurgVLP features, classifier training, and MLflow. Aadhitya owns videos and prediction export/import. See [progress](PROGRESS.md). Work on `ml-dev`; push to `main` only when Shlok requests it.
+Shlok owns SurgVLP features, classifier training, and MLflow. Aadhitya owns videos, prediction export/import, and clip-level evaluation. Shlok also owns annotation coverage analysis and the fixed surgery-level split. Start with the [assigned parallel tasks](PROGRESS.md#assigned-parallel-work-2026-11-14), which list file ownership, dependencies, and completion criteria. See [progress](PROGRESS.md). Work on `ml-dev`; push to `main` only when Shlok requests it.
 
 Full extraction and training run on **Databricks serverless CPU**. Classic GPU creation is blocked by workspace provisioning, and the serverless GPU probe did not execute. CPU is sufficient for the first two demo cases; revisit GPU for larger runs.
 
@@ -36,7 +36,7 @@ This downloads a temporary verification copy and checks hashes, frame coverage, 
 | Case | Full feature matrix | Extraction time | Notebook time | Status |
 |---|---|---|---|---|
 | VID01 | 1,734 x 768 | 263.91 s | 382.92 s | Uploaded and independently verified |
-| VID02 | Expected 2,840 x 768 | Pending | Pending | Full run in progress |
+| VID02 | 2,840 x 768 | 429.60 s | 580.45 s | Uploaded and independently verified |
 
 ## Train the classifier
 
@@ -50,7 +50,22 @@ The 20-minute-capped Databricks CPU job trains per-tool logistic regressions on 
 
 Parameters, per-tool precision/recall/F1/average precision, and fitted classifier artifacts are logged to MLflow. A checksum-verified copy is stored at `/Volumes/workspace/default/surgf/models/tool-presence/<mlflow-run-id>/`. The report records package versions and feature hashes. Use the same environment when loading the joblib artifact.
 
+Verified run: [MLflow results](https://dbc-48252777-1798.cloud.databricks.com/?o=7474644357435752#mlflow/experiments/1933783029716480/runs/54659bc60d734052927dadf80ea16e13). Training took 16.43 s. F1 was grasper 0.721, hook 0.618, irrigator 0.308, clipper 0.154, bipolar 0.125, and scissors 0.000. Load the artifact using Databricks ML v6: NumPy 2.3.4, scikit-learn 1.7.2, joblib 1.5.2.
+
 This is a two-case engineering baseline, not a reliable estimate across surgeries. It does not tune on the test case or insert predictions into the live search table. Aadhitya owns the next step using [export_predictions.py](export_predictions.py).
+
+## Expanded training
+
+The frozen split is [case_split.json](case_split.json); VID02 remains diagnostic. [tool_coverage.json](tool_coverage.json) records annotation coverage for all cases. Reproduce it with:
+
+```sh
+python ml/audit_tool_coverage.py --samples ~/madhacks2026/data/cholect50/samples.json --output ml/tool_coverage.json
+python scripts/train_databricks_tools.py --split ml/case_split.json
+```
+
+The expanded run chooses balanced or unweighted training by validation macro F1, then evaluates the final test once. Threshold remains 0.5. All required bundles must exist and pass validation. Use the existing ML v6 environment to load the saved model; its format remains compatible with prediction export.
+
+For assigned extractions, `scripts/process_ml_cases.py --cases VID04 VID05 --samples PATH --state PATH_OUTSIDE_GIT` processes cases serially, keeps a fixed code revision, and saves run IDs plus independent verification results. Resume with the same arguments. A failed job stops for review.
 
 ## Feature contract
 
@@ -77,3 +92,16 @@ python -m unittest discover -s scripts -p 'test_*.py' -v
 ```
 
 References: [shared contract](../agent-kit/CONTRACTS.md), [serverless environments](https://docs.databricks.com/aws/en/compute/serverless/dependencies), [SDK authentication](https://docs.databricks.com/aws/en/dev-tools/sdk-python).
+
+## Audit annotation coverage
+
+Run without downloading frames or starting Databricks jobs:
+
+```sh
+python ml/audit_tool_coverage.py --samples ~/madhacks2026/data/cholect50/samples.json \
+  --split ml/case_split.json --output ml/tool_coverage.json
+```
+
+The saved report includes source SHA-256, per-case counts, dataset totals, and counts for each split. Positive coverage is reported both as frames and surgeries. Missing/null instruments are unknown; an empty classifications list is a known negative. Counts cover observed samples only and do not infer labels for absent frame IDs. Duplicate frames, invalid labels, empty input, overlapping splits and unavailable cases fail validation. This project reserves the previously inspected VID02 for diagnostics.
+
+The fixed split has 12 training, 3 validation, 4 final-test surgeries and diagnostic VID02. Keep membership unchanged during model comparisons. Coverage establishes label availability, not independent-frame sample size or model quality. Use validation for model selection; the other training workstream owns execution.

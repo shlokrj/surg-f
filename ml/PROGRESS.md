@@ -4,9 +4,28 @@ The project has three teams: backend, frontend, and ML. Shlok and Aadhitya share
 
 Update your own section after each feature or major change with the date, branch or commit, exact verification command and result, blockers, and next handoff. Preserve the other person's entries. Coordinate before editing shared files.
 
+## Assigned parallel work (2026-11-14)
+
+Shlok requested this split for both teammates to start while existing tests and jobs finish. These are assigned tasks, not completed results. The baseline evidence below comes from the recorded `ml-dev` handoff; this documentation update did not rerun remote jobs.
+
+| Owner | Order | Task and owned paths | Done when / handoff |
+|---|---|---|---|
+| Shlok | 1 — start now | Add an annotation coverage audit in `ml/audit_tool_coverage.py`: per-case known/unknown frame counts, positive counts for all six tools, and rare-tool coverage. Use existing labels; no feature extraction required. | Save a reproducible coverage report and command; distinguish missing annotations from negative labels. Give Aadhitya the report and fixed case split. |
+| Shlok | 2 — start now | Define the larger surgery-level train/validation/test split in `ml/case_split.json`, then parameterize `ml/train_tools_databricks.py` and `scripts/train_databricks_tools.py`. Keep the existing VID01 → VID02 smoke run available. | Validate nonempty, disjoint case lists and complete compatible bundles; log split, source revision, and threshold in MLflow. Freeze the split before model comparisons. VID02 has already been inspected: retain it as a smoke/diagnostic case and use previously unseen surgeries for the new final test set. |
+| Shlok | 3 — after bundles validate | Train the larger baseline; compare class weighting in `ml/train_tools.py` using validation cases only. Tune thresholds only on validation if needed. | Log per-tool support, precision, recall, F1 and AP, plus chosen settings. Run the fixed final test after model selection; hand Aadhitya the model path, run ID, environment, and saved thresholds. |
+| Aadhitya | 1 — start now | Run the existing `ml/export_predictions.py` on held-out VID02 using the baseline model path below. Own export/import and `scripts/clips_job.py`; preserve the shared clip schema. | Validate intervals, labels, source and training-case rejection; import via the existing job, verify rerun adds no duplicates, and record prediction row counts plus a search response with `source=prediction`. Keep annotation results distinct. |
+| Aadhitya | 2 — start now | Add `ml/evaluate_clips.py` for predicted intervals versus annotation intervals, with tests in `ml/test_clip_evaluation.py`. Develop against synthetic intervals while export runs. | Report per-tool event precision/recall/F1 at a declared temporal IoU threshold with one-to-one matching, plus fragmentation counts. Cover exact, partial, duplicate, missing, and empty intervals; exclude unknown annotation spans. Use VID02 for diagnostics only and validation cases for any smoothing choices. |
+| Aadhitya | 3 — independent | Upload the existing 25 fps VID02 video and verify download/time alignment using the existing video workflow. | Record Volume path, size/hash check and observed playback timestamp; hand frontend a reproducible fetch command. |
+
+**Extraction ownership stays unchanged:** Shlok owns VID04, VID05, VID06, VID08, VID10, VID12, VID13, VID14, VID15; Aadhitya owns VID18, VID22, VID23, VID25, VID26, VID27, VID29, VID31, VID32. VID01 and VID02 already have verified bundles. Before starting any assigned case, check for an existing active run or complete bundle; do not duplicate or overwrite it. Use the existing smoke gate and timeouts, one case at a time per person, with full extraction on Databricks. Record run IDs and validation results in your own section. These extraction assignments do not decide training membership; Shlok's frozen split does.
+
+**Coordination:** existing tests/jobs keep their current committed snapshot. Start independent work in separate worktrees or checkouts; do not change files underneath a local test run. Shlok owns training files and the split; Aadhitya owns export, evaluation, and videos. If export needs a changed model artifact format, agree before changing the producer/consumer interface. Each person updates only their own progress section and preserves the other's changes. Pull this documentation update from `main` into `ml-dev` before implementation; continue publishing implementation to `ml-dev` under the existing workflow.
+
+**Documentation verification:** this assignment update changes Markdown only. `git diff --check` and a relative Markdown link-target check across all four updated documents passed on branch `docs/ml-task-split`; publication target is `main`. No new ML test, training, extraction, or import result is claimed here.
+
 ## Shlok - features, classifier training, and MLflow
 
-**Status (2026-11-14, `ml-dev`):** Databricks serverless CPU works. VID01 is complete and independently verified; VID02 full extraction is running. Classifier code is ready; real training waits for both bundles.
+**Status (2026-11-14, `ml-dev`):** Databricks serverless CPU works. VID01 and VID02 are complete and independently verified. The CPU classifier trained successfully and its model and metrics are saved in MLflow and the shared Volume.
 
 | Step | Evidence | Status |
 |---|---|---|
@@ -15,18 +34,38 @@ Update your own section after each feature or major change with the date, branch
 | VID01 smoke | Run `918098132910738`: `[16,768]`, 2.36 s extraction | Passed |
 | VID01 full | Run `1014355595133232`: `[1734,768]`, 263.91 s extraction, 382.92 s notebook time | Uploaded and independently verified |
 | VID02 smoke | Run `574066955461279`: `[16,768]`, 2.49 s extraction | Passed |
-| VID02 full | Run `1008298473978504`, 30-minute cap; expected `[2840,768]` | Running |
-| Classifier | `train_tools.py`: train VID01, test VID02, train-only scaling, threshold 0.5, unknown annotations excluded; provenance and package versions recorded | Implemented, real run pending |
+| VID02 full | Run `1008298473978504`: `[2840,768]`, 429.60 s extraction, 580.45 s notebook time | Uploaded and independently verified |
+| Classifier | `train_tools.py`: train VID01, test VID02, train-only scaling, threshold 0.5, unknown annotations excluded; provenance and package versions recorded | Passed on Databricks; training took 16.43 s |
 
 **Verification:** `python scripts/verify_databricks_features.py --case-id VID01 --samples ~/madhacks2026/data/cholect50/samples.json` downloaded all four Volume files and passed full-case, checksum, and source annotation checks. The local check performs no extraction. Unit suites cover bundle integrity, publication, surgery separation, train-only scaling, provenance, and launcher gates. Official SurgVLP image encoder/preprocessing parity on real frame 680 was exact.
 
 **Compute decision:** all full extraction stays on Databricks. Classic T4 creation failed because the workspace has no associated worker environments. Aadhitya's serverless A10 probe stayed pending and was cancelled. The first CPU attempt (`886657513377262`) failed during manual dependency installation; managed ML v6 resolved it. No GPU cluster was created. Measured CPU throughput is about 6.4-6.8 frames/s on the current cases.
 
-**Next handoff:** independently verify VID02, run `scripts/train_databricks_tools.py`, and give Aadhitya the model Volume path and MLflow run for held-out prediction export/import. Keep the model's two-case evaluation limits explicit. Do not fit or tune on VID02.
+**Training result:** `python scripts/train_databricks_tools.py` launched successful Databricks run `875405233998464` from `36f35d0`. MLflow run `54659bc60d734052927dadf80ea16e13` is FINISHED, with both baseline artifacts and all per-tool metrics independently listed through the API. Training used 1,734 VID01 frames and testing used 2,840 VID02 frames, with threshold 0.5. F1: bipolar 0.125, clipper 0.154, grasper 0.721, hook 0.618, irrigator 0.308, scissors 0.000. This is an engineering smoke test; rare-tool predictions are weak.
+
+**Next handoff to Aadhitya:** model directory `/Volumes/workspace/default/surgf/models/tool-presence/54659bc60d734052927dadf80ea16e13/` contains `tool_classifiers.joblib` and `metrics.json`. Use Databricks ML v6 (NumPy 2.3.4, scikit-learn 1.7.2, joblib 1.5.2) for prediction export. Both files were downloaded independently for verification; model SHA-256 is `b3d2a5d3dd5c211605091517f6ee0fc9cd806febd5915771a8b7fec9dc6e6c5e`. Predictions have not been imported by Shlok. Aadhitya owns export/import. Expand training cases next, with a fixed surgery split before training; keep this two-case run as the smoke baseline and do not tune on VID02.
+
+**Final checks:** `python -m unittest discover -s ml -p 'test_*.py'` passed 17 tests; the scripts suite passed 10 tests. `git diff --check` passed. Independent Volume validation passed for both cases against source labels. Saved VID01 frames 674-689 matched the earlier local smoke features within `rtol=1e-4, atol=1e-5` (maximum absolute difference 0.00000161). All full extraction ran on Databricks.
 
 **Local assets:** environment `~/madhacks2026/.venv-surgf`; labels and smoke frames in `~/madhacks2026/data/cholect50/`; official weights in `~/madhacks2026/models/`; local partial smoke output in `~/madhacks2026/features-smoke/VID01/`. No data or credentials are committed.
 
 **Workflow:** pull before work, commit each major change with updated docs, and push only `ml-dev` unless Shlok explicitly requests `main`.
+
+### Expanded training setup (2026-11-14)
+
+Coverage audit: `python ml/audit_tool_coverage.py --samples ~/madhacks2026/data/cholect50/samples.json --output ml/tool_coverage.json` streamed all 50 cases. The report records the source checksum, known/unknown counts, and positive frames for each tool. All selected cases have zero unknown frames. The fixed split in `ml/case_split.json` has 12 training cases (19,920 frames), 3 validation cases (5,963), 4 final test cases (10,499), and diagnostic VID02 (2,840). Training has 796 clipper and 427 scissors positives; validation has 141/108 and final test 418/168. This is frozen before expanded model comparisons.
+
+`python scripts/train_databricks_tools.py --split ml/case_split.json` compares balanced and unweighted logistic regression using validation macro F1 only, then runs the selected setting on the final test set once. Threshold stays 0.5 and the exported model format is unchanged. Omit `--split` to reproduce the two-case smoke baseline. Training waits for complete compatible bundles. Tests cover split overlap/duplicates and verify final test cases are not used for weight selection. All 19 ML tests passed; Python compilation passed. Expanded training has not run yet.
+
+### Coverage audit handoff (2026-11-14)
+
+Completed in isolated branch `feat/ml-coverage-audit`, published to `ml-dev`, building on the other chat's `9c53eba` setup. The existing `ml/case_split.json` membership is preserved. `python ml/audit_tool_coverage.py --samples ~/madhacks2026/data/cholect50/samples.json --split ml/case_split.json --output ml/tool_coverage.json` passed across 50 cases and 100,863 observed annotated frames. An independent source recount matched every case/tool count and source checksum. There are zero unknown annotations among observed samples; this does not establish coverage for absent frames. Added dataset/split totals, known-negative counts, and number of surgeries with each tool.
+
+`python -m unittest discover -s ml -p 'test_*.py'` passed 22 tests, including missing-versus-negative labels, duplicate/malformed samples and split validation. `git diff --check` passed. No extraction, training, or import was launched here. Next: Aadhitya can use the saved coverage report and fixed split for evaluation; Shlok's other chat continues extraction/training. No coverage blocker remains.
+
+### Assigned extraction batch (2026-11-14)
+
+Shlok is processing VID04, VID05, VID06, VID08, VID10, VID12, VID13, VID14, and VID15 in this chat. `scripts/process_ml_cases.py` runs one case at a time on Databricks CPU, with a smoke gate, a pinned committed snapshot, and independent source-label validation. A local state file outside Git records run IDs and allows resuming. Failed jobs stop for review. Aadhitya's active jobs are left running.
 
 ## Aadhitya - videos and Databricks
 
@@ -48,15 +87,17 @@ Scope: playable demo videos, Databricks ingestion, and exporting classifier pred
 - [x] Add `ml/export_predictions.py` (2026-11-14). It loads `tool_classifiers.joblib` and `metrics.json` from `train_tools.py` and a complete bundle (checked with `validate_bundle`). It thresholds each frame at the saved threshold, merges consecutive positive frames with `to_intervals()`, and writes `case_id,start_sec,end_sec,label,source=prediction` rows. It refuses cases listed in `train_cases`. Verified: `python -m unittest discover -s ml -p 'test_*.py'` ran 17 tests, all OK, including 2 new ones (frames 10–12 and 20 become `10–13` and `20–21`; a training case is rejected). It has not run on real bundles yet: the Volume had no `features/` directory when checked, and VID01 full run `1014355595133232` was in progress.
 - [ ] Once the model is trained on VID01 and tested on VID02: run `python ml/export_predictions.py MODEL_DIR /Volumes/.../features/VID02 pred.csv`, upload `pred.csv` to `/Volumes/workspace/default/surgf/` and run `python scripts/clips_job.py run --csv /Volumes/workspace/default/surgf/pred.csv` (Lakeflow job, verified 2026-11-14), then record the row counts and a sample `/search` result with `source = prediction`.
 
-**Blocker / next handoff:** 25 fps `VID01.mp4` and `VID02.mp4` exist on Aadhitya's machine and are not hosted. Frontend needs an accessible video; training needs Shlok's validated features.
+**Current handoff:** VID01 is hosted as recorded above; VID02 hosting remains assigned to Aadhitya. Both feature bundles and the baseline model are available according to Shlok's recorded verification. Start export using the model path in his section. The earlier pending-run notes are historical.
 
-**For Shlok (2026-11-14):** serverless GPU never got a GPU, but serverless CPU runs. To run `extract_databricks.py` on serverless CPU with `python scripts/gpu_run.py start --case-id VID01 --cpu`, the notebook needs three changes. It's your file, so make them or tell Aadhitya to: (1) allow `device='cpu'` when CUDA is absent, instead of raising; (2) `%pip install` torch>=2.6 and torchvision, since the base serverless environment has no torch; (3) replace `/local_disk0`, which likely doesn't exist on serverless, with `tempfile.mkdtemp()`. ResNet-50 on about 1.7k frames should take minutes on CPU. This is unmeasured.
+**Historical CPU setup request (resolved by the verified CPU runs above):** serverless GPU never got a GPU, but serverless CPU runs. To run `extract_databricks.py` on serverless CPU with `python scripts/gpu_run.py start --case-id VID01 --cpu`, the notebook needs three changes. It's your file, so make them or tell Aadhitya to: (1) allow `device='cpu'` when CUDA is absent, instead of raising; (2) `%pip install` torch>=2.6 and torchvision, since the base serverless environment has no torch; (3) replace `/local_disk0`, which likely doesn't exist on serverless, with `tempfile.mkdtemp()`. ResNet-50 on about 1.7k frames should take minutes on CPU. This is unmeasured.
 
-**For Shlok: scale up training data (2026-11-14, Aadhitya).** One training surgery is a smoke test, not a result. Frames within a surgery are highly correlated, and the rare tools barely appear in VID01: labeled frames there are grasper 1141, hook 788, irrigator 133, bipolar 124, clipper 102, scissors 17. Across all 50 cases: clipper 3429, scissors 2134. Proposal:
+**Earlier scale-up proposal (2026-11-14, Aadhitya; task assignments above supersede the proposed split).** One training surgery is a smoke test, not a result. Frames within a surgery are highly correlated, and the rare tools barely appear in VID01: labeled frames there are grasper 1141, hook 788, irrigator 133, bipolar 124, clipper 102, scissors 17. Across all 50 cases: clipper 3429, scissors 2134. Proposal:
 1. **Extract 20 cases**, the first 20 CholecT50 IDs ≤ 80 in order (all have 25 fps video): VID01, 02, 04, 05, 06, 08, 10, 12, 13, 14, 15, 18, 22, 23, 25, 26, 27, 29, 31, 32. At the measured ~6.4 min per case, 18 cases are about 2 h serially, or much less in parallel.
 2. **Split extraction to avoid collisions.** `publish_features.py` refuses existing destinations anyway. **Shlok:** VID04, 05, 06, 08, 10, 12, 13, 14, 15. **Aadhitya:** VID18, 22, 23, 25, 26, 27, 29, 31, 32, starting now with `gpu_run.py start --cpu`: smoke first, then `--full-case --smoke-run-id`.
 3. **Make train and test cases notebook parameters.** `train_tools_databricks.py` currently hardcodes `['VID01']` / `['VID02']` and run name `vid01-train-vid02-test`, while `fit_baseline` already accepts lists. Suggested split: about 15 train / 5 test by surgery. Your call on which cases; picking them before seeing results avoids tuning on test.
 4. Keep VID01→VID02 as the first end-to-end smoke test. Rerun with the larger split as a new MLflow run so the two can be compared.
+
+**Aadhitya extraction batch (2026-11-14, in progress).** Full runs **succeeded:** VID22 (`283287863291506`), VID26 (`872291925628183`), VID32 (`92535306724931`). **Running on old code `36f35d0`:** VID23, VID25. **Failed with `HTTPError 429 Too Many Requests`** from Hugging Face while about 10 runs downloaded frames at once: VID18 (`881277135860981`), VID27 (`554620829089169`), VID29 (`366749532894628`), VID31 (`848682686385294`). **Fix `de8fdb7`:** `download_case.download_frames` now retries 429 and 5xx up to 8 times, honoring `Retry-After` and otherwise backing off 1–60 s. Other errors (e.g. 404) still raise immediately. A mocked check (two 429s then success, 3 calls; 404 raises) passed, and the ML tests pass. VID18, VID27, VID29, and VID31 were relaunched on `de8fdb7`. **Shlok:** your runs on older snapshots (e.g. VID04 on `bfc7585`) don't have the retry, so relaunch from `de8fdb7` or later if they hit 429. Also, launching several cases at the same instant made one `deploy` of the shared snapshot fail without starting a run, twice (VID29, VID27). Stagger launches by a few seconds.
 
 ## Shared feature handoff
 
