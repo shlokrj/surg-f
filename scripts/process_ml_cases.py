@@ -13,11 +13,22 @@ from run_databricks_features import client, snapshot
 from verify_databricks_features import verify
 
 
+def refresh_pending(state, revision, remote):
+    """Preserve snapshots for started cases; upgrade only unstarted cases."""
+    for result in state['results'].values():
+        if result.get('smoke') or result.get('full'):
+            result.setdefault('revision', state['revision'])
+            result.setdefault('remote', state['remote'])
+    state['revision'], state['remote'] = revision, remote
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--cases', nargs='+', required=True)
     p.add_argument('--samples', required=True)
     p.add_argument('--state', type=Path, required=True)
+    p.add_argument('--refresh-pending', action='store_true',
+                   help='Use current committed code for unstarted cases; preserve active runs')
     a = p.parse_args()
     w = client()
     if a.state.exists():
@@ -27,8 +38,8 @@ def main():
     else:
         revision, remote = snapshot(w)
         state = {'revision': revision, 'remote': remote, 'cases': a.cases, 'results': {}}
-    # Keep smoke and full jobs on the same committed snapshot even if HEAD moves.
-    gpu_run.snapshot = lambda _: (state['revision'], state['remote'])
+    if a.refresh_pending:
+        refresh_pending(state, *snapshot(w))
 
     def save():
         a.state.parent.mkdir(parents=True, exist_ok=True)
@@ -51,6 +62,21 @@ def main():
         result = state['results'].setdefault(case, {})
         if result.get('verified'):
             continue
+        result.setdefault('revision', state['revision'])
+        result.setdefault('remote', state['remote'])
+        # Both phases use this case's snapshot, even if another chat moves HEAD.
+        gpu_run.snapshot = lambda _: (result['revision'], result['remote'])
+        if not result.get('smoke') and not result.get('full'):
+            existing = {x.path.rstrip('/').split('/')[-1] for x in
+                        w.files.list_directory_contents('/Volumes/workspace/default/surgf/features')}
+            if case in existing:
+                result['verified'] = verify(case, a.samples)
+                save()
+                continue
+            for run in w.jobs.list_runs(active_only=True):
+                if f'-{case}-' in (run.run_name or ''):
+                    raise RuntimeError(f'{case} already has active run {run.run_id}; review before submitting')
+        save()
         for phase in ['smoke', 'full']:
             if phase not in result:
                 result[phase] = gpu_run.start(case, phase == 'full', 30, True, result.get('smoke'))
