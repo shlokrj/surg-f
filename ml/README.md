@@ -165,3 +165,17 @@ python scripts/review_databricks_errors.py --model-run-id 54659bc60d734052927dad
 The runner downloads the model from MLflow inside Databricks ML v6, creates up to 20 rows per tool/error type, and saves `review.csv` plus `review.json` in a child MLflow run and `/Volumes/workspace/default/surgf/reviews/<review-run-id>/`. Readback hashes are checked. CSV columns include case, tool, frame/second, expected label, probability, threshold, error type, model run and partition. The sidecar records total error counts before sampling, unknown-frame count, provenance and `visually_reviewed=false`.
 
 Training/final-test cases are rejected; VID02 requires `--diagnostic`. Only known labels are reviewed. Chronologically spaced sampling is reproducible, not an unbiased estimate of model quality. Review rows describe raw frame decisions before smoothing and must not be imported into the clip search table. Local/mounted use: `python ml/review_prediction_errors.py MODEL_DIR BUNDLE_DIR review.csv --split ml/case_split.json` (use the model's package versions).
+
+## Select smoothing across validation surgeries
+
+After the validation model is available, run the same predeclared sweep on VID15, VID25 and VID26 with `scripts/export_databricks_clips.py`. Download each new child run's `clips/evaluation.json` from MLflow (use unique local filenames), or save each notebook's complete sweep-result JSON. Then run:
+
+```sh
+python ml/select_smoothing.py /path/to/validation-results/*.json \
+  --split ml/case_split.json --settings 0:1,1:1,2:2,3:3,5:3,10:5 \
+  --output /tmp/smoothing-selection.json
+```
+
+This writes a ranked Markdown table and a JSON decision with input hashes, model/code/bundle provenance, per-case/per-tool scores and the fixed split. Every requested setting must have exactly one result for every validation surgery. Diagnostic/final-test cases, incomplete sweeps, changed annotations, mixed models/code/thresholds and duplicate results are rejected. Existing output files are not overwritten.
+
+Selection averages event F1 over all six tools (no-event tools score zero), then equally across validation surgeries. This fixed-denominator criterion is recorded in advance and differs from the older `macro_event_f1`, which averages only defined values. New sweep runs also log `six_tool_macro_event_f1` to MLflow. Ties choose smaller gap, then smaller minimum length. Record the resulting setting before final-test export; do not tune against final-test or VID02 diagnostic results. Historical reports without model split and provenance fields cannot be used by this selector; new runs capture those fields.
