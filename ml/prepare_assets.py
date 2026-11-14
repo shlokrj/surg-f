@@ -5,6 +5,7 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+from download_case import with_retry
 from extract_features import CHECKPOINT_SHA256, CHECKPOINT_URL, sha256
 
 SAMPLES_URL = 'https://huggingface.co/datasets/Voxel51/cholect50/resolve/main/samples.json'
@@ -15,8 +16,11 @@ def download(url, target):
     target = Path(target)
     target.parent.mkdir(parents=True, exist_ok=True)
     partial = target.with_suffix(target.suffix + '.part')
-    with urllib.request.urlopen(url, timeout=120) as src, partial.open('wb') as dst:
-        shutil.copyfileobj(src, dst)
+
+    def fetch():
+        with urllib.request.urlopen(url, timeout=120) as src, partial.open('wb') as dst:
+            shutil.copyfileobj(src, dst)
+    with_retry(fetch)  # many parallel runs fetch the 500 MB labels file at once
     partial.replace(target)
 
 
