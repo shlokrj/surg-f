@@ -26,5 +26,5 @@ VALUES (incoming.case_id, incoming.start_sec, incoming.end_sec, incoming.label, 
 
 SELECT case_id, start_sec, end_sec, label, source
 FROM surgf_clips
-WHERE source = 'annotation' AND label = 'clip applier'
+WHERE source = 'annotation' AND label = 'clipper'
 ORDER BY case_id, start_sec;
