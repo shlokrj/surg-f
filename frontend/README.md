@@ -1,6 +1,6 @@
 # Surg+F frontend
 
-Two-page video chooser and search/playback dashboard based on Mihir's Claude Design prototype. Search calls the shared `GET /search?q=...` API. Selecting a result switches to its `case_id` video and seeks to `start_sec`.
+The dashboard lets users switch between the hosted VID01 and VID02 cases. It keeps the video and timeline on the left and the chat, recent questions, and search field on the right. Search output appears below both as one or more stacked sections. It is scoped to the open case, using the shared `GET /search?q=...` clip contract.
 
 ## Run
 
@@ -10,7 +10,7 @@ npm install
 npm run dev
 ```
 
-Set `VITE_BACKEND_URL` to the API origin (default `http://localhost:8000`). For local development without the backend, set `VITE_USE_FIXTURE=true` in `frontend/.env.local`; this reads `shared/search.fixture.json`. Switch to the real API by changing that environment variable.
+Run the backend as described in [backend/README.md](../backend/README.md). `VITE_BACKEND_URL` defaults to `http://localhost:8000`; `VITE_USE_FIXTURE=true` in `frontend/.env.local` reads `shared/search.fixture.json` instead. The video owner hosts prepared footage in the Databricks Volume. From the repo root with the team `.env`, run `python scripts/fetch_videos.py VID01` to download the Git-ignored demo video into `frontend/public/videos/`. You can also set `VITE_VIDEO_BASE_URL` to a host with `VID01.mp4` and `VID02.mp4`.
 
 Put playable assets at `frontend/public/videos/VID01.mp4`, etc., or set `VITE_VIDEO_BASE_URL` to a URL containing the same filenames. The case manifest maps `VID01` and `VID02`.
 
@@ -31,9 +31,19 @@ This writes `frontend/public/videos/VID01.mp4` (692,593,324 bytes, 28:53) and `V
 
 **Prediction results.** `/search` returns both `source=annotation` and `source=prediction` rows, and has no source filter parameter. Today predictions exist for **VID02 only** (945 rows) from an early baseline model. They are mostly 1-second fragments, so expect many short, noisy `prediction` hits (for example 83 for `clipper`). Keep showing the source on each card and label predictions as model output. Consider grouping or de-emphasizing them. Data/ML will replace these rows after temporal smoothing and the larger model; the fields will not change. Video files are excluded from Git. A local upload plays in the browser but does not ingest or annotate the video.
 
-The chat-shaped panel currently performs annotated label search. General Q&A, counts, persistent chat history, arbitrary upload processing, and bleeding detection need backend support and are not claimed by this build.
+## Search features
 
-## Integration check
+- `/timestamp clipper` calls `GET /search?q=clipper`, keeps only hits for the open case, and lets users seek to a result. Annotation and prediction sources are labeled separately.
+- The event timeline calls `GET /cases/{case_id}/timeline` and shows annotation intervals in separate instrument rows.
+- `/chart` uses the timeline response's `summary` for annotation counts. It needs one timeline request rather than six searches.
+- `/quiz` calls `GET /quiz` for five operation-wide study questions. If the backend is unreachable or has no quiz route, it displays the saved seed-1 quiz with a sample-data notice. It is **not specific to the open video**. Answers are graded locally, explanations appear after selection, and “Watch examples” searches the given `search_q` in the open case. Unreviewed content is labeled.
+- `/model` explains that a linked 3D model is unavailable.
+
+The four buttons insert commands into the chat input without sending. Commands can be combined. Simple keyword rules route some phrases locally; there is no LLM interpretation yet. In frontend fixture mode, saved VID01/VID02 timeline and seed-1 quiz responses from `backend/fixtures/` are imported. A locally opened MP4/MOV has no indexed annotations.
+
+## Check
+
+Run `npm run build`. With the Databricks backend and VID01 video available, enter `/timestamp clipper`; the first known interval is `674–690` seconds. Select it and confirm the video seeks to 11:14. `/chart` and `/quiz` require the six instrument-label queries to succeed. A cold warehouse may take time to respond.
 
 With the backend returning real rows and `VID01.mp4` available, search `clipper`. Click the first result and confirm `VID01` seeks to `11:14` (674 s). Repeat with VID02: the first `clipper` annotation is `VID02 1255–1268` (20:55). Also check a result from a case without video (for example any `clipper` hit outside VID01/VID02), a `prediction` result, and a no-match query. Run `npm run build` for a production build.
 
