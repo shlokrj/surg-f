@@ -18,6 +18,12 @@ class Threshold:
         return np.stack([1 - x[:, 0], x[:, 0]], axis=1)
 
 
+class MultiProb:
+    """Stand-in 2-label MLP: both label probabilities = first feature."""
+    def predict_proba(self, x):
+        return np.stack([x[:, 0], x[:, 0]], axis=1)
+
+
 class ExportTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -37,6 +43,22 @@ class ExportTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_mlp_exports_instruments_only_with_per_label_thresholds(self):
+        joblib.dump({'model': MultiProb(), 'labels': ['instruments:hook', 'verbs:cut'],
+                     'thresholds': [0.5, 0.1], 'window': 0}, self.model / 'multilabel_mlp.joblib')
+        with patch('export_predictions.validate_bundle', return_value=self.metadata):
+            self.assertEqual(predict_clips(self.model, self.bundle),  # verbs:cut is not exported
+                             [('VID02', 10, 13, 'hook', 'prediction'), ('VID02', 20, 21, 'hook', 'prediction')])
+            self.assertEqual(predict_clips(self.model, self.bundle, max_gap=7),
+                             [('VID02', 10, 21, 'hook', 'prediction')])
+        joblib.dump({'model': MultiProb(), 'labels': ['instruments:hook', 'verbs:cut'],
+                     'thresholds': [0.95, 0.1], 'window': 0}, self.model / 'multilabel_mlp.joblib')
+        with patch('export_predictions.validate_bundle', return_value=self.metadata):
+            self.assertEqual(predict_clips(self.model, self.bundle), [])  # 0.9 < per-label 0.95
+        with patch('export_predictions.validate_bundle', return_value=dict(self.metadata, case_id='VID01')):
+            with self.assertRaisesRegex(ValueError, 'training'):
+                predict_clips(self.model, self.bundle)
 
     def test_consecutive_positives_become_clips(self):
         with patch('export_predictions.validate_bundle', return_value=self.metadata):

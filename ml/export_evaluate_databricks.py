@@ -32,7 +32,8 @@ if not experiment_path.startswith('/Users/'):
     raise ValueError('Use an explicit user-owned MLflow experiment path')
 mlflow.set_experiment(experiment_path)
 bundle = Path('/Volumes/workspace/default/surgf/features') / case_id
-model_dir = Path(mlflow.artifacts.download_artifacts(run_id=model_run_id, artifact_path='baseline'))
+is_mlp = mlflow.get_run(model_run_id).data.params.get('model') == 'mlp'  # train_multilabel run
+model_dir = Path(mlflow.artifacts.download_artifacts(run_id=model_run_id, artifact_path='multilabel' if is_mlp else 'baseline'))
 model_report = json.loads((model_dir / 'metrics.json').read_text())
 bundle_metadata = json.loads((bundle / 'metadata.json').read_text())
 

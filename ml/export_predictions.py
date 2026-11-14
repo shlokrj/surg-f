@@ -1,6 +1,7 @@
 """Turn tool-classifier predictions on one held-out case into clip rows for surgf_clips.
 
-Reads train_tools.py output (tool_classifiers.joblib + metrics.json) and a validated feature bundle,
+Reads train_tools.py output (tool_classifiers.joblib + metrics.json) or train_multilabel.py output
+(multilabel_mlp.joblib + metrics.json; only its instrument labels are exported) and a validated feature bundle,
 predicts each frame, and merges consecutive positive frames (1 fps, frame N = second N) into
 case_id,start_sec,end_sec,label,source=prediction rows. Import them with databricks/import_clips.sql.
 Optional smoothing cleans up flicker: --max-gap fills off-gaps of up to N seconds between clips, then
@@ -52,6 +53,8 @@ def predict_clips(model_dir, bundle, max_gap=0, min_len=1):
     for key in ['checkpoint_sha256', 'preprocessing', 'samples_sha256']:
         if key not in report or key not in metadata or report[key] != metadata[key]:
             raise ValueError(f'model/bundle provenance mismatch: {key}')
+    if (model_dir / 'multilabel_mlp.joblib').exists():
+        return mlp_clips(model_dir, bundle, case_id, max_gap, min_len)
     saved = joblib.load(model_dir / 'tool_classifiers.joblib')
     threshold = saved['threshold']
     if (not isinstance(threshold, (int, float)) or not np.isfinite(threshold)
@@ -73,6 +76,31 @@ def predict_clips(model_dir, bundle, max_gap=0, min_len=1):
             raise ValueError('invalid model probabilities')
         hits = frames[probabilities[:, 1] >= threshold]
         rows += [(case_id, start, end, tool, 'prediction') for start, end in smooth(to_intervals(sorted(hits)), max_gap, min_len)]
+    return rows
+
+
+def mlp_clips(model_dir, bundle, case_id, max_gap, min_len):
+    """Instrument clips from the 29-label MLP: same +-window context and per-label thresholds as training."""
+    from train_multilabel import with_context
+    saved = joblib.load(model_dir / 'multilabel_mlp.joblib')
+    labels, thresholds = saved['labels'], np.asarray(saved['thresholds'], dtype=float)
+    if (len(thresholds) != len(labels) or not np.isfinite(thresholds).all()
+            or np.any((thresholds < 0) | (thresholds > 1))):
+        raise ValueError('invalid MLP thresholds')
+    features = np.load(bundle / 'features.npy', allow_pickle=False)
+    with open(bundle / 'manifest.csv') as f:
+        frames = np.array([int(r['frame_id']) for r in csv.DictReader(f)])
+    probabilities = np.asarray(saved['model'].predict_proba(with_context(features, saved['window'])))
+    if (probabilities.shape != (len(frames), len(labels)) or not np.isfinite(probabilities).all()
+            or np.any((probabilities < 0) | (probabilities > 1))):
+        raise ValueError('invalid model probabilities')
+    rows = []
+    for j, label in enumerate(labels):
+        group, tool = label.split(':', 1)
+        if group == 'instruments':  # verbs/targets wait for the search-label decision (DECISIONS.md)
+            hits = frames[probabilities[:, j] >= thresholds[j]]
+            rows += [(case_id, start, end, tool, 'prediction')
+                     for start, end in smooth(to_intervals(sorted(hits)), max_gap, min_len)]
     return rows
 
 

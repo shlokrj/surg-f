@@ -15,7 +15,8 @@ from databricks.sdk.service.workspace import ImportFormat, Language
 from run_databricks_features import ROOT, client, snapshot
 
 FILES = ['ml/export_evaluate_databricks.py', 'ml/export_predictions.py', 'ml/evaluate_clips.py',
-         'ml/extract_features.py', 'databricks/make_clips_csv.py']
+         'ml/extract_features.py', 'databricks/make_clips_csv.py',
+         'ml/train_multilabel.py', 'ml/train_tools.py']  # MLP export reuses with_context
 
 
 def main():

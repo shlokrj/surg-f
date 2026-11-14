@@ -34,12 +34,21 @@ def with_context(x, window):
     return np.hstack([x, ((c[hi] - c[lo]) / (hi - lo)[:, None]).astype(np.float32)])
 
 
+PROVENANCE = ['checkpoint_sha256', 'preprocessing', 'samples_sha256']
+
+
 def load(features_root, labels, cases, window):
-    names, xs, ys = label_names(labels), [], []
+    """Return features, label matrix, and the bundles' shared provenance (must match across cases)."""
+    names, xs, ys, provenance = label_names(labels), [], [], None
     for case in cases:
         path = Path(features_root) / case
-        if validate_bundle(path, require_complete=True)['case_id'] != case:
+        metadata = validate_bundle(path, require_complete=True)
+        if metadata['case_id'] != case:
             raise ValueError(f'{path}: bundle case ID differs')
+        if provenance is None:
+            provenance = {k: metadata[k] for k in PROVENANCE}
+        elif any(metadata[k] != provenance[k] for k in PROVENANCE):
+            raise ValueError(f'{case}: incompatible bundle provenance')
         frames = np.loadtxt(path / 'manifest.csv', delimiter=',', skiprows=1, usecols=1, dtype=int, ndmin=1)
         rows = labels['cases'][case]
         if list(frames) != list(range(len(rows))):
@@ -47,7 +56,7 @@ def load(features_root, labels, cases, window):
         xs.append(with_context(np.load(path / 'features.npy', allow_pickle=False), window))
         ys.append(np.array([[name.split(':', 1)[1] in r[gi] for gi, g in enumerate(labels['groups'])
                              for name in names if name.startswith(g + ':')] for r in rows], dtype=np.int8))
-    return np.concatenate(xs), np.concatenate(ys)
+    return np.concatenate(xs), np.concatenate(ys), provenance
 
 
 def f1(y, p):
@@ -90,8 +99,10 @@ def run(features_root, labels_path, split, output, final=False):
     labels = json.loads(Path(labels_path).read_text())
     names, candidates = label_names(labels), []
     for config in CONFIGS:
-        xtr, ytr = load(features_root, labels, split['train'], config['window'])
-        xva, yva = load(features_root, labels, split['validation'], config['window'])
+        xtr, ytr, provenance = load(features_root, labels, split['train'], config['window'])
+        xva, yva, val_provenance = load(features_root, labels, split['validation'], config['window'])
+        if val_provenance != provenance:
+            raise ValueError('train/validation provenance mismatch')
         model = fit(xtr, ytr, config['hidden'])
         prob = model.predict_proba(xva)
         thresholds = pick_thresholds(yva, prob)
@@ -100,14 +111,17 @@ def run(features_root, labels_path, split, output, final=False):
                            'validation_at_0.5': evaluate(yva, prob, np.full(len(names), 0.5), names),
                            'train_frames': len(xtr)})
     best = max(candidates, key=lambda c: (c['validation']['macro_f1'], -c['config']['window']))
-    report = {'model': 'mlp', 'labels': names, 'split': split, 'selected': best['config'],
+    report = {'model': 'mlp', 'labels': names, 'split': split, 'selected': best['config'], **provenance,
+              'train_cases': split['train'], 'threshold': 'per_label',
               'train_frames': best['train_frames'], 'thresholds': dict(zip(names, best['thresholds'].tolist())),
               'candidates': [{'config': c['config'], 'validation_macro_f1': c['validation']['macro_f1'],
                               'validation_macro_f1_at_0.5': c['validation_at_0.5']['macro_f1']} for c in candidates],
               'validation': best['validation'], 'final_test_used': final,
               'limitations': 'Surgery-held-out engineering baseline; thresholds tuned on validation; not clinical validation.'}
     if final:
-        xte, yte = load(features_root, labels, split['test'], best['config']['window'])
+        xte, yte, test_provenance = load(features_root, labels, split['test'], best['config']['window'])
+        if test_provenance != provenance:
+            raise ValueError('train/test provenance mismatch')
         report['test'] = evaluate(yte, best['model'].predict_proba(xte), best['thresholds'], names)
         report['test_frames'] = len(xte)
     output.mkdir(parents=True)
