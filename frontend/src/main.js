@@ -54,12 +54,12 @@ function resultCard(result, index) {
 
 function detectRequest(input) {
   const lower = input.toLowerCase();
-  const explicit = [...lower.matchAll(/\/(timestamp|quiz|chart|3d_model)\b/g)].map(match => match[1]);
+  const explicit = [...lower.matchAll(/\/(timestamp|quiz|chart|model)\b/g)].map(match => match[1]);
   const modes = [...new Set(explicit)];
   if (!modes.length) {
     if (/quiz|test me|practice question|study question/.test(lower)) modes.push('quiz');
     if (/chart|graph|distribution|how many|count|frequency|summary of tools/.test(lower)) modes.push('chart');
-    if (/3d|model|anatomy/.test(lower)) modes.push('3d_model');
+    if (/3d|model|anatomy/.test(lower)) modes.push('model');
     if (/when|timestamp|show me|find|where|used|occurred|happen/.test(lower) || !modes.length) modes.unshift('timestamp');
   }
   const label = instrumentLabels.find(item => new RegExp(`\\b${item}\\b`).test(lower));
@@ -70,7 +70,7 @@ function outputSections() {
   if (state.error) return `<div class="empty error" role="alert">${escapeHtml(state.error)}</div>`;
   if (!state.outputs.length) return '<div class="empty">Choose a feature or ask about an instrument in this video.</div>';
   return state.outputs.map(mode => {
-    if (mode === '3d_model') return '<section class="feature-card"><span class="kicker">/3d_model</span><h2>3D model unavailable</h2><p>This video has no linked 3D anatomy model. A model and a part-to-video mapping are needed before this feature can show results.</p></section>';
+    if (mode === 'model') return '<section class="feature-card"><span class="kicker">/model</span><h2>3D model unavailable</h2><p>This video has no linked 3D anatomy model. A model and a part-to-video mapping are needed before this feature can show results.</p></section>';
     if (mode === 'timestamp') return `<section class="feature-card"><span class="kicker">/timestamp</span><h2>Matching moments</h2><p>${state.results.length} annotated ${state.results.length === 1 ? 'interval' : 'intervals'} in ${escapeHtml(state.caseId)}${state.queryLabel ? ` for ${escapeHtml(state.queryLabel)}` : ''}.</p>${state.results.length ? `<div class="results">${state.results.slice(0, 80).map(resultCard).join('')}</div>${state.results.length > 80 ? '<p>Showing the first 80 moments.</p>' : ''}` : '<p>No matching annotations in this video.</p>'}</section>`;
     if (mode === 'chart') {
       const counts = instrumentLabels.map(label => ({ label, count: state.caseClips.filter(hit => hit.label === label).length }));
@@ -91,7 +91,7 @@ function dashboard() {
     <div class="video-frame"><video id="player" data-case-id="${escapeHtml(state.caseId)}" controls preload="metadata" ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video><div class="video-fallback" id="video-fallback" hidden><strong>Video unavailable</strong><span>The video for ${escapeHtml(state.caseId)} has not been downloaded or hosted yet.</span></div></div>
     ${state.localVideo ? '<p class="local-note">Local video playback only. This file has no indexed annotations.</p>' : ''}
     <div class="timeline-panel"><div class="timeline-header timeline-search-heading"><div><span class="kicker">CURRENT VIDEO</span><h2>Event timeline</h2></div>${state.localVideo ? '' : `<form id="search-form" class="inline-search"><label class="sr-only" for="query">Ask about this video</label><input id="query" name="q" placeholder="Try /timestamp clipper, /quiz, /chart…" required><button type="submit" ${state.loading ? 'disabled' : ''}>Search</button></form>`}</div>
-      ${state.localVideo ? '' : '<div class="feature-options"><button data-prompt="/timestamp clipper">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/3d_model">/3d_model</button></div>'}
+      ${state.localVideo ? '' : '<div class="feature-options"><button data-prompt="/timestamp clipper">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/model">/model</button></div>'}
       <div class="timeline-track" id="timeline" aria-label="Matches in current video"><div class="timeline-line"></div>${currentResults.map(({ result, index }) => { const left = Math.min(99, Math.max(0, Number(result.start_sec) / duration * 100)); const width = Math.max(.65, Math.min(100 - left, (Number(result.end_sec) - Number(result.start_sec)) / duration * 100)); return `<button class="timeline-event ${state.active === index ? 'selected' : ''}" data-result="${index}" style="left:${left}%;width:${width}%" title="${escapeHtml(result.label)} · ${formatTime(result.start_sec)}–${formatTime(result.end_sec)}" aria-label="${escapeHtml(result.label)} at ${formatTime(result.start_sec)}"></button>`; }).join('')}<span class="timeline-end">${state.duration ? formatTime(duration) : '—'}</span></div><div class="legend"><span><i></i> Matches in ${escapeHtml(state.caseId)}</span><span>${currentResults.length} shown</span></div></div>
     <div class="feature-results" aria-live="polite">${outputSections()}</div></section></main>`;
 }
@@ -151,7 +151,7 @@ async function runSearch(raw) {
   state.error = ''; state.results = []; state.active = null; state.quizRevealed = false;
   render();
   try {
-    if (modes.some(mode => mode !== '3d_model')) {
+    if (modes.some(mode => mode !== 'model')) {
       const needsAll = modes.includes('chart') || modes.includes('quiz') || !label;
       const clips = needsAll ? await loadCaseClips(state.caseId) : (await searchClips(label)).filter(hit => hit.case_id === state.caseId);
       state.caseClips = clips;

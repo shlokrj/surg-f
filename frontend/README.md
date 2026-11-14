@@ -17,7 +17,7 @@ Run the backend as described in [backend/README.md](../backend/README.md). `VITE
 - `/timestamp clipper` lists annotated clipper intervals for the current video. A click seeks to the interval start.
 - `/chart` counts annotated intervals by instrument for the current video. It queries the six known instrument labels through the existing API.
 - `/quiz` makes an instrument-identification study question from one real annotation in the current video. The answer links to its video moment.
-- `/3d_model` explains that a linked model is unavailable. It does not fabricate an anatomy model or video mapping.
+- `/model` explains that a linked model is unavailable. It does not fabricate an anatomy model or video mapping.
 
 Combine commands, such as `/timestamp clipper /quiz`, to stack sections. Without commands, simple keyword rules route phrases such as “when was the clipper used” to timestamps and “how many” to a chart. This is local routing, not an LLM. The backend still exposes only exact label search. Local MP4/MOV playback has no indexed annotations, so these features are unavailable for a locally opened file.
 
