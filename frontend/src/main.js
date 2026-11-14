@@ -119,7 +119,7 @@ function dashboard() {
   const currentResults = (state.timeline?.segments ?? []).map((result, index) => ({ result, index }));
   const duration = state.duration || 1800;
   return `<main class="dashboard dashboard-features"><section class="workbench"><div class="section-heading"><div><span class="kicker">VIDEO</span><h1>${escapeHtml(state.title)}</h1></div><div class="section-actions">${filterButton()}<div class="case-switch" role="group" aria-label="Demo video"><button data-case="VID01" ${state.caseId === 'VID01' ? 'aria-pressed="true"' : ''}>VID01</button><button data-case="VID02" ${state.caseId === 'VID02' ? 'aria-pressed="true"' : ''}>VID02</button></div></div></div>
-    <div class="video-frame surgical-media ${state.filterOn ? 'filtered' : ''}"><video id="player" data-case-id="${escapeHtml(state.caseId)}" controls preload="metadata" ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video><div class="video-fallback" id="video-fallback" hidden><strong>Video unavailable</strong><span>The video for ${escapeHtml(state.caseId)} has not been downloaded or hosted yet.</span></div></div>
+    <div class="video-frame surgical-media ${state.filterOn ? 'filtered' : ''}"><video id="player" data-case-id="${escapeHtml(state.caseId)}" preload="metadata" playsinline ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video><div class="video-fallback" id="video-fallback" hidden><strong>Video unavailable</strong><span>The video for ${escapeHtml(state.caseId)} has not been downloaded or hosted yet.</span></div><div class="video-controls" role="group" aria-label="Video controls"><button type="button" id="video-play" aria-label="Play video">▶</button><span id="video-time">00:00 / --:--</span><input id="video-seek" type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek video"><button type="button" id="video-mute" aria-label="Mute video">♬</button><input id="video-volume" type="range" min="0" max="1" value="1" step="0.05" aria-label="Volume"><select id="video-speed" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select><button type="button" id="video-fullscreen" aria-label="Fullscreen video">⛶</button></div></div>
     ${state.localVideo ? '<p class="local-note">Local video playback only. This file has no indexed annotations.</p>' : ''}
     <div class="timeline-panel"><div class="timeline-header"><div><span class="kicker">CURRENT VIDEO</span><h2>Event timeline</h2></div></div>
       ${state.localVideo ? '' : '<div class="feature-options"><button data-prompt="/timestamp">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/model">/model</button></div>'}
@@ -212,11 +212,37 @@ function wire() {
   document.querySelectorAll('[data-watch]').forEach(el => el.addEventListener('click', () => runSearch(`/timestamp ${el.dataset.watch}`)));
   document.querySelectorAll('[data-seek]').forEach(el => el.addEventListener('click', () => { const video = document.querySelector('#player'); if (video) video.currentTime = Number(el.dataset.seek); }));
   const video = document.querySelector('#player');
+  const playButton = document.querySelector('#video-play');
+  const seek = document.querySelector('#video-seek');
+  const time = document.querySelector('#video-time');
+  const muteButton = document.querySelector('#video-mute');
+  const volume = document.querySelector('#video-volume');
+  const speed = document.querySelector('#video-speed');
+  const updateControls = () => {
+    if (!video) return;
+    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    if (time) time.textContent = `${formatTime(video.currentTime)} / ${duration ? formatTime(duration) : '--:--'}`;
+    if (seek) { seek.max = String(duration || 100); seek.value = String(video.currentTime || 0); }
+    if (playButton) { playButton.textContent = video.paused ? '▶' : '❚❚'; playButton.setAttribute('aria-label', video.paused ? 'Play video' : 'Pause video'); }
+    if (volume) volume.value = String(video.volume);
+    if (muteButton) { muteButton.textContent = video.muted ? '♪̸' : '♬'; muteButton.setAttribute('aria-label', video.muted ? 'Unmute video' : 'Mute video'); }
+  };
+  playButton?.addEventListener('click', () => { if (video.paused) video.play().catch(() => {}); else video.pause(); });
+  seek?.addEventListener('input', () => { if (video?.readyState >= 1) video.currentTime = Number(seek.value); });
+  muteButton?.addEventListener('click', () => { video.muted = !video.muted; updateControls(); });
+  volume?.addEventListener('input', () => { video.volume = Number(volume.value); video.muted = false; updateControls(); });
+  speed?.addEventListener('change', () => { video.playbackRate = Number(speed.value); });
+  document.querySelector('#video-fullscreen')?.addEventListener('click', () => document.querySelector('.video-frame')?.requestFullscreen?.());
+  video?.addEventListener('timeupdate', updateControls);
+  video?.addEventListener('play', updateControls);
+  video?.addEventListener('pause', updateControls);
+  video?.addEventListener('volumechange', updateControls);
   video?.addEventListener('error', () => { document.querySelector('#video-fallback').hidden = false; });
   video?.addEventListener('loadedmetadata', () => {
     state.duration = video.duration;
     if (state.pendingSeek != null) { video.currentTime = state.pendingSeek; state.pendingSeek = null; }
     updateTimeline();
+    updateControls();
   });
 }
 function openFile(file) {
