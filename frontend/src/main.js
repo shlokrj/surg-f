@@ -1,6 +1,9 @@
 import './style.css';
 import { searchClips, getTimeline, getQuiz, instrumentLabels } from './api.js';
-import { videoForCase } from './cases.js';
+import { videoForCase, videoAssetForCase } from './cases.js';
+import { mountOverlays } from './overlays.js';
+let disposeOverlays = () => {};
+let boxesEnabled = false;
 
 const app = document.querySelector('#app');
 const state = {
@@ -18,6 +21,7 @@ const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({
 const logo = `<span class="wordmark" aria-label="Surg+F">Surg<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="m15.3 15.3 6 6M10 6v8M6 10h8"/></svg>F</span>`;
 
 function render() {
+  disposeOverlays();
   const previousVideo = document.querySelector('#player');
   if (previousVideo?.dataset.caseId === state.caseId && previousVideo.readyState >= 1 && state.pendingSeek == null) {
     state.pendingSeek = previousVideo.currentTime;
@@ -86,6 +90,7 @@ function dashboard() {
   const duration = state.duration || 1800;
   return `<main class="dashboard dashboard-features"><section class="workbench"><div class="section-heading"><div><span class="kicker">VIDEO</span><h1>${escapeHtml(state.title)}</h1></div><div class="case-switch" role="group" aria-label="Demo video"><button data-case="VID01" ${state.caseId === 'VID01' ? 'aria-pressed="true"' : ''}>VID01</button><button data-case="VID02" ${state.caseId === 'VID02' ? 'aria-pressed="true"' : ''}>VID02</button></div></div>
     <div class="video-frame"><video id="player" data-case-id="${escapeHtml(state.caseId)}" controls preload="metadata" ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video><div class="video-fallback" id="video-fallback" hidden><strong>Video unavailable</strong><span>The video for ${escapeHtml(state.caseId)} has not been downloaded or hosted yet.</span></div></div>
+    <div class="overlay-controls" id="overlay-controls"></div>
     ${state.localVideo ? '<p class="local-note">Local video playback only. This file has no indexed annotations.</p>' : ''}
     <div class="timeline-panel"><div class="timeline-header"><div><span class="kicker">CURRENT VIDEO</span><h2>Event timeline</h2></div></div>
       ${state.localVideo ? '' : '<div class="feature-options"><button data-prompt="/timestamp">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/model">/model</button></div>'}
@@ -149,6 +154,7 @@ function wire() {
   document.querySelectorAll('[data-watch]').forEach(el => el.addEventListener('click', () => runSearch(`/timestamp ${el.dataset.watch}`)));
   document.querySelectorAll('[data-seek]').forEach(el => el.addEventListener('click', () => { const video = document.querySelector('#player'); if (video) video.currentTime = Number(el.dataset.seek); }));
   const video = document.querySelector('#player');
+  if (video) disposeOverlays = mountOverlays({ video, host: video.parentElement, controls: document.querySelector('#overlay-controls'), caseId: state.caseId, assetId: state.localVideo ? null : videoAssetForCase(state.caseId), enabled: boxesEnabled, onToggle: value => { boxesEnabled = value; } });
   video?.addEventListener('error', () => { document.querySelector('#video-fallback').hidden = false; });
   video?.addEventListener('loadedmetadata', () => {
     state.duration = video.duration;

@@ -1,10 +1,10 @@
 # Stage 3: localized video overlays
 
-Status: **implementation started 2026-11-14 at Shlok's explicit request; owner Shlok, branch `feat/spatial-overlays`**. Aadhitya independently continues stage 2 on `ml-dev`. This adds spatial localization to the current search and tool-presence pipeline. The initial deliverable is an offline detector-to-player prototype. Verification results will be recorded as work completes; this is not a production-accuracy claim.
+Status: **experimental offline runner and player integration implemented; browser acceptance pending; started 2026-11-14 at Shlok's explicit request; owner Shlok, branch `feat/spatial-overlays`**. Aadhitya independently continues stage 2 on `ml-dev`. This adds spatial localization to the current search and tool-presence pipeline. The initial deliverable is an offline detector-to-player prototype. Verification results will be recorded as work completes; this is not a production-accuracy claim.
 
 ## Intended experience
 
-The player will offer a toggle for boxes on visible instruments and anatomical targets, with readable labels and model scores. Separate instrument/anatomy filters are a proposed refinement. Overlays should follow playback, pause and seek correctly, clear when cases change, and remain aligned in fullscreen or resized players. Missing localization data should show an unavailable state, not fabricated boxes.
+The player will offer a toggle for boxes on visible instruments and anatomical targets, with readable labels and model scores. Separate instrument/anatomy filters are implemented on the feature branch. Overlays should follow playback, pause and seek correctly, clear when cases change, and remain aligned in fullscreen or resized players. Missing localization data should show an unavailable state, not fabricated boxes.
 
 The supplied reference image shows purple instrument/anatomy boxes, labels and scores in a surgical player. Treat this as visual direction only. It depicts robotic prostatectomy with ProGrasp, monopolar scissors and neurovascular bundle labels; those names, its case identity, procedure phases and displayed scores are not our cholecystectomy taxonomy or verified outputs. No reference-image file has been added to the repository.
 
