@@ -1,6 +1,6 @@
 # ML workflow
 
-Shlok owns SurgVLP features, classifier training, and MLflow. Aadhitya owns videos and prediction export/import. See [progress](PROGRESS.md). Work on `ml-dev`; push to `main` only when Shlok requests it.
+Shlok owns SurgVLP features, classifier training, and MLflow. Aadhitya owns videos, prediction export/import, and clip-level evaluation. Shlok also owns annotation coverage analysis and the fixed surgery-level split. Start with the [assigned parallel tasks](PROGRESS.md#assigned-parallel-work-2026-11-14), which list file ownership, dependencies, and completion criteria. See [progress](PROGRESS.md). Work on `ml-dev`; push to `main` only when Shlok requests it.
 
 Full extraction and training run on **Databricks serverless CPU**. Classic GPU creation is blocked by workspace provisioning, and the serverless GPU probe did not execute. CPU is sufficient for the first two demo cases; revisit GPU for larger runs.
 
