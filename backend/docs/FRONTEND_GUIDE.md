@@ -15,6 +15,7 @@ Then open:
 - http://localhost:8000/search?q=clipper
 - http://localhost:8000/cases/VID01/timeline
 - http://localhost:8000/quiz?seed=1
+- http://localhost:8000/interpret?case_id=VID01&q=when%20was%20the%20clipper%20used
 - http://localhost:8000/docs for interactive docs. The raw schema is at `/openapi.json`.
 
 ## Environment and modes
@@ -25,6 +26,7 @@ Then open:
 | `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_TOKEN` | repo-root `.env` (git-ignored) | When all three are set, the backend uses live Databricks data |
 | `SURGF_CORS_ORIGINS` | backend environment | Optional comma-separated origins. Default `http://localhost:5173,http://127.0.0.1:5173` |
 | `SURGF_WARMUP` | backend environment | `0` turns off the startup query that wakes the SQL warehouse |
+| `DATABRICKS_GENIE_SPACE_ID` | repo-root `.env` | Optional. Turns on Genie for free-form questions in `/interpret` |
 
 **Which mode am I in?** `GET /health` returns `{"status":"ok","mode":"databricks"}` or `{"status":"ok","mode":"fixture"}`.
 
@@ -45,6 +47,7 @@ If you use the frontend's own fixture mode (`VITE_USE_FIXTURE=true`), import [fi
 | Instrument-usage chart (`/chart`) | `GET /cases/{case_id}/timeline` | `summary[]` |
 | Quiz card (`/quiz`) | `GET /quiz` (optionally `?seed=`) | `questions[]`, `reviewed` |
 | Quiz "Watch examples" button | `GET /search?q=<search_q>` | Hide the button when `search_q` is `null` |
+| Search bar submit (any typed text or slash command) | `GET /interpret?q=<text>&case_id=<id>` | `actions[]`, `message`, `suggestions` |
 | "Live data / demo data" badge | `GET /health` | `mode` |
 
 **Changes from the current frontend:**
@@ -246,6 +249,90 @@ Errors: 422 for an invalid `seed`.
 ```ts
 type HealthResponse = { status: "ok"; mode: "databricks" | "fixture" };
 ```
+
+## 5. Interpret (typed text to actions)
+
+**Purpose:** send whatever the user typed in the search bar and get back what to do. This replaces the frontend's own keyword matching.
+**Request:** `GET /interpret?q=<text>&case_id=<open video>`
+**Parameters:**
+- `q` (required, 1–300 characters): the typed text, including any slash commands. When the text contains slash commands, only those commands decide the actions.
+- `case_id` (optional): the video currently open. It is used when the text names no video.
+
+**Actions:** `actions` is a list in display order. Each has a `type`:
+
+| `type` | Do this |
+|---|---|
+| `timestamp` | If `results` is not null, show those clips. Otherwise call `request` (for example `/search?q=clipper`) and keep the clips for `case_id` |
+| `chart` | If `summary` is not null, Genie already computed it. Otherwise call `request` (for example `/cases/VID01/timeline`) |
+| `quiz` | Call `request` (`/quiz`) |
+| `model` | Open the 3D model view; `request` is null |
+
+**Reply text:** show `message` in the chat panel. When `actions` is empty, the request was not understood: show `message` and offer `suggestions`.
+
+**Speed:** `interpreter` is `rules` (answered instantly) or `genie` (Databricks Genie answered a free-form question, which takes 5 to 30 seconds, so show a loading state). Genie is only used when the backend has `DATABRICKS_GENIE_SPACE_ID` set; see [GENIE_PLAN.md](GENIE_PLAN.md). If Genie fails, the rules' answer is returned and `genie.error` is set.
+
+```powershell
+curl.exe -s "http://localhost:8000/interpret?case_id=VID01&q=%2Ftimestamp%20clipper%20%2Fquiz"
+```
+
+Response (real):
+
+```json
+{
+  "query": "/timestamp clipper /quiz",
+  "interpreter": "rules",
+  "actions": [
+    {
+      "type": "timestamp",
+      "case_id": "VID01",
+      "label": "clipper",
+      "request": "/search?q=clipper",
+      "results": null,
+      "summary": null
+    },
+    {
+      "type": "quiz",
+      "case_id": null,
+      "label": null,
+      "request": "/quiz",
+      "results": null,
+      "summary": null
+    }
+  ],
+  "message": "Showing moments with the clipper in VID01 and a five-question quiz on the operation.",
+  "suggestions": [],
+  "genie": null
+}
+```
+
+```ts
+type Action = {
+  type: "timestamp" | "chart" | "quiz" | "model";
+  case_id: string | null;         // set for timestamp and chart
+  label: string | null;           // instrument for timestamp
+  request: string | null;         // backend path to call, or null
+  results: Clip[] | null;         // clips from Genie; show instead of calling request
+  summary: LabelSummary[] | null; // totals from Genie for a chart
+};
+type GenieTrace = {
+  conversation_id: string | null;
+  sql: string | null;
+  description: string | null;
+  columns: string[];
+  rows: unknown[][];
+  error: string | null;
+};
+type InterpretResponse = {
+  query: string;
+  interpreter: "rules" | "genie";
+  actions: Action[];
+  message: string;
+  suggestions: string[];
+  genie: GenieTrace | null;
+};
+```
+
+Errors: 422 for a blank or too-long `q`, or a bad `case_id`.
 
 ## Planned stage 3: video localization
 
