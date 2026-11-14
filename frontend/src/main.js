@@ -7,7 +7,7 @@ const app = document.querySelector('#app');
 const state = {
   page: 'home', caseId: 'VID01', title: 'VID01 · Cholecystectomy', videoUrl: videoForCase('VID01'),
   localVideo: false, localUrl: null, query: '', results: [], history: [], active: null,
-  loading: false, error: '', pendingSeek: null, duration: 0, outputs: [], timeline: null, timelineError: '', quiz: null, quizAnswers: {}, quizSubmitted: false, reply: '',
+  loading: false, error: '', pendingSeek: null, duration: 0, outputs: [], timeline: null, timelineError: '', quiz: null, quizAnswers: {}, quizSubmitted: false, reply: '', chartRequest: null,
 };
 const formatTime = seconds => {
   const n = Math.floor(Number(seconds) || 0);
@@ -59,12 +59,33 @@ function detectRequest(input) {
   const modes = [...new Set(explicit)];
   if (!modes.length) {
     if (/quiz|test me|practice question|study question/.test(lower)) modes.push('quiz');
-    if (/chart|graph|distribution|how many|count|frequency|summary of tools/.test(lower)) modes.push('chart');
+    if (/chart|graph|distribution|breakdown|how many|count|frequency|summary of tools|what (?:was|is|did).*(?:doing|do)|verbs?|targets?/.test(lower)) modes.push('chart');
     if (/3d|model|anatomy/.test(lower)) modes.push('model');
     if (/when|timestamp|show me|find|where|used|occurred|happen/.test(lower) || !modes.length) modes.unshift('timestamp');
   }
   const label = instrumentLabels.find(item => new RegExp(`\\b${item}\\b`).test(lower));
   return { modes, label };
+}
+function parseChartRequest(input) {
+  const text = input.toLowerCase();
+  const instrument = instrumentLabels.find(label => new RegExp(`\\b${label}\\b`).test(text)) ?? null;
+  const explicit = text.includes('/chart');
+  const categories = [];
+  if (/instruments?|tools?/.test(text)) categories.push('instruments');
+  if (/verbs?|actions?|doing|do(es)?|performed?/.test(text)) categories.push('verbs');
+  if (/targets?|anatomy|structures?|organs?/.test(text)) categories.push('targets');
+  if (!categories.length && (explicit || /chart|graph|distribution|breakdown|how many|count|frequency/.test(text))) categories.push('instruments', 'verbs', 'targets');
+  return { categories: [...new Set(categories)], instrument };
+}
+function chartSection(category, request) {
+  if (category === 'instruments') {
+    const counts = (state.timeline?.summary ?? []).filter(item => !request.instrument || item.label === request.instrument);
+    const max = Math.max(1, ...counts.map(item => item.count));
+    return `<div class="chart-block"><h3>Instruments</h3><p>Annotated intervals by instrument in ${escapeHtml(state.caseId)}. The current dataset exposes six instrument labels.</p><div class="chart">${counts.map(item => `<div class="chart-row"><span>${escapeHtml(item.label)}</span><div class="chart-track"><div style="width:${item.count / max * 100}%"></div></div><strong>${item.count}</strong></div>`).join('')}</div></div>`;
+  }
+  const title = category === 'instruments' ? 'Instrument breakdown' : category === 'verbs' ? 'Verbs' : 'Targets';
+  const detail = request.instrument ? ` for ${escapeHtml(request.instrument)}` : '';
+  return `<div class="chart-block chart-unavailable"><h3>${title}${detail}</h3><p>No ${category === 'instruments' ? 'instrument-to-action breakdown' : category} annotations are available from the current API${detail}. This chart needs per-event instrument, verb, and target labels for the open video.</p></div>`;
 }
 function outputSections() {
   if (state.loading) return '<div class="empty">Loading annotations for this video…</div>';
@@ -74,9 +95,8 @@ function outputSections() {
     if (mode === 'model') return '<section class="feature-card"><span class="kicker">/model</span><h2>3D model unavailable</h2><p>This video has no linked 3D anatomy model. A model and a part-to-video mapping are needed before this feature can show results.</p></section>';
     if (mode === 'timestamp') return `<section class="feature-card"><span class="kicker">/timestamp</span><h2>Matching moments</h2><p>${state.results.length} matching ${state.results.length === 1 ? 'interval' : 'intervals'} in ${escapeHtml(state.caseId)}${state.queryLabel ? ` for ${escapeHtml(state.queryLabel)}` : ''}.</p>${state.results.length ? `<div class="results">${state.results.slice(0, 80).map(resultCard).join('')}</div>${state.results.length > 80 ? '<p>Showing the first 80 moments.</p>' : ''}` : '<p>No matching annotations in this video.</p>'}</section>`;
     if (mode === 'chart') {
-      const counts = state.timeline?.summary ?? [];
-      const max = Math.max(1, ...counts.map(item => item.count));
-      return `<section class="feature-card"><span class="kicker">/chart</span><h2>Instrument events in ${escapeHtml(state.caseId)}</h2><p>Dataset annotation intervals for this video; model predictions are excluded.</p><div class="chart">${counts.map(item => `<div class="chart-row"><span>${escapeHtml(item.label)}</span><div class="chart-track"><div style="width:${item.count / max * 100}%"></div></div><strong>${item.count}</strong></div>`).join('')}</div></section>`;
+      const request = state.chartRequest ?? { categories: ['instruments', 'verbs', 'targets'], instrument: null };
+      return `<section class="feature-card"><span class="kicker">/chart</span><h2>Event charts for ${escapeHtml(state.caseId)}</h2>${request.categories.map(category => chartSection(category, request)).join('')}</section>`;
     }
     return quizCard(state);
   }).join('');
@@ -103,7 +123,7 @@ function dashboard() {
 function openSample(seek = null) {
   state.page = 'dash'; state.caseId = 'VID01'; state.title = 'VID01 · Cholecystectomy';
   state.videoUrl = videoForCase('VID01'); state.localVideo = false; state.error = '';
-  state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.query = ''; state.active = null; state.duration = 0; state.pendingSeek = seek;
+  state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.chartRequest = null; state.query = ''; state.active = null; state.duration = 0; state.pendingSeek = seek;
   render();
   loadCurrentTimeline();
   if (seek != null) runSearch('/timestamp clipper');
@@ -120,7 +140,7 @@ function wire() {
     if (next === state.caseId) return;
     const query = state.query;
     state.caseId = next; state.title = `${next} · Cholecystectomy`; state.videoUrl = videoForCase(next);
-    state.duration = 0; state.pendingSeek = null; state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.query = ''; state.error = '';
+    state.duration = 0; state.pendingSeek = null; state.results = []; state.timeline = null; state.timelineError = ''; state.quiz = null; state.outputs = []; state.chartRequest = null; state.query = ''; state.error = '';
     render();
     loadCurrentTimeline();
     if (query) runSearch(query);
@@ -180,7 +200,7 @@ async function runSearch(raw) {
   if (!query || state.localVideo) return;
   const caseId = state.caseId;
   const local = detectRequest(query);
-  state.query = query; state.queryLabel = local.label; state.outputs = local.modes; state.loading = true; state.reply = '';
+  state.query = query; state.queryLabel = local.label; state.outputs = local.modes; state.chartRequest = local.modes.includes('chart') ? parseChartRequest(query) : null; state.loading = true; state.reply = '';
   state.history = [query, ...state.history.filter(item => item !== query)].slice(0, 6);
   state.error = ''; state.results = []; state.active = null; state.quizAnswers = {}; state.quizSubmitted = false;
   render();
@@ -193,12 +213,13 @@ async function runSearch(raw) {
     const modes = [...new Set(actions.map(action => action.type))];
     const stamps = actions.filter(action => action.type === 'timestamp');
     state.outputs = modes;
+    state.chartRequest = modes.includes('chart') ? parseChartRequest(query) : null;
     state.queryLabel = stamps.map(action => action.label).filter(Boolean).join(', ');
     state.reply = (plan?.message ?? '').replaceAll('**', '');
     const tasks = stamps.map(async action => action.results
       ?? (action.label ? (await searchClips(action.label)).filter(hit => hit.case_id === (action.case_id ?? caseId)) : []));
     const extra = [];
-    if (modes.includes('chart') && !state.timeline) extra.push((async () => { state.timeline = await getTimeline(caseId); })());
+    if (modes.includes('chart') && state.chartRequest?.categories.includes('instruments') && !state.timeline) extra.push((async () => { state.timeline = await getTimeline(caseId); })());
     if (modes.includes('quiz')) extra.push((async () => { state.quiz = await getQuiz(); })());
     const [found] = await Promise.all([Promise.all(tasks), ...extra]);
     if (state.caseId !== caseId) return;
