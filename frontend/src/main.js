@@ -1,12 +1,12 @@
 import './style.css';
-import { searchClips, fixtureMode } from './api.js';
+import { searchClips, loadCaseClips, instrumentLabels } from './api.js';
 import { videoForCase } from './cases.js';
 
 const app = document.querySelector('#app');
 const state = {
   page: 'home', caseId: 'VID01', title: 'VID01 · Cholecystectomy', videoUrl: videoForCase('VID01'),
   localVideo: false, localUrl: null, query: '', results: [], history: [], active: null,
-  loading: false, error: '', pendingSeek: null, duration: 0,
+  loading: false, error: '', pendingSeek: null, duration: 0, outputs: [], caseClips: [], quizRevealed: false,
 };
 const formatTime = seconds => {
   const n = Math.floor(Number(seconds) || 0);
@@ -52,46 +52,56 @@ function resultCard(result, index) {
     <span class="result-time">${formatTime(result.start_sec)}–${formatTime(result.end_sec)}</span><span class="result-arrow">↗</span></button>`;
 }
 
+function detectRequest(input) {
+  const lower = input.toLowerCase();
+  const explicit = [...lower.matchAll(/\/(timestamp|quiz|chart|3d_model)\b/g)].map(match => match[1]);
+  const modes = [...new Set(explicit)];
+  if (!modes.length) {
+    if (/quiz|test me|practice question|study question/.test(lower)) modes.push('quiz');
+    if (/chart|graph|distribution|how many|count|frequency|summary of tools/.test(lower)) modes.push('chart');
+    if (/3d|model|anatomy/.test(lower)) modes.push('3d_model');
+    if (/when|timestamp|show me|find|where|used|occurred|happen/.test(lower) || !modes.length) modes.unshift('timestamp');
+  }
+  const label = instrumentLabels.find(item => new RegExp(`\\b${item}\\b`).test(lower));
+  return { modes, label };
+}
+function outputSections() {
+  if (state.loading) return '<div class="empty">Loading annotations for this video…</div>';
+  if (state.error) return `<div class="empty error" role="alert">${escapeHtml(state.error)}</div>`;
+  if (!state.outputs.length) return '<div class="empty">Choose a feature or ask about an instrument in this video.</div>';
+  return state.outputs.map(mode => {
+    if (mode === '3d_model') return '<section class="feature-card"><span class="kicker">/3d_model</span><h2>3D model unavailable</h2><p>This video has no linked 3D anatomy model. A model and a part-to-video mapping are needed before this feature can show results.</p></section>';
+    if (mode === 'timestamp') return `<section class="feature-card"><span class="kicker">/timestamp</span><h2>Matching moments</h2><p>${state.results.length} annotated ${state.results.length === 1 ? 'interval' : 'intervals'} in ${escapeHtml(state.caseId)}${state.queryLabel ? ` for ${escapeHtml(state.queryLabel)}` : ''}.</p>${state.results.length ? `<div class="results">${state.results.slice(0, 80).map(resultCard).join('')}</div>${state.results.length > 80 ? '<p>Showing the first 80 moments.</p>' : ''}` : '<p>No matching annotations in this video.</p>'}</section>`;
+    if (mode === 'chart') {
+      const counts = instrumentLabels.map(label => ({ label, count: state.caseClips.filter(hit => hit.label === label).length }));
+      const max = Math.max(1, ...counts.map(item => item.count));
+      return `<section class="feature-card"><span class="kicker">/chart</span><h2>Instrument events in ${escapeHtml(state.caseId)}</h2><p>Counts of annotated intervals in this video. Multiple instruments can appear at the same time.</p><div class="chart">${counts.map(item => `<div class="chart-row"><span>${item.label}</span><div class="chart-track"><div style="width:${item.count / max * 100}%"></div></div><strong>${item.count}</strong></div>`).join('')}</div></section>`;
+    }
+    const clips = state.caseClips;
+    const sample = clips.find(hit => hit.label === 'clipper') ?? clips[0];
+    const choices = instrumentLabels.filter(label => clips.some(hit => hit.label === label)).slice(0, 4);
+    if (sample && !choices.includes(sample.label)) choices[0] = sample.label;
+    return `<section class="feature-card"><span class="kicker">/quiz</span><h2>Study question</h2>${sample ? `<p>Which instrument is annotated at ${formatTime(sample.start_sec)} in this video?</p><div class="quiz-choices">${choices.map(label => `<button class="quiz-choice" data-answer="${escapeHtml(label)}">${escapeHtml(label)}</button>`).join('')}</div><p id="quiz-feedback">${state.quizRevealed ? `Answer: ${escapeHtml(sample.label)}. The annotation spans ${formatTime(sample.start_sec)}–${formatTime(sample.end_sec)}.` : 'Choose an answer to reveal the annotation.'}</p><button class="quiz-jump" data-quiz-time="${sample.start_sec}">Watch this moment →</button>` : '<p>No annotations are available to create a quiz for this video.</p>'}<small>Questions are generated from tool annotations, not clinical guidance.</small></section>`;
+  }).join('');
+}
 function dashboard() {
-  const currentResults = state.results.map((result, index) => ({ result, index })).filter(({ result }) => result.case_id === state.caseId);
+  const currentResults = state.results.map((result, index) => ({ result, index }));
   const duration = state.duration || 1800;
-  return `<main class="dashboard"><section class="workbench"><div class="section-heading"><div><span class="kicker">VIDEO</span><h1>${escapeHtml(state.title)}</h1></div><span class="case-pill">${escapeHtml(state.caseId)}</span></div>
-    <div class="video-frame"><video id="player" data-case-id="${escapeHtml(state.caseId)}" controls preload="metadata" ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video>
-    <div class="video-fallback" id="video-fallback" hidden><strong>Video unavailable</strong><span>The video for ${escapeHtml(state.caseId)} has not been downloaded or hosted yet.</span></div></div>
-    ${state.localVideo ? '<p class="local-note">Local video playback only. This file has no indexed annotations, so event search is unavailable.</p>' : ''}
-    <div class="timeline-panel"><div class="timeline-header"><div><span class="kicker">CURRENT VIDEO</span><h2>Matching moments on this timeline</h2></div></div>
-      <div class="timeline-track" id="timeline" aria-label="Matches in current video"><div class="timeline-line"></div>
-      ${currentResults.map(({ result, index }) => {
-        const left = Math.min(99, Math.max(0, Number(result.start_sec) / duration * 100));
-        const width = Math.max(.65, Math.min(100 - left, (Number(result.end_sec) - Number(result.start_sec)) / duration * 100));
-        return `<button class="timeline-event ${state.active === index ? 'selected' : ''}" data-result="${index}" style="left:${left}%;width:${width}%" title="${escapeHtml(result.label)} · ${formatTime(result.start_sec)}–${formatTime(result.end_sec)}" aria-label="${escapeHtml(result.label)} at ${formatTime(result.start_sec)}"></button>`;
-      }).join('')}<span class="timeline-end">${state.duration ? formatTime(duration) : '—'}</span></div>
-      <div class="legend"><span><i></i> Search matches in ${escapeHtml(state.caseId)}</span><span>${currentResults.length} shown</span></div></div>
-    <section class="moments"><div class="moments-heading"><div><span class="kicker">ALL CASES</span><h2>Search results</h2></div><span class="count">${state.results.length}</span></div>
-      ${state.loading ? '<p class="empty">Searching annotated clips…</p>' : state.error ? `<p class="empty error" role="alert">${escapeHtml(state.error)}</p>` : state.results.length
-        ? `<div class="results">${state.results.map(resultCard).join('')}</div>`
-        : `<div class="empty"><strong>${state.query ? 'No matching moments found' : 'No search yet'}</strong><p>${state.query ? 'Try another instrument label.' : state.localVideo ? 'Search is available for indexed cases.' : 'Search an instrument label to see its timestamps.'}</p></div>`}</section></section>
-    <aside class="chat"><div class="chat-header"><span class="kicker">ANNOTATION SEARCH</span><h2>Find an instrument</h2><p>Search the labeled cases by instrument name.</p></div>
-      ${state.localVideo ? '' : `<div class="history"><div class="aside-label">RECENT SEARCHES</div>${state.history.length
-        ? state.history.map((query, index) => `<button class="history-item" data-history="${index}"><span>⌕</span>${escapeHtml(query)}<b>↗</b></button>`).join('')
-        : '<p class="history-empty">Your searches will appear here.</p>'}</div>`}
-      <div class="chat-body">${state.localVideo
-        ? '<div class="chat-intro"><strong>This video is not indexed</strong><p>You can play it here. Search results are available for the prepared cases.</p></div>'
-        : state.query
-          ? `<div class="chat-message user">${escapeHtml(state.query)}</div><div class="chat-message assistant"><span class="mini-logo">⌕</span><div>${state.loading ? 'Searching annotations…' : state.error ? escapeHtml(state.error) : state.results.length ? `${state.results.length} matching ${state.results.length === 1 ? 'interval' : 'intervals'} across ${new Set(state.results.map(r => r.case_id)).size} ${new Set(state.results.map(r => r.case_id)).size === 1 ? 'case' : 'cases'}. Select a result on the left.` : 'No matches in the available annotations.'}</div></div>`
-          : '<div class="chat-intro"><strong>Search the annotations</strong><p>Enter an instrument label to find its appearances across indexed surgeries.</p></div>'}</div>
-      ${state.localVideo ? '<div class="chat-compose"><button class="sample-btn" id="open-sample">Open indexed sample <span>→</span></button></div>'
-        : `<div class="chat-compose"><div class="suggestions"><button data-prompt="clipper">Clipper</button><button data-prompt="hook">Hook</button><button data-prompt="grasper">Grasper</button></div>
-          <form id="search-form"><label for="query" class="sr-only">Instrument label</label><input id="query" name="q" placeholder="Instrument label, e.g. clipper" autocomplete="off" required><button type="submit" aria-label="Search" ${state.loading ? 'disabled' : ''}>→</button></form>
-          <small>Exact instrument labels. This search does not answer general questions.</small></div>`}</aside></main>`;
+  return `<main class="dashboard dashboard-features"><section class="workbench"><div class="section-heading"><div><span class="kicker">VIDEO</span><h1>${escapeHtml(state.title)}</h1></div><span class="case-pill">${escapeHtml(state.caseId)}</span></div>
+    <div class="video-frame"><video id="player" data-case-id="${escapeHtml(state.caseId)}" controls preload="metadata" ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video><div class="video-fallback" id="video-fallback" hidden><strong>Video unavailable</strong><span>The video for ${escapeHtml(state.caseId)} has not been downloaded or hosted yet.</span></div></div>
+    ${state.localVideo ? '<p class="local-note">Local video playback only. This file has no indexed annotations.</p>' : ''}
+    <div class="timeline-panel"><div class="timeline-header timeline-search-heading"><div><span class="kicker">CURRENT VIDEO</span><h2>Event timeline</h2></div>${state.localVideo ? '' : `<form id="search-form" class="inline-search"><label class="sr-only" for="query">Ask about this video</label><input id="query" name="q" placeholder="Try /timestamp clipper, /quiz, /chart…" required><button type="submit" ${state.loading ? 'disabled' : ''}>Search</button></form>`}</div>
+      ${state.localVideo ? '' : '<div class="feature-options"><button data-prompt="/timestamp clipper">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/3d_model">/3d_model</button></div>'}
+      <div class="timeline-track" id="timeline" aria-label="Matches in current video"><div class="timeline-line"></div>${currentResults.map(({ result, index }) => { const left = Math.min(99, Math.max(0, Number(result.start_sec) / duration * 100)); const width = Math.max(.65, Math.min(100 - left, (Number(result.end_sec) - Number(result.start_sec)) / duration * 100)); return `<button class="timeline-event ${state.active === index ? 'selected' : ''}" data-result="${index}" style="left:${left}%;width:${width}%" title="${escapeHtml(result.label)} · ${formatTime(result.start_sec)}–${formatTime(result.end_sec)}" aria-label="${escapeHtml(result.label)} at ${formatTime(result.start_sec)}"></button>`; }).join('')}<span class="timeline-end">${state.duration ? formatTime(duration) : '—'}</span></div><div class="legend"><span><i></i> Matches in ${escapeHtml(state.caseId)}</span><span>${currentResults.length} shown</span></div></div>
+    <div class="feature-results" aria-live="polite">${outputSections()}</div></section></main>`;
 }
 
 function openSample(seek = null) {
   state.page = 'dash'; state.caseId = 'VID01'; state.title = 'VID01 · Cholecystectomy';
   state.videoUrl = videoForCase('VID01'); state.localVideo = false; state.error = '';
-  state.results = []; state.query = ''; state.active = null; state.duration = 0; state.pendingSeek = seek;
+  state.results = []; state.caseClips = []; state.outputs = []; state.query = ''; state.active = null; state.duration = 0; state.pendingSeek = seek;
   render();
-  if (seek != null) runSearch('clipper');
+  if (seek != null) runSearch('/timestamp clipper');
 }
 function wire() {
   document.querySelector('#change-video')?.addEventListener('click', () => { state.page = 'home'; state.error = ''; render(); });
@@ -111,7 +121,8 @@ function wire() {
   document.querySelector('#search-form')?.addEventListener('submit', event => { event.preventDefault(); runSearch(new FormData(event.currentTarget).get('q')); });
   document.querySelectorAll('[data-prompt]').forEach(el => el.addEventListener('click', () => runSearch(el.dataset.prompt)));
   document.querySelectorAll('[data-result]').forEach(el => el.addEventListener('click', () => selectResult(Number(el.dataset.result))));
-  document.querySelectorAll('[data-history]').forEach(el => el.addEventListener('click', () => runSearch(state.history[Number(el.dataset.history)], false)));
+  document.querySelectorAll('[data-answer]').forEach(el => el.addEventListener('click', () => { state.quizRevealed = true; const sample = state.caseClips.find(hit => hit.label === 'clipper') ?? state.caseClips[0]; document.querySelector('#quiz-feedback').textContent = `${el.dataset.answer === sample.label ? 'Correct.' : 'Not quite.'} The annotation labels ${sample.label} at ${formatTime(sample.start_sec)}–${formatTime(sample.end_sec)}.`; }));
+  document.querySelectorAll('[data-quiz-time]').forEach(el => el.addEventListener('click', () => { const video = document.querySelector('#player'); if (video) video.currentTime = Number(el.dataset.quizTime); }));
   const video = document.querySelector('#player');
   video?.addEventListener('error', () => { document.querySelector('#video-fallback').hidden = false; });
   video?.addEventListener('loadedmetadata', () => {
@@ -132,16 +143,24 @@ function openFile(file) {
   state.results = []; state.active = null; state.error = ''; state.duration = 0; state.pendingSeek = null;
   render();
 }
-async function runSearch(raw, addHistory = true) {
-  const query = String(raw ?? '').trim().toLowerCase();
+async function runSearch(raw) {
+  const query = String(raw ?? '').trim();
   if (!query || state.localVideo) return;
-  state.query = query; state.loading = true; state.error = ''; state.results = []; state.active = null;
-  if (addHistory) state.history = [query, ...state.history.filter(item => item !== query)].slice(0, 6);
+  const { modes, label } = detectRequest(query);
+  state.query = query; state.queryLabel = label; state.outputs = modes; state.loading = true;
+  state.error = ''; state.results = []; state.active = null; state.quizRevealed = false;
   render();
-  try { state.results = await searchClips(query); }
-  catch (error) { state.error = `${error.message}. Check the backend connection.`; }
+  try {
+    if (modes.some(mode => mode !== '3d_model')) {
+      const needsAll = modes.includes('chart') || modes.includes('quiz') || !label;
+      const clips = needsAll ? await loadCaseClips(state.caseId) : (await searchClips(label)).filter(hit => hit.case_id === state.caseId);
+      state.caseClips = clips;
+      state.results = label ? clips.filter(hit => hit.label === label) : clips;
+    }
+  } catch (error) { state.error = `${error.message}. Check the backend connection.`; }
   finally { state.loading = false; render(); }
 }
+
 function selectResult(index) {
   const result = state.results[index];
   if (!result) return;

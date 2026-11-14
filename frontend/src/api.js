@@ -16,3 +16,9 @@ export async function searchClips(query) {
 }
 
 export { fixtureMode, backendUrl };
+
+export const instrumentLabels = ['clipper', 'hook', 'grasper', 'irrigator', 'bipolar', 'scissors'];
+export async function loadCaseClips(caseId) {
+  const batches = await Promise.all(instrumentLabels.map(label => searchClips(label)));
+  return batches.flat().filter(hit => hit.case_id === caseId).sort((a, b) => a.start_sec - b.start_sec);
+}
