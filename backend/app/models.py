@@ -120,3 +120,81 @@ class QuizResponse(BaseModel):
     questions: list[QuizQuestion] = Field(
         description="Always 5: 3 next_step questions, then 2 which_tool questions."
     )
+
+
+# --- interpret (typed input -> actions) ---------------------------------------
+
+
+class Action(BaseModel):
+    type: Literal["timestamp", "chart", "quiz", "model"] = Field(
+        description="timestamp: list moments for one instrument. chart: instrument usage for "
+        "one video. quiz: start the general quiz. model: open the 3D model view."
+    )
+    case_id: str | None = Field(
+        default=None, description="Video the action applies to (timestamp and chart only)."
+    )
+    label: str | None = Field(
+        default=None, description="Instrument label for a timestamp action.", examples=["clipper"]
+    )
+    request: str | None = Field(
+        default=None,
+        description="Backend path that carries out the action, for example /search?q=clipper. "
+        "null when no call is needed: the data is attached, or the action is model.",
+    )
+    results: list[Clip] | None = Field(
+        default=None,
+        description="Clips already found by Genie for a timestamp action. Show these instead "
+        "of calling `request`.",
+    )
+    summary: list[LabelSummary] | None = Field(
+        default=None, description="Per-instrument totals already computed by Genie for a chart."
+    )
+
+
+class GenieTrace(BaseModel):
+    conversation_id: str | None = None
+    sql: str | None = Field(default=None, description="The SQL Genie wrote and ran.")
+    description: str | None = Field(default=None, description="Genie's summary of that SQL.")
+    columns: list[str] = Field(default_factory=list)
+    rows: list[list] = Field(default_factory=list, description="Raw result rows (max 500).")
+    error: str | None = Field(default=None, description="Set when Genie failed or timed out.")
+
+
+class InterpretResponse(BaseModel):
+    query: str = Field(description="The text that was interpreted, with spaces collapsed.")
+    interpreter: Literal["rules", "genie"] = Field(
+        description="rules: decided instantly by keyword rules. genie: answered by Databricks "
+        "Genie from the clip table."
+    )
+    actions: list[Action] = Field(
+        description="What to do, in display order. Empty when the request was not understood."
+    )
+    message: str = Field(description="One short reply to show in the chat panel.")
+    suggestions: list[str] = Field(
+        default_factory=list, description="Example inputs to offer when the request was unclear."
+    )
+    genie: GenieTrace | None = Field(
+        default=None, description="Details of the Genie call, when one was made."
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "query": "when was the clipper used?",
+                "interpreter": "rules",
+                "actions": [
+                    {
+                        "type": "timestamp",
+                        "case_id": "VID01",
+                        "label": "clipper",
+                        "request": "/search?q=clipper",
+                        "results": None,
+                        "summary": None,
+                    }
+                ],
+                "message": "Showing moments with the clipper in VID01.",
+                "suggestions": [],
+                "genie": None,
+            }
+        }
+    )
