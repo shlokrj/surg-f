@@ -33,12 +33,13 @@ This writes `frontend/public/videos/VID01.mp4` (692,593,324 bytes, 28:53) and `V
 
 ## Search features
 
-- `/timestamp clipper` lists annotated clipper intervals for the current video. A click seeks to the interval start.
-- `/chart` counts dataset annotation intervals by instrument for the current video, excluding model predictions. It queries the six known instrument labels through the existing API.
-- `/quiz` makes an instrument-identification study question from one dataset annotation in the current video, excluding model predictions. The answer links to its video moment.
-- `/model` explains that a linked model is unavailable. It does not fabricate an anatomy model or video mapping.
+- `/timestamp clipper` calls `GET /search?q=clipper`, keeps only hits for the open case, and lets users seek to a result. Annotation and prediction sources are labeled separately.
+- The event timeline calls `GET /cases/{case_id}/timeline` and shows annotation intervals in separate instrument rows.
+- `/chart` uses the timeline response's `summary` for annotation counts. It needs one timeline request rather than six searches.
+- `/quiz` calls `GET /quiz` for five operation-wide study questions. It is **not specific to the open video**. Answers are graded locally, explanations appear after selection, and “Watch examples” searches the given `search_q` in the open case. Unreviewed content is labeled.
+- `/model` explains that a linked 3D model is unavailable.
 
-Timestamp results label dataset annotations and model predictions separately. Predictions can be short and noisy, especially for VID02. The four buttons add their command to the search input without submitting it. Combine commands, such as `/timestamp clipper /quiz`, to stack sections. Without commands, simple keyword rules route phrases such as “when was the clipper used” to timestamps and “how many” to a chart. This is local routing, not an LLM. The backend still exposes only exact label search. Local MP4/MOV playback has no indexed annotations, so these features are unavailable for a locally opened file.
+The four buttons insert commands into the chat input without sending. Commands can be combined. Simple keyword rules route some phrases locally; there is no LLM interpretation yet. In frontend fixture mode, saved VID01/VID02 timeline and seed-1 quiz responses from `backend/fixtures/` are imported. A locally opened MP4/MOV has no indexed annotations.
 
 ## Check
 
