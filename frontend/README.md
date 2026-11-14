@@ -33,7 +33,7 @@ This writes `frontend/public/videos/VID01.mp4` (692,593,324 bytes, 28:53) and `V
 
 ## Content filter
 
-The home preview and dashboard player start with the surgical footage blurred for demos. The **Content filter: On/Off** button is beside “Available demo case” on the home page and above the dashboard video. Turning it off reveals the footage; selecting a new video turns it back on. The filter is a visual overlay and does not change video data or analysis.
+The home preview and dashboard player start with a light blur over the surgical footage for demos. The dashboard overlay stops above the native player controls, so play/pause, time, volume, and fullscreen remain clear and usable. The **Content filter: On/Off** button is beside “Available demo case” on the home page and above the dashboard video. Turning it off reveals the footage; selecting a new video turns it back on. The filter is a visual overlay and does not change video data or analysis.
 
 ## Search features
 
