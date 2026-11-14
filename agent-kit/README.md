@@ -7,3 +7,5 @@ Start with [AGENTS.md](AGENTS.md) for Git and collaboration rules. Use [SPEC.md]
 - [Databricks setup](DATABRICKS.md) walks through live search and the sponsor features.
 - [Evaluation and judging](EVALUATION.md) covers integration checks, metrics, and demo order.
 - [Project decisions](DECISIONS.md) records choices that affect multiple lanes.
+
+- [ML team progress](../ml/PROGRESS.md) separates Shlok's feature extraction from Aadhitya's video work.
