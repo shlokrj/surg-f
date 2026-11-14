@@ -117,3 +117,15 @@ python scripts/check_training_readiness.py --databricks --output /tmp/surgf-trai
 It downloads one bundle at a time into temporary storage, validates full-case coverage and file checksums, checks instrument labels and compatible checkpoint/preprocessing/source provenance, and reports all missing or invalid cases. It excludes the diagnostic partition and starts no compute jobs. Exit code 0 means every required bundle passed; 1 means blockers remain. The report also flags tools without both training classes, which the classifier cannot fit. Availability is a snapshot: rerun after extraction finishes.
 
 For an independent source annotation join, add `--samples path/to/samples.json`. Without it, only internal bundle integrity and recorded source provenance are checked. For already mounted/local bundles, omit `--databricks` and use `--features-root /path/to/features`. The training notebook still validates its inputs; this report does not replace those checks.
+
+## Compare models without evaluating the final test set
+
+Once training and validation bundles are available, run:
+
+```sh
+python scripts/train_databricks_tools.py --split ml/case_split.json --validation-only
+```
+
+This compares balanced and unweighted logistic regression on validation macro F1, keeps the threshold at 0.5, and saves the selected candidate model without reading final-test bundles. Ties select balanced weighting. `metrics.json` records both validation scores, per-tool metrics, package versions and bundle hashes, plus `evaluation_partition=validation` and `final_test_evaluated=false`. MLflow records the selection scores and partition. The existing artifact keys `test_cases` and `test_frames` describe the evaluated partition; in this mode they contain validation cases/frames. Read `evaluation_partition` when interpreting results.
+
+After model choices are fixed and all required bundles pass readiness, omit `--validation-only` for the final evaluation. That command repeats the same deterministic comparison and evaluates the selected setting on the final-test partition. It does not enforce a global one-run limit; do not change choices based on final-test results or repeatedly use that command for experimentation. The original two-case smoke command remains unchanged.

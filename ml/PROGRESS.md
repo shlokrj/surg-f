@@ -69,6 +69,12 @@ Added `scripts/check_training_readiness.py` on `feat/ml-training-readiness` for 
 
 `python -m unittest discover -s scripts -p 'test_*.py'` passed 16 tests, including collection of multiple blockers, provenance mismatch, inspected-case exclusion, missing labels, and a real corrupted-bundle checksum check. `git diff --check` passed. Next: the extraction owners finish publishing their assigned bundles; rerun this command, optionally with source labels, before the existing expanded-training command. No training was launched here.
 
+### Validation-only model selection (2026-11-14)
+
+Implemented on `feat/ml-selection-audit` for publication to `ml-dev` and `main`, as authorized by Shlok. `python scripts/train_databricks_tools.py --split ml/case_split.json --validation-only` saves the selected validation candidate without loading final-test cases. The default expanded command retains final evaluation, and the smoke command is unchanged. Reports retain validation bundle provenance and mark the evaluated partition; MLflow logs both weighting scores and selection details. Split validation now rejects malformed types and VID02 outside diagnostics.
+
+Verification: `python -m unittest discover -s ml -p 'test_*.py'` passed 35 tests, including actual synthetic logistic-regression training/serialization, final-test exclusion, tie-breaking, validation hashes, and existing-output rejection. Script tests and syntax checks also passed. No real training was launched: extraction remains in the other chat. Next: use validation-only mode once the training/validation bundles are ready; reserve the final-test command for the fixed model decision.
+
 ### Assigned extraction batch (2026-11-14)
 
 Shlok is processing VID04, VID05, VID06, VID08, VID10, VID12, VID13, VID14, and VID15 in this chat. `scripts/process_ml_cases.py` runs one case at a time on Databricks CPU, with a smoke gate, a pinned committed snapshot, and independent source-label validation. A local state file outside Git records run IDs and allows resuming. Failed jobs stop for review. Aadhitya's active jobs are left running.

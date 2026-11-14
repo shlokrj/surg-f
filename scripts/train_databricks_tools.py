@@ -12,7 +12,11 @@ from run_databricks_features import ROOT, client, snapshot
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--split", help="Committed split JSON path, e.g. ml/case_split.json; omit for smoke baseline")
+    parser.add_argument('--validation-only', action='store_true',
+                        help='Compare models without loading final-test cases; requires --split')
     args = parser.parse_args()
+    if args.validation_only and not args.split:
+        parser.error('--validation-only requires --split')
     w = client()
     revision, remote = snapshot(w)
     w.workspace.mkdirs(remote)
@@ -38,7 +42,8 @@ def main():
                               source=Source.WORKSPACE, base_parameters={
                                   'module_dir': '/Workspace' + remote,
                                   'experiment_path': f'/Users/{owner}/surg-f-tool-baseline',
-                                  'source_revision': revision, 'split_json': split_json}))],
+                                  'source_revision': revision, 'split_json': split_json,
+                                  'validation_only': str(args.validation_only).lower()}))],
     ).response
     print(json.dumps({'run_id': response.run_id, 'revision': revision,
                       'url': w.jobs.get_run(response.run_id).run_page_url}, indent=2))
