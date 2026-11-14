@@ -37,13 +37,17 @@ Scope: frozen SurgVLP setup, one-case-at-a-time feature extraction, annotation a
 
 **CPU dependency correction (2026-11-14):** smoke run `886657513377262` failed during library installation before model execution. Replaced manually pinned torch/torchvision packages with the listed managed ML v6 CPU base environment and ijson 3.6.0. Launcher tests now cover CPU environment selection, explicit paths/device, timeout, and rejection of missing or wrong-device smoke evidence; 10 launcher tests passed. Retry pending.
 
+**CPU smoke verified (2026-11-14):** run `918098132910738` succeeded on Databricks serverless CPU using managed ML v6. Real VID01 frames 674-689 produced `[16,768]`; model load 1.46 s, extraction 2.36 s (6.79 frames/s), assets 81.19 s, frame download 4.58 s, notebook elapsed 111.63 s. Full VID01 run `1014355595133232` is in progress with a 30-minute cap. Full-case timing and upload are not yet verified.
+
+**Classifier implementation (2026-11-14):** Shlok is implementing the CPU baseline under the approved next steps. `train_tools.py` uses per-tool logistic regression on frozen features, trains on VID01, holds out VID02, fits scaling on training rows only, excludes missing annotations, and fixes the threshold at 0.5. Tools without both training classes are marked not trained. The Databricks notebook logs params, per-tool metrics, and fitted classifier artifacts to MLflow and the Volume. Three synthetic-data tests cover surgery separation, train-only scaling, and matching provenance; 15 ML tests pass in total. Training has not run on real bundles yet.
+
 **Workflow:** pull before work, commit each feature or major change and update docs, then push only `ml-dev`. Update `main` only at Shlok's explicit request.
 
 ## Aadhitya - videos and Databricks
 
 **Status (2026-11-14):** video work owned by Aadhitya, confirmed by Shlok. Existing results below are reported in project progress, not rerun in this session. Branch: `ml-dev`.
 
-Scope: playable demo videos and existing Databricks ingestion work. The training notebook and MLflow work remain proposed for Aadhitya until he confirms.
+Scope: playable demo videos, Databricks ingestion, and exporting classifier predictions into the search table. Shlok built training and MLflow (`train_tools.py`), so Aadhitya takes the next step after it (2026-11-14).
 
 - [x] Import 3,620 annotation clips across 50 cases; reported rerun inserted zero duplicates.
 - [x] Build VID01 with `python3 ml/make_case_video.py samples.json VID01 out_dir/`.
@@ -55,7 +59,9 @@ Scope: playable demo videos and existing Databricks ingestion work. The training
 - [x] Add `scripts/gpu_run.py` (2026-11-14) to start, list, and stop extraction runs on serverless compute. Each run has a hard timeout (default 30 min) and bills only while active. It reuses `run_databricks_features.py` deploy/snapshot unchanged. Verified: `start --case-id VID01 --cpu --timeout-min 5` launched run 409734303669408, `list` showed it, `stop` cancelled it, and `list` no longer showed it. Needs `pip install databricks-sdk python-dotenv`.
 - [x] Test serverless compute (2026-11-14). Serverless GPU (`GPU_1xA10`) stayed `PENDING` for 13.5 min with no GPU assigned, then was cancelled. Serverless CPU starts in under 1 min. Details are in agent-kit/PROGRESS.md, open question 4.
 - [x] Host the 25 fps VID01 for the frontend (2026-11-14) at `/Volumes/workspace/default/surgf/videos/VID01.mp4`. `python scripts/fetch_videos.py VID01` puts it in `frontend/public/videos/` (md5 matches, git-ignored). VID02 is built locally but not uploaded yet.
-- [ ] Confirm ownership of the Databricks classifier notebook and MLflow runs.
+- [x] Ownership settled (2026-11-14): Shlok owns training and MLflow; Aadhitya owns prediction export and import.
+- [x] Add `ml/export_predictions.py` (2026-11-14). It loads `tool_classifiers.joblib` and `metrics.json` from `train_tools.py` and a complete bundle (checked with `validate_bundle`). It thresholds each frame at the saved threshold, merges consecutive positive frames with `to_intervals()`, and writes `case_id,start_sec,end_sec,label,source=prediction` rows. It refuses cases listed in `train_cases`. Verified: `python -m unittest discover -s ml -p 'test_*.py'` ran 17 tests, all OK, including 2 new ones (frames 10–12 and 20 become `10–13` and `20–21`; a training case is rejected). It has not run on real bundles yet: the Volume had no `features/` directory when checked, and VID01 full run `1014355595133232` was in progress.
+- [ ] Once the model is trained on VID01 and tested on VID02: run `python ml/export_predictions.py MODEL_DIR /Volumes/.../features/VID02 pred.csv`, load it into `surgf_clip_staging`, run `import_clips.sql`, then record the row counts and a sample `/search` result with `source = prediction`.
 
 **Blocker / next handoff:** 25 fps `VID01.mp4` and `VID02.mp4` exist on Aadhitya's machine and are not hosted. Frontend needs an accessible video; training needs Shlok's validated features.
 

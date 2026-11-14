@@ -119,3 +119,15 @@ Live workspace checks on 2026-11-14 found:
 For serverless CPU, select the managed ML base environment, add ijson, explicitly choose CPU, use a writable temporary directory, and resolve workspace modules by absolute path. Aadhitya's `scripts/gpu_run.py start --case-id VID01 --cpu` now supplies the serverless launcher. The notebook still needs these changes before extraction will work; do not launch a full case before a timed smoke run passes. Keep full extraction and feature storage on Databricks. Train the small classifier on cached features using CPU.
 
 This recommendation prioritizes getting the demo working. Extraction throughput and total cost on Databricks have not yet been measured. See [serverless environment configuration](https://docs.databricks.com/aws/en/compute/serverless/dependencies) and [AI Runtime overview](https://docs.databricks.com/aws/en/machine-learning/ai-runtime/overview).
+
+## CPU classifier baseline
+
+After both complete feature bundles are validated, run:
+
+```sh
+python scripts/train_databricks_tools.py
+```
+
+This submits a 20-minute-capped Databricks serverless CPU job using ML v6. It trains per-tool logistic regressions on VID01 and evaluates on VID02 with a fixed 0.5 threshold. Scaling is fitted only on training frames. Missing annotations are excluded; a tool without both training classes is not trained. Parameters, metrics, and fitted pipelines are saved in MLflow, with a checksum-verified copy under `/Volumes/workspace/default/surgf/models/tool-presence/<mlflow-run-id>/`.
+
+This is a two-case engineering baseline. It is not a reliable estimate of performance across surgeries, and test results are not used for threshold selection. It does not insert predictions into the live search table.
