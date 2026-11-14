@@ -23,6 +23,17 @@ Shlok requested this split for both teammates to start while existing tests and 
 
 **Documentation verification:** this assignment update changes Markdown only. `git diff --check` and a relative Markdown link-target check across all four updated documents passed on branch `docs/ml-task-split`; publication target is `main`. No new ML test, training, extraction, or import result is claimed here.
 
+## Reporting and error-review assignments (2026-11-14)
+
+Shlok requested this follow-on split while extraction continues. It does not reassign active extraction cases; follow the latest extraction handoffs below.
+
+| Owner | Task / files | Completion and handoff |
+|---|---|---|
+| Shlok | Per-surgery model reports and training-only reference baselines in `ml/train_tools.py`, `ml/train_tools_databricks.py`, and `ml/test_model_reporting.py`. | Implemented and locally verified below. Each candidate reports tool support, confusion counts, precision/recall/F1/AP per surgery; save a readable `comparison.md` and detailed `metrics.json` with both validation candidates. Reference baselines must use training labels only. No changes to the selection criterion or final-test membership. |
+| Aadhitya | Validation error-review export in new `ml/review_prediction_errors.py` and `ml/test_prediction_errors.py`, alongside existing prediction export/evaluation. | Start with synthetic predictions. Produce a bounded CSV of false-positive/false-negative timestamps with case ID, tool, frame/second, expected label, probability, threshold, error type and model run ID. Exclude unknown labels; verify 1 fps timestamp mapping, threshold boundaries, deterministic sampling, and no duplicate review rows. Use validation cases for model review, VID02 only for diagnostics, and exclude final-test cases from iterative review. Keep this separate from the search-table CSV and coordinate any artifact-format change with Shlok. |
+
+**Handoff:** Shlok supplies the selected model run and report when validation training runs. Aadhitya can implement and test the review-file format now, then generate a real review file and record which examples were visually inspected once predictions and videos are available. Do not claim synthetic tests establish model performance. Each owner records their own verification and preserves the other's progress.
+
 ## Shlok - features, classifier training, and MLflow
 
 **Status (2026-11-14, `ml-dev`):** Databricks serverless CPU works. VID01 and VID02 are complete and independently verified. The CPU classifier trained successfully and its model and metrics are saved in MLflow and the shared Volume.
@@ -81,11 +92,24 @@ Verification: `python -m unittest discover -s ml -p 'test_*.py'` passed 35 tests
 
 Added `--validation-only` to the readiness command; `python -m unittest discover -s scripts -p 'test_*.py'` passed 17 tests, including final-test exclusion; `git diff --check` passed. Published to `ml-dev` and `main` with user authorization. No model comparison was launched because its required inputs are incomplete. Next handoff: Shlok's extraction chat checks/resumes its assigned missing cases; then rerun validation readiness and launch `python scripts/train_databricks_tools.py --split ml/case_split.json --validation-only`. Preserve the fixed split and existing runs.
 
+### Per-surgery reporting and reference baselines (2026-11-14)
+
+Implemented on `feat/ml-surgery-report` for publication to `ml-dev` and `main`. `fit_baseline` now records per-surgery known-frame support, confusion counts, precision/recall/F1/AP and two reference baselines (always absent and constant training prevalence). Unknown annotations remain excluded before slicing cases. Untrained tools retain null model metrics and available baseline metrics. `fit_selected` keeps each weighting candidate's validation report and generates `comparison.md`; the notebook logs it to MLflow and copies it into the model Volume directory. The joblib format, 0.5 threshold, validation macro-F1 selection and case split are unchanged.
+
+Verification: `python -m unittest discover -s ml -p 'test_*.py'` passed 39 tests; `python -m unittest discover -s scripts -p 'test_*.py'` passed 17. Tests check hand-calculated confusion counts/AP, training-only prevalence, single-class labels, two-surgery reporting with actual synthetic logistic regression, unsupported tools and Markdown output. `git diff --check` and Python compilation passed. Real-data reporting awaits a new training run; no remote job was submitted here. Next: Shlok uses the existing validation-only command when inputs are ready; Aadhitya implements the assigned timestamp review export above.
+
 ### Assigned extraction batch (2026-11-14)
 
 Shlok is processing VID04, VID05, VID06, VID08, VID10, VID12, VID13, VID14, and VID15 in this chat. `scripts/process_ml_cases.py` runs one case at a time on Databricks CPU, with a smoke gate, a pinned committed snapshot, and independent source-label validation. A local state file outside Git records run IDs and allows resuming. Failed jobs stop for review. Aadhitya's active jobs are left running.
 
 **Extraction recovery (2026-11-14):** pulled the Hugging Face 429/5xx retry fix. VID04 smoke `196154580792121` succeeded and full run `532427394711055` remains active on its original snapshot. The local batch controller was restarted without cancelling the remote run. `process_ml_cases.py --refresh-pending` now preserves each started case's revision while moving unstarted cases to current committed code, so VID05 onward receives the downloader fix. It checks existing bundles and active runs before new submissions. All 11 script tests passed, including preservation of the active case's smoke/full snapshot. This chat handles assigned extraction only; coverage and model selection belong to the other chat.
+
+**Live extraction checkpoint:** VID04 and VID05 have passed full independent Volume validation against source labels. VID06 full run `1045908906110666` is active. Remaining cases use the latest committed asset and frame retry fixes; no coverage or model-selection work is being done in this chat.
+
+| Case | Full run | Frames | Extraction seconds |
+|---|---|---|---|
+| VID04 | `532427394711055` | 1523 | 232.69 |
+| VID05 | `510839580767177` | 2345 | 352.48 |
 
 ## Aadhitya - videos and Databricks
 
@@ -114,6 +138,8 @@ Scope: playable demo videos, Databricks ingestion, and exporting classifier pred
   - **Search impact:** 1-second prediction fragments now appear in `/search` next to annotations, for example 83 clipper predictions. Frontend/backend may want to filter or label `source=prediction` until smoothing lands.
 - [x] Host the 25 fps VID02 for the frontend (2026-11-14; assigned task 3). Uploaded `~/madhacks2026/data/videos_25fps/VID02.mp4` to `/Volumes/workspace/default/surgf/videos/VID02.mp4` with no overwrite. Volume size 1,140,221,247 bytes matches the local file. `python scripts/fetch_videos.py VID02` downloaded it into `frontend/public/videos/VID02.mp4` (git-ignored) with md5 `7b7b2beaf4c7b93e31f7e9d4f6159b78`, identical to the source. The file is 854x480, 25 fps, 47:19.04. Playback check: CholecT50 frame 1000 matches video time 1000.08 s at 51.1 dB PSNR, against 17.3 dB at 999.9 s and 14.5 dB at 1000.5 s. This is the same constant +0.08 s offset recorded earlier, so clip `start_sec` values seek correctly.
 - [ ] Extraction batch status (2026-11-14 snapshot): `python scripts/check_training_readiness.py --databricks` reported **10/19** required bundles ready. Of Aadhitya's split cases, only VID27 and VID31 are still missing. VID27 full run `429498081916540` and VID31 smoke run `581397573944072` are RUNNING, and the local `process_ml_cases.py` controllers (state files `data/state/aadhi-a.json` and `aadhi-b.json`) are alive to launch the next steps. Shlok's VID06, 08, 10, 12, 13, 14, and 15 are still missing.
+
+- [x] Frontend docs updated (2026-11-14): [frontend/README.md](../frontend/README.md#videos-and-data-from-dataml-2026-11-14), the agent-kit/HANDOFFS.md frontend handoff, and the Frontend progress row. A live SQL warehouse query on `surgf_clips` returned annotation 3620 rows / 50 cases, prediction 945 / 1 case (VID02), and fixture 1. For `clipper`, 11 of 154 annotation rows are in VID01/VID02, which are the only cases with video. The first VID02 clipper annotation is 1255–1268 s.
 
 **Current handoff:** VID01 and VID02 are hosted. **Frontend (Mihir):** run `python scripts/fetch_videos.py VID01 VID02` from the repo root with `.env`. **Frontend/backend:** `/search` currently returns 1-second `source=prediction` fragments from the unsmoothed baseline. Label or filter `source=prediction` until smoothing lands. For any new training run, run `scripts/export_databricks_clips.py` with its MLflow run ID on validation cases to compare event metrics in MLflow.
 
