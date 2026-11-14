@@ -37,6 +37,7 @@ Scope: playable demo videos and existing Databricks ingestion work. The training
 - [x] Build VID01 with `python3 ml/make_case_video.py samples.json VID01 out_dir/`.
 - [x] Verify VID01 frame/time alignment; project progress reports frame 680 matched the source at 46 dB PSNR.
 - [x] Add `ml/download_case.py` (2026-11-14, `ml-dev`). It downloads full-resolution 854x480 frames for a whole case, or for one clip with `python3 ml/download_case.py samples.json VID02 out_dir/ 674 690` (end exclusive). Verified: that clip gave 16 PNGs, `000674` through `000689`. An unknown case (`VID99`) exits with an error. `make_case_video.py` now reuses it, and rebuilding VID01 gave an identical md5 (`836b8d8b…`).
+- [x] Check smooth-video source (2026-11-14). Cholec80 25 fps videos download directly with no request form. Single videos can be pulled from the 74.9 GB zip using range requests. `RemoteZip(url).infolist()` listed 324 entries, including `videos/video01.mp4` at 692.7 MB. Covers VID01–VID80 only. Details are in agent-kit/PROGRESS.md, open question 2.
 - [ ] Build another demo case, such as VID02.
 - [ ] Agree with frontend on video hosting and hand over playable URLs.
 - [ ] Confirm ownership of the Databricks classifier notebook and MLflow runs.
