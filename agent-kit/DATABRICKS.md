@@ -18,6 +18,6 @@
 | SurgVLP feature bundles | `/Volumes/workspace/default/surgf/features/<case_id>/` | Team |
 | Classifier runs and model | MLflow in the team workspace | Team |
 | Prediction clips | Same `surgf_clips` table, `source = prediction` | Team |
-| Playable `.mp4` per case | 25 fps from Cholec80 via `ml/download_cholec80_video.py` (VID01–VID80), otherwise 1 fps via `ml/make_case_video.py`. Hosting not decided: wherever the frontend player can load it, never Git | Open |
+| Playable `.mp4` per case | Built at 25 fps from Cholec80 with `ml/download_cholec80_video.py` (VID01–VID80), otherwise at 1 fps with `ml/make_case_video.py`. Shared copies live in `/Volumes/workspace/default/surgf/videos/<case_id>.mp4` (VID01 so far). Pull them into `frontend/public/videos/` with `python scripts/fetch_videos.py VID01`. Never commit them to Git | Team |
 | Code and docs | GitHub | Team |
 | Credentials | Repo-root `.env`, git-ignored | Never shared in Git |
