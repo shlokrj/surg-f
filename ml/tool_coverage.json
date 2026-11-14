@@ -601,5 +601,216 @@
         "scissors": 28
       }
     }
+  },
+  "summary": {
+    "case_count": 50,
+    "known_frames": 100863,
+    "unknown_frames": 0,
+    "positive_frames": {
+      "bipolar": 6666,
+      "clipper": 3429,
+      "grasper": 69041,
+      "hook": 52766,
+      "irrigator": 4957,
+      "scissors": 2134
+    },
+    "negative_frames": {
+      "bipolar": 94197,
+      "clipper": 97434,
+      "grasper": 31822,
+      "hook": 48097,
+      "irrigator": 95906,
+      "scissors": 98729
+    },
+    "cases_with_positive_frames": {
+      "bipolar": 47,
+      "clipper": 50,
+      "grasper": 50,
+      "hook": 50,
+      "irrigator": 36,
+      "scissors": 50
+    }
+  },
+  "counting_policy": "Count observed samples only; null or absent instruments are unknown. An empty classifications list is a known negative. Repeated labels count once per frame. Absent frame IDs are not inferred as negative.",
+  "split": {
+    "name": "expanded-v1",
+    "groups": {
+      "train": {
+        "case_ids": [
+          "VID01",
+          "VID04",
+          "VID05",
+          "VID06",
+          "VID08",
+          "VID10",
+          "VID12",
+          "VID13",
+          "VID14",
+          "VID18",
+          "VID22",
+          "VID23"
+        ],
+        "case_count": 12,
+        "known_frames": 19920,
+        "unknown_frames": 0,
+        "positive_frames": {
+          "bipolar": 1440,
+          "clipper": 796,
+          "grasper": 14067,
+          "hook": 10312,
+          "irrigator": 1076,
+          "scissors": 427
+        },
+        "negative_frames": {
+          "bipolar": 18480,
+          "clipper": 19124,
+          "grasper": 5853,
+          "hook": 9608,
+          "irrigator": 18844,
+          "scissors": 19493
+        },
+        "cases_with_positive_frames": {
+          "bipolar": 12,
+          "clipper": 12,
+          "grasper": 12,
+          "hook": 12,
+          "irrigator": 9,
+          "scissors": 12
+        }
+      },
+      "validation": {
+        "case_ids": [
+          "VID15",
+          "VID25",
+          "VID26"
+        ],
+        "case_count": 3,
+        "known_frames": 5963,
+        "unknown_frames": 0,
+        "positive_frames": {
+          "bipolar": 399,
+          "clipper": 141,
+          "grasper": 4038,
+          "hook": 3201,
+          "irrigator": 371,
+          "scissors": 108
+        },
+        "negative_frames": {
+          "bipolar": 5564,
+          "clipper": 5822,
+          "grasper": 1925,
+          "hook": 2762,
+          "irrigator": 5592,
+          "scissors": 5855
+        },
+        "cases_with_positive_frames": {
+          "bipolar": 3,
+          "clipper": 3,
+          "grasper": 3,
+          "hook": 3,
+          "irrigator": 3,
+          "scissors": 3
+        }
+      },
+      "test": {
+        "case_ids": [
+          "VID27",
+          "VID29",
+          "VID31",
+          "VID32"
+        ],
+        "case_count": 4,
+        "known_frames": 10499,
+        "unknown_frames": 0,
+        "positive_frames": {
+          "bipolar": 621,
+          "clipper": 418,
+          "grasper": 8460,
+          "hook": 5736,
+          "irrigator": 899,
+          "scissors": 168
+        },
+        "negative_frames": {
+          "bipolar": 9878,
+          "clipper": 10081,
+          "grasper": 2039,
+          "hook": 4763,
+          "irrigator": 9600,
+          "scissors": 10331
+        },
+        "cases_with_positive_frames": {
+          "bipolar": 4,
+          "clipper": 4,
+          "grasper": 4,
+          "hook": 4,
+          "irrigator": 3,
+          "scissors": 4
+        }
+      },
+      "diagnostic": {
+        "case_ids": [
+          "VID02"
+        ],
+        "case_count": 1,
+        "known_frames": 2840,
+        "unknown_frames": 0,
+        "positive_frames": {
+          "bipolar": 148,
+          "clipper": 67,
+          "grasper": 1638,
+          "hook": 1536,
+          "irrigator": 191,
+          "scissors": 242
+        },
+        "negative_frames": {
+          "bipolar": 2692,
+          "clipper": 2773,
+          "grasper": 1202,
+          "hook": 1304,
+          "irrigator": 2649,
+          "scissors": 2598
+        },
+        "cases_with_positive_frames": {
+          "bipolar": 1,
+          "clipper": 1,
+          "grasper": 1,
+          "hook": 1,
+          "irrigator": 1,
+          "scissors": 1
+        }
+      }
+    },
+    "unassigned_cases": [
+      "VID103",
+      "VID110",
+      "VID111",
+      "VID35",
+      "VID36",
+      "VID40",
+      "VID42",
+      "VID43",
+      "VID47",
+      "VID48",
+      "VID49",
+      "VID50",
+      "VID51",
+      "VID52",
+      "VID56",
+      "VID57",
+      "VID60",
+      "VID62",
+      "VID65",
+      "VID66",
+      "VID68",
+      "VID70",
+      "VID73",
+      "VID74",
+      "VID75",
+      "VID78",
+      "VID79",
+      "VID80",
+      "VID92",
+      "VID96"
+    ]
   }
 }

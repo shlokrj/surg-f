@@ -92,3 +92,16 @@ python -m unittest discover -s scripts -p 'test_*.py' -v
 ```
 
 References: [shared contract](../agent-kit/CONTRACTS.md), [serverless environments](https://docs.databricks.com/aws/en/compute/serverless/dependencies), [SDK authentication](https://docs.databricks.com/aws/en/dev-tools/sdk-python).
+
+## Audit annotation coverage
+
+Run without downloading frames or starting Databricks jobs:
+
+```sh
+python ml/audit_tool_coverage.py --samples ~/madhacks2026/data/cholect50/samples.json \
+  --split ml/case_split.json --output ml/tool_coverage.json
+```
+
+The saved report includes source SHA-256, per-case counts, dataset totals, and counts for each split. Positive coverage is reported both as frames and surgeries. Missing/null instruments are unknown; an empty classifications list is a known negative. Counts cover observed samples only and do not infer labels for absent frame IDs. Duplicate frames, invalid labels, empty input, overlapping splits and unavailable cases fail validation. This project reserves the previously inspected VID02 for diagnostics.
+
+The fixed split has 12 training, 3 validation, 4 final-test surgeries and diagnostic VID02. Keep membership unchanged during model comparisons. Coverage establishes label availability, not independent-frame sample size or model quality. Use validation for model selection; the other training workstream owns execution.

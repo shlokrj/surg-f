@@ -57,6 +57,12 @@ Coverage audit: `python ml/audit_tool_coverage.py --samples ~/madhacks2026/data/
 
 `python scripts/train_databricks_tools.py --split ml/case_split.json` compares balanced and unweighted logistic regression using validation macro F1 only, then runs the selected setting on the final test set once. Threshold stays 0.5 and the exported model format is unchanged. Omit `--split` to reproduce the two-case smoke baseline. Training waits for complete compatible bundles. Tests cover split overlap/duplicates and verify final test cases are not used for weight selection. All 19 ML tests passed; Python compilation passed. Expanded training has not run yet.
 
+### Coverage audit handoff (2026-11-14)
+
+Completed in isolated branch `feat/ml-coverage-audit`, published to `ml-dev`, building on the other chat's `9c53eba` setup. The existing `ml/case_split.json` membership is preserved. `python ml/audit_tool_coverage.py --samples ~/madhacks2026/data/cholect50/samples.json --split ml/case_split.json --output ml/tool_coverage.json` passed across 50 cases and 100,863 observed annotated frames. An independent source recount matched every case/tool count and source checksum. There are zero unknown annotations among observed samples; this does not establish coverage for absent frames. Added dataset/split totals, known-negative counts, and number of surgeries with each tool.
+
+`python -m unittest discover -s ml -p 'test_*.py'` passed 22 tests, including missing-versus-negative labels, duplicate/malformed samples and split validation. `git diff --check` passed. No extraction, training, or import was launched here. Next: Aadhitya can use the saved coverage report and fixed split for evaluation; Shlok's other chat continues extraction/training. No coverage blocker remains.
+
 ### Assigned extraction batch (2026-11-14)
 
 Shlok is processing VID04, VID05, VID06, VID08, VID10, VID12, VID13, VID14, and VID15 in this chat. `scripts/process_ml_cases.py` runs one case at a time on Databricks CPU, with a smoke gate, a pinned committed snapshot, and independent source-label validation. A local state file outside Git records run IDs and allows resuming. Failed jobs stop for review. Aadhitya's active jobs are left running.
