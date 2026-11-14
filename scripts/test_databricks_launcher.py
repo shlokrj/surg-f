@@ -8,7 +8,8 @@ class SmokeGateTests(unittest.TestCase):
         self.task = RunTask(task_key='extract', existing_cluster_id='gpu',
                             state=RunState(result_state=RunResultState.SUCCESS),
                             notebook_task=NotebookTask(notebook_path='/snapshot/extract_databricks',
-                                base_parameters={'case_id': 'VID01', 'full_case': 'false'}))
+                                base_parameters={'case_id': 'VID01', 'full_case': 'false',
+                                                 'device': 'cuda', 'module_dir': '/Workspace/snapshot'}))
 
     def check(self):
         validate_smoke(Run(tasks=[self.task]), 'gpu', '/snapshot', 'VID01')

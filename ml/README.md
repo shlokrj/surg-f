@@ -1,5 +1,20 @@
 # SurgVLP feature extraction
 
+## Current Databricks serverless CPU workflow
+
+From the repo root, activate `~/madhacks2026/.venv-surgf`. The launcher deploys committed code and installs pinned CPU packages in Databricks. Run each case separately:
+
+```sh
+python scripts/gpu_run.py start --case-id VID01 --cpu --timeout-min 15
+python scripts/run_databricks_features.py status RUN_ID
+python scripts/gpu_run.py start --case-id VID01 --cpu --full-case --smoke-run-id RUN_ID --timeout-min 30
+```
+
+Keep the Git revision unchanged between a case's smoke and full runs. Repeat with VID02 after VID01 upload validation passes. Full runs require a successful smoke on the same case, device, and source revision. The notebook returns JSON with model loading, extraction, download, and overall timing plus the verified Volume destination. CPU uses batches of four frames. No full extraction runs locally.
+
+The sections below include prior setup and investigation details. The serverless path above supersedes the classic GPU instructions for the current demo.
+
+
 Shlok owns this pipeline; Aadhitya owns videos. See [progress](PROGRESS.md) for evidence and blockers. Commit and push to `ml-dev`; update `main` only when Shlok requests it.
 
 ## Databricks GPU run

@@ -5,7 +5,7 @@ by --timeout-min (default 30) so a forgotten run stops itself.
 Reuses run_databricks_features.py to upload the committed ml/ snapshot first.
 
   python scripts/gpu_run.py start --case-id VID01               # 16-frame smoke run
-  python scripts/gpu_run.py start --case-id VID01 --full-case   # whole case, publishes to the Volume
+  python scripts/gpu_run.py start --case-id VID01 --full-case --smoke-run-id ID   # whole case, publishes to the Volume
   python scripts/gpu_run.py start --case-id VID01 --cpu         # serverless CPU instead of GPU
   python scripts/gpu_run.py list                                # active runs, with IDs and URLs
   python scripts/gpu_run.py stop RUN_ID                         # cancel a run now
@@ -19,22 +19,43 @@ from databricks.sdk.service.jobs import Compute, JobEnvironment, NotebookTask, S
 from run_databricks_features import client, deploy, snapshot
 
 
-def start(case_id, full_case, timeout_min, cpu):
+def start(case_id, full_case, timeout_min, cpu, smoke_run_id=None):
     if not re.fullmatch(r'VID\d+', case_id):
         raise SystemExit('case-id must look like VID01')
+    if not 1 <= timeout_min <= 60:
+        raise SystemExit('timeout-min must be between 1 and 60')
     w = client()
     revision, remote = snapshot(w)
+    if full_case:
+        if not smoke_run_id:
+            raise SystemExit('full-case requires a successful --smoke-run-id for this case and revision')
+        smoke = w.jobs.get_run(smoke_run_id)
+        task = next((t for t in smoke.tasks or [] if t.task_key == 'extract'), None)
+        expected = {'case_id': case_id, 'full_case': 'false', 'device': 'cpu' if cpu else 'cuda',
+                    'module_dir': '/Workspace' + remote}
+        if (not task or not task.state or not task.state.result_state
+                or task.state.result_state.value != 'SUCCESS' or not task.notebook_task
+                or task.notebook_task.notebook_path != remote + '/extract_databricks'
+                or task.notebook_task.base_parameters != expected):
+            raise SystemExit('smoke must succeed on the same case, device, and revision')
     deploy(w, revision, remote)
     run = w.jobs.submit(
         run_name=f'surg-f-{case_id}-{"full" if full_case else "smoke"}-{"cpu" if cpu else "gpu"}-{revision[:7]}',
         timeout_seconds=timeout_min * 60,
-        environments=[JobEnvironment(environment_key='gpu', spec=Environment(environment_version='4'))],
-        tasks=[SubmitTask(task_key='extract', environment_key='gpu',
+        environments=[JobEnvironment(environment_key='extraction', spec=Environment(
+            environment_version='4', dependencies=[
+                '--extra-index-url https://download.pytorch.org/whl/cpu' if cpu else '--extra-index-url https://download.pytorch.org/whl/cu124',
+                'torch==2.6.0+cpu' if cpu else 'torch==2.6.0',
+                'torchvision==0.21.0+cpu' if cpu else 'torchvision==0.21.0',
+                'numpy==1.26.4', 'Pillow==11.3.0', 'ijson==3.6.0']))],
+        tasks=[SubmitTask(task_key='extract', environment_key='extraction',
                           compute=None if cpu else Compute(hardware_accelerator=HardwareAcceleratorType.GPU_1X_A10),
                           notebook_task=NotebookTask(notebook_path=remote + '/extract_databricks',
                                                      source=Source.WORKSPACE,
                                                      base_parameters={'case_id': case_id,
-                                                                      'full_case': str(full_case).lower()}),
+                                                                      'full_case': str(full_case).lower(),
+                                                                      'device': 'cpu' if cpu else 'cuda',
+                                                                      'module_dir': '/Workspace' + remote}),
                           max_retries=0)],
     ).response
     print(f'started run {run.run_id} (auto-stops after {timeout_min} min)')
@@ -60,13 +81,14 @@ def main():
     s = sub.add_parser('start')
     s.add_argument('--case-id', default='VID01')
     s.add_argument('--full-case', action='store_true')
+    s.add_argument('--smoke-run-id', type=int)
     s.add_argument('--timeout-min', type=int, default=30)
     s.add_argument('--cpu', action='store_true', help='serverless CPU instead of GPU')
     sub.add_parser('list')
     sub.add_parser('stop').add_argument('run_id', type=int)
     a = p.parse_args()
     if a.action == 'start':
-        start(a.case_id, a.full_case, a.timeout_min, a.cpu)
+        start(a.case_id, a.full_case, a.timeout_min, a.cpu, a.smoke_run_id)
     elif a.action == 'list':
         list_active()
     else:
