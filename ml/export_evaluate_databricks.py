@@ -34,6 +34,7 @@ mlflow.set_experiment(experiment_path)
 bundle = Path('/Volumes/workspace/default/surgf/features') / case_id
 model_dir = Path(mlflow.artifacts.download_artifacts(run_id=model_run_id, artifact_path='baseline'))
 model_report = json.loads((model_dir / 'metrics.json').read_text())
+bundle_metadata = json.loads((bundle / 'metadata.json').read_text())
 
 out_dir = Path('/Volumes/workspace/default/surgf/predictions') / model_run_id
 def destination_for(max_gap, min_len):  # unsmoothed keeps the original <CASE>.csv name
@@ -55,7 +56,10 @@ for max_gap, min_len in settings:
             writer.writerows(rows)
         report = evaluate(destination, bundle, iou)
         report.update(model_run_id=model_run_id, prediction_csv=str(destination), prediction_rows=len(rows),
-                      max_gap_sec=max_gap, min_clip_sec=min_len)
+                      max_gap_sec=max_gap, min_clip_sec=min_len,
+                      model_split=model_report.get('split'), frame_threshold=model_report['threshold'],
+                      source_revision=dbutils.widgets.get('source_revision'),
+                      feature_bundle_hashes=bundle_metadata['file_sha256'], mlflow_run_id=run.info.run_id)
         mlflow.log_params({'case_id': case_id, 'model_run_id': model_run_id, 'iou_threshold': iou,
                           'frame_threshold': model_report['threshold'], 'matching': report['matching'],
                           'max_gap_sec': max_gap, 'min_clip_sec': min_len,
@@ -65,6 +69,13 @@ for max_gap, min_len in settings:
         f1s = [v['f1'] for v in report['tools'].values() if v['f1'] is not None]
         if f1s:
             mlflow.log_metric('macro_event_f1', sum(f1s) / len(f1s))
+        # Fixed denominator matches select_smoothing.py; never rewards dropping absent tools.
+        six_tool_f1 = []
+        for tool in ['bipolar', 'clipper', 'grasper', 'hook', 'irrigator', 'scissors']:
+            values = report['tools'].get(tool, {})
+            tp, fp, fn = (values.get(key, 0) for key in ['tp', 'fp', 'fn'])
+            six_tool_f1.append(2*tp/(2*tp+fp+fn) if 2*tp+fp+fn else 0.0)
+        mlflow.log_metric('six_tool_macro_event_f1', sum(six_tool_f1)/6)
         mlflow.log_metrics({'prediction_rows': len(rows), 'unknown_frames': report['unknown_frames']})
         mlflow.log_artifact(str(destination), artifact_path='clips')
         mlflow.log_dict(report, 'clips/evaluation.json')
