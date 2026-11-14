@@ -1,5 +1,10 @@
 # ML team progress
 
+## Active phase ownership (2026-11-14)
+
+Shlok explicitly took ownership of **stage 3 bounding-box implementation** on `feat/spatial-overlays`, using a separate worktree (`surg-f-spatial`). Aadhitya continues **stage 2** classifier retraining, validation, smoothing and prediction integration on `ml-dev`. Do not duplicate or restart each other's jobs. Shlok owns new localization scripts/artifacts and the isolated player-overlay integration; preserve Mihir's other frontend work and Rohan's backend routes. This supersedes the earlier future-only status and proposed stage-3 task split. Stage-3 implementation is a bounded offline detector-to-player prototype; tracking, action recognition and validated anatomy accuracy remain separate follow-ups. Commits and verification will be recorded below.
+
+
 The project has three teams: backend, frontend, and ML. Shlok and Aadhitya share the ML team and branch `ml-dev`. Databricks is a workstream within this split. See [project progress](../agent-kit/PROGRESS.md), [handoffs](../agent-kit/HANDOFFS.md), and [shared contracts](../agent-kit/CONTRACTS.md).
 
 Update your own section after each feature or major change with the date, branch or commit, exact verification command and result, blockers, and next handoff. Preserve the other person's entries. Coordinate before editing shared files.

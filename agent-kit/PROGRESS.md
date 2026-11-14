@@ -1,5 +1,10 @@
 # Surg+F progress
 
+## Active phase ownership (2026-11-14)
+
+Shlok explicitly took ownership of **stage 3 bounding-box implementation** on `feat/spatial-overlays`, using a separate worktree (`surg-f-spatial`). Aadhitya continues **stage 2** classifier retraining, validation, smoothing and prediction integration on `ml-dev`. Do not duplicate or restart each other's jobs. Shlok owns new localization scripts/artifacts and the isolated player-overlay integration; preserve Mihir's other frontend work and Rohan's backend routes. This supersedes the earlier future-only status and proposed stage-3 task split. Stage-3 implementation is a bounded offline detector-to-player prototype; tracking, action recognition and validated anatomy accuracy remain separate follow-ups. Commits and verification will be recorded below.
+
+
 ## Current milestone
 
 Agent kit prepared and Markdown links checked. The first integration target is **one real annotated CholecT50 clip returned by Databricks SQL and opened at the correct timestamp**. The three teams are backend, frontend, and ML; Shlok and Aadhitya share ML, including the Databricks workstream. See the [ML tracker](../ml/PROGRESS.md) for their separate tasks. Unconfirmed assignments remain marked below.
