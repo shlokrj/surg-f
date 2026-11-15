@@ -202,7 +202,7 @@ class InterpretResponse(BaseModel):
 
 # --- chat (one typed message -> one action with its data) ---------------------
 
-ChatAction = Literal["search", "quiz", "study_quiz", "timeline", "answer", "none"]
+ChatAction = Literal["search", "quiz", "study_quiz", "timeline", "answer", "model", "none"]
 ChatRouter = Literal["llm", "rules", "genie"]
 
 
@@ -225,6 +225,21 @@ class ChatRequest(BaseModel):
         le=86400,
         description="Length of the open video from the player, in seconds. Optional: lets "
         "'how long is this video' be answered exactly.",
+    )
+
+
+class ModelData(BaseModel):
+    """Which step the 3D model should open at, for the `model` action."""
+
+    case_id: str = Field(description="The video the request was about.", examples=["VID01"])
+    step_key: str | None = Field(
+        description="Phase name of the step to show (as in GET /cases/{case_id}/steps), or "
+        "null to keep the step the video is on.",
+        examples=["ClippingCutting"],
+    )
+    step_label: str | None = Field(
+        description="Plain-language name of that step, or null.",
+        examples=["Clipping and cutting"],
     )
 
 
@@ -262,11 +277,12 @@ class ChatResponse(BaseModel):
         "(question/answer pairs, answers to be hidden until revealed). answer: `data` is a "
         "small result table (or "
         "null), computed by the backend or by Genie. "
+        "model: open the 3D model; `data` says which step to show. "
         "none: nothing to render besides `reply`; `data` is null."
     )
-    data: SearchResponse | QuizResponse | StudyQuiz | TimelineResponse | AnswerData | None = Field(
-        description="The payload for `action`, or null."
-    )
+    data: (
+        SearchResponse | QuizResponse | StudyQuiz | TimelineResponse | AnswerData | ModelData | None
+    ) = Field(description="The payload for `action`, or null.")
     router: ChatRouter = Field(
         description="Which path decided: llm (Databricks chat model picked a tool), rules "
         "(keyword rules) or genie (Databricks Genie answered a data question)."

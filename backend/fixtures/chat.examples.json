@@ -668,6 +668,23 @@
     },
     {
       "request": {
+        "message": "show the clipping step in 3D",
+        "case_id": "VID01"
+      },
+      "verified": true,
+      "response": {
+        "reply": "Opening the 3D model at step 3, clipping and cutting.",
+        "action": "model",
+        "data": {
+          "case_id": "VID01",
+          "step_key": "ClippingCutting",
+          "step_label": "Clipping and cutting"
+        },
+        "router": "rules"
+      }
+    },
+    {
+      "request": {
         "message": "what dose of antibiotics should I give",
         "case_id": "VID01"
       },

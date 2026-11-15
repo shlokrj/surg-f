@@ -400,9 +400,11 @@ type ChatResponse =
   | { reply: string; action: "study_quiz"; data: StudyQuiz;      router: "genie" }
   | { reply: string; action: "timeline"; data: TimelineResponse; router: Router }
   | { reply: string; action: "answer";   data: AnswerTable | null; router: Router }
+  | { reply: string; action: "model";    data: ModelData;        router: Router }
   | { reply: string; action: "none";     data: null;             router: Router };
 
 type Router = "llm" | "rules" | "genie";   // which path decided; for debugging and the demo
+type ModelData = { case_id: string; step_key: string | null; step_label: string | null };
 type AnswerTable = { columns: string[]; rows: unknown[][]; sql: string | null };
 type StudyQuiz = { items: {
   question_number: number; question: string; answer: string; explanation: string | null;
@@ -421,6 +423,7 @@ type StudyQuiz = { items: {
 | `quiz` | Same as `GET /quiz` | The quiz card |
 | `timeline` | Same as `GET /cases/{case_id}/timeline` | The instrument chart (`summary`) and timeline track (`segments`) |
 | `answer` | A small table, or `null`. For rankings and usage questions the backend computes it, with columns `label`, `count`, `total_sec`, `first_sec` and `sql: null`. From Genie the columns vary | The reply text, plus an optional plain table of `columns` and `rows`. `reply` already states the answer in words |
+| `model` | Which step to show: `step_key` is a phase name from `GET /cases/{case_id}/steps`, or `null` for the step the video is on | The 3D model panel. If `step_key` is set, seek the video to that step's `start_sec`; the model follows the video |
 | `none` | `null` | Only the reply. Used for medical-advice and off-topic messages, an unknown video, and a data outage |
 
 **How the backend decides (you don't need to handle any of this):**
@@ -632,7 +635,12 @@ type StudyQuiz = { items: {
 - **Chat search is narrower than `GET /search`:** it returns annotation rows for the open video only, which is what the matching-moments list shows. Call `GET /search` directly when you need every video or model predictions.
 - **Already wired (2026-11-14):** `runSearch` in `frontend/src/main.js` sends free-typed messages to `/chat` through `chatMessage` in `api.js`, and falls back to `/interpret` when `/chat` can't be reached. The `answer` table is not rendered yet; only its reply text is shown.
 - **`/interpret` is unchanged.** `/chat` reuses its keyword rules. `/interpret` returns a list of actions and the requests to make; `/chat` returns one action with the data attached.
-- **Slash commands work as messages:** `/quiz`, `/chart`, `/timestamp clipper`. `/model` returns `none` with a "no 3D model yet" reply.
+- **Slash commands work as messages:** `/quiz`, `/chart`, `/timestamp clipper`, `/model`.
+- **3D model (2026-11-14):** "show me the 3D model" and "show the clipping step in 3D" return `action: model`. Example:
+  ```json
+  {"reply": "Opening the 3D model at step 3, clipping and cutting.", "action": "model", "data": {"case_id": "VID01", "step_key": "ClippingCutting", "step_label": "Clipping and cutting"}, "router": "rules"}
+  ```
+  The panel itself is frontend-only: see "3D model" in [frontend/README.md](../../frontend/README.md).
 - **CORS** now allows `POST` from the default dev origins.
 
 ## Planned stage 3: video localization

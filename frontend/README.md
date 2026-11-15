@@ -52,6 +52,16 @@ The home preview and dashboard player start with a modest 10 px blur over the su
 
 The four buttons are multi-select controls: clicking an unselected button inserts its command into the chat input without sending, while clicking it again leaves the text unchanged. Their highlights follow the commands currently in the input, including manual typing and deletion. Commands can be combined. Simple keyword rules route some phrases locally; there is no LLM interpretation yet. In frontend fixture mode, saved VID01/VID02 timeline and seed-1 quiz responses from `backend/fixtures/` are imported. A locally opened MP4/MOV has no indexed annotations.
 
+## 3D model (`/model`)
+
+`/model`, or a chat message such as "show the clipping step in 3D", opens a 3D view of the gallbladder and the organs around it below the video. Drag rotates, scrolling over the model zooms, and selecting an organ (on the model or in the "See through" list) makes it see-through. The view follows the video: when playback enters a new step, the model changes to that step's picture. The arrows in the Timeline panel and in the model panel move the video, and so the model, one step back or forward.
+
+- **It is an illustration.** The anatomy is a generic adult body from BodyParts3D, not the patient in the video. The cystic artery, ports, clips, cut, triangle, attachment marker and retrieval bag are schematic drawings. The step pictures are **not yet medically reviewed**; the panel says so until `REVIEWED` in `src/model/steps.js` is set to `true`.
+- **Files:** `src/model/steps.js` (what each step shows, plain data), `src/model/viewer.js` (three.js; loaded only when the panel opens), `src/model/panel.js` (markup and the link to the video time), `src/model/model.css`, `src/model/manifest.json` and `public/models/gallbladder-region.glb` (both generated), and `public/models/ATTRIBUTION.md`.
+- **Class names** in the panel start with `anat-`, because `home.css` already uses `.model-*` for the homepage's model notes.
+- **Rebuild the model file** (only needed to change which structures are included): download and unzip `isa_BP3D_4.0_obj_99.zip` from https://dbarchive.biosciencedbc.jp/en/bodyparts3d/download.html outside the repository, then run `node scripts/build-anatomy-model.mjs <folder with the FJ####.obj files>` from `frontend/`.
+- **Known rough edges:** when the liver is faded, a few leftover fragments of its inner segment walls are visible. Ghosted organs are drawn in a fixed order, so two overlapping see-through organs can look slightly different from different angles.
+
 ## Check
 
 Run `npm run build`. With the Databricks backend and VID01 video available, enter `/timestamp clipper`; the first known interval is `674–690` seconds. Select it and confirm the video seeks to 11:14. `/chart` and `/quiz` require the six instrument-label queries to succeed. A cold warehouse may take time to respond.

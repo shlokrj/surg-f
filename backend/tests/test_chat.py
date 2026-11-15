@@ -248,6 +248,7 @@ def test_llm_http_client_parses_tool_calls_and_never_relays_model_text():
         "search_clips",
         "make_quiz",
         "show_timeline",
+        "show_3d",
         "clips_in_range",
         "rank_instruments",
         "instrument_usage",
@@ -291,6 +292,68 @@ def test_llm_is_built_only_with_credentials_and_an_endpoint_name():
     assert build_llm(settings_from(creds)) is None
     assert build_llm(settings_from({"DATABRICKS_CHAT_ENDPOINT": "e"})) is None
     assert build_llm(settings_from({**creds, "DATABRICKS_CHAT_ENDPOINT": "e"})).endpoint == "e"
+
+
+# --- 3D model -------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("message", "step_key"),
+    [
+        ("/model", None),
+        ("show me the 3D model", None),
+        ("can I see the anatomy?", None),
+        ("show the clipping step in 3D", "ClippingCutting"),
+        ("3d view of calot's triangle dissection", "CalotTriangleDissection"),
+        ("show the model when the gallbladder is put in the bag", "GallbladderPackaging"),
+        ("3D model at step 4", "GallbladderDissection"),
+        ("show the cleaning step on the 3d model", "CleaningCoagulation"),
+    ],
+)
+def test_rules_open_the_3d_model_at_the_named_step(message, step_key):
+    body = ask(make_client(), message)
+    assert (body["action"], body["router"]) == ("model", "rules")
+    assert body["data"]["case_id"] == "VID01"
+    assert body["data"]["step_key"] == step_key
+    assert (body["data"]["step_label"] is None) == (step_key is None)
+    assert "3D model" in body["reply"]
+
+
+@pytest.mark.parametrize(
+    ("message", "action"),
+    [
+        ("show me the clipper", "search"),  # an instrument, not the 3D clipping step
+        ("show me when the clipper is used", "search"),
+        ("what does the model predict for the hook?", "search"),  # the machine-learning model
+        ("quiz me", "quiz"),
+    ],
+)
+def test_rules_do_not_mistake_other_requests_for_the_3d_model(message, action):
+    assert ask(make_client(), message)["action"] == action
+
+
+def test_llm_show_3d_opens_the_model_and_checks_the_step():
+    body = ask(make_client(llm=FakeLLM(ToolChoice("show_3d", {"step": "ClippingCutting"}))), "x")
+    assert (body["action"], body["router"]) == ("model", "llm")
+    assert body["data"] == {
+        "case_id": "VID01",
+        "step_key": "ClippingCutting",
+        "step_label": "Clipping and cutting",
+    }
+    assert body["reply"] == "Opening the 3D model at step 3, clipping and cutting."
+
+    body = ask(make_client(llm=FakeLLM(ToolChoice("show_3d"))), "x")
+    assert body["data"]["step_key"] is None
+
+    # A step name the operation does not have is an invalid tool call: the rules answer.
+    body = ask(make_client(llm=FakeLLM(ToolChoice("show_3d", {"step": "Suturing"}))), "quiz me")
+    assert (body["action"], body["router"]) == ("quiz", "rules")
+
+
+def test_3d_model_for_a_video_without_saved_steps_still_opens():
+    body = ask(make_client(), "show the clipping step in 3D", case_id="VID99")
+    assert body["action"] == "model"
+    assert body["data"] == {"case_id": "VID99", "step_key": None, "step_label": None}
 
 
 # --- structured data tools (fast answers without Genie) ---------------------------
@@ -561,6 +624,7 @@ def test_examples_fixture_has_one_valid_example_per_action():
         "quiz",
         "timeline",
         "answer",
+        "model",
         "none",
     }
     for example in examples["examples"]:
@@ -658,6 +722,9 @@ def test_advice_and_judging_are_deflected_without_genie(message):
         ("when does the video end", True),
         ("what is the total time the hook was used", False),
         ("show me the clipper", False),
+        ("show me the anatomy", False),
+        ("open the 3d model at the clipping step", False),
+        ("quiz me on anatomy", True),
     ],
 )
 def test_genie_routing_words(message, to_genie):

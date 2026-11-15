@@ -1,0 +1,59 @@
+/* 3D model panel and the step arrows. Uses the tokens from style.css. */
+
+.anat-step { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; margin-bottom: 14px; }
+.anat-step-text { display: grid; gap: 2px; min-height: 46px; align-content: center; }
+.anat-step-text strong { font-size: var(--text-base); font-weight: 600; }
+.anat-step-text span { color: var(--ink-muted); font-size: var(--text-md); text-wrap: balance; }
+
+.step-nav {
+  width: 40px; height: 40px; display: grid; place-items: center; flex: none;
+  border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface);
+  color: var(--brand-strong); font-size: 18px; line-height: 1; cursor: pointer;
+  transition: background-color .15s, border-color .15s;
+}
+.step-nav:hover:not(:disabled) { background: var(--surface-tint); border-color: #9db5aa; }
+.step-nav:disabled { color: #9aaba3; border-color: var(--line); cursor: default; }
+.step-nav-group { display: flex; gap: 8px; flex: none; }
+.panel-head.tl-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+
+.anat-stage {
+  position: relative; width: 100%; aspect-ratio: 16 / 10; max-height: 70vh; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 14px;
+  background: radial-gradient(120% 90% at 50% 20%, #ffffff, #e9f2ee);
+}
+.anat-canvas, .anat-canvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.anat-canvas canvas { cursor: grab; touch-action: none; }
+.anat-canvas canvas:active { cursor: grabbing; }
+.anat-status { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; color: var(--ink-muted); text-align: center; }
+.anat-status[hidden] { display: none; }
+.anat-hover {
+  position: absolute; left: 12px; top: 12px; padding: 4px 10px; border-radius: 999px;
+  background: #ffffffe6; border: 1px solid var(--line); color: var(--ink); font-size: var(--text-sm); pointer-events: none;
+}
+.anat-hover:empty { display: none; }
+.anat-tools { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; }
+.anat-tools button {
+  min-width: 36px; height: 36px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 999px;
+  background: #ffffffeb; color: var(--ink); font-size: var(--text-sm); font-weight: 600; cursor: pointer;
+}
+.anat-tools button:hover { background: var(--surface-tint); border-color: #9db5aa; }
+
+.anat-organs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 14px; }
+.anat-organs > span { margin-right: 4px; color: var(--ink-muted); font-size: var(--text-sm); }
+.anat-organs button[data-organ] {
+  display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px;
+  border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface);
+  color: var(--ink); font-size: var(--text-sm); cursor: pointer; transition: background-color .15s, border-color .15s;
+}
+.anat-organs button[data-organ] i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.anat-organs button[data-organ]:hover { background: var(--surface-tint); border-color: #9db5aa; }
+.anat-organs button[data-organ][aria-pressed="true"] { background: var(--surface-tint); border-style: dashed; color: var(--ink-muted); }
+.anat-organs button[data-organ][aria-pressed="true"] i { opacity: .3; }
+
+.anat-notes { max-width: 78ch; margin-top: 14px; color: var(--ink-muted); font-size: var(--text-md); }
+.anat-credit { max-width: 78ch; margin-top: 6px; color: var(--ink-muted); font-size: var(--text-xs); }
+
+@media (max-width: 640px) {
+  .anat-stage { aspect-ratio: 4 / 5; }
+  .anat-step { gap: 8px; }
+}

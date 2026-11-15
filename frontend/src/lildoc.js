@@ -79,6 +79,6 @@ export function reply({ modes, labels, hits, caseId, genieText }) {
   }
   if (modes.includes('chart')) parts.push('One chart, coming right up! It counts what shows up in this video.');
   if (modes.includes('quiz')) parts.push('Pop quiz! Five questions about the operation. Take your time, I’m not grading on a curve.');
-  if (modes.includes('model')) parts.push('I’d love to show you the 3D model, but it isn’t linked to this video yet.');
+  if (modes.includes('model')) parts.push('Here’s the 3D model. Drag to look around, scroll to zoom, and tap an organ to see through it. It follows the video from step to step.');
   return parts.join(' ') || `Hmm, I’m not sure what to show for that. Try a tool name like clipper, or /chart, /quiz or /model.`;
 }

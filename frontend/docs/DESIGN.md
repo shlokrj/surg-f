@@ -30,6 +30,21 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
 8. Buttons use only `.btn-primary`, `.btn-secondary` and the shared toggles from `style.css`. Pressed toggles darken on hover. Minimum text size is 14px. Headings and short paragraphs use `text-wrap: balance` to avoid one-word last lines.
 9. Preserve real case entry, the filtered VID01 preview, annotation timestamp action and local playback limitation. The preview-edge strip shows the real `clipper` → VID01 11:14 annotation and links to the actual preview; it is not fake product data.
 
+## Feature stack, how it works, model notes (2026-11-14)
+
+- **Feature stack:** the three feature sections are sticky cards (`.stack-card`, `top: 7vh + i·18px`, each 18px shorter than the one before). Cards keep full width; the covered card's content dims. A spacer inside the container (padding does not count for sticky) lets all three rest evenly offset, like Hangar's stack, then leave as one block.
+- **Dig into the stack** (`src/architecture.js`, `src/architecture.css`; hackathon theme "let's dig in"):
+  - One pinned stage. The block of six CSS-3D slabs pulls apart (`--e`), then shrinks into a layer map on the right (`--nav`). Each label is a button that scrolls to its layer, and the current layer's slab slides out toward the scene.
+  - Scrolling digs down one layer at a time. The copy on the left swaps, the current scene rises out of the card while the next comes up from below (`--s`), and the card darkens with depth (`--depth`). Each scene plays over its layer's scroll span (`--p`).
+  - Scenes: the player finds the box (a scan, candidate boxes, then a lock on the real VID01 overlay prediction at 860 s, gallbladder 0.997); search types the demo question, lights App → FastAPI → SQL, shows the real query and returns VID01 860–877 s; the clip index rains real VID01 rows into a Delta stack, scans them and slides out the scissors row; the label model separates its planes, sends signals through and lights the reliable labels with their F1; frame features sends a real frame through ResNet-50's four stages to a 768-number vector (bars marked illustrative); surgery video fans real VID01 frames 14:16–14:23 into an arc above the full VID01 instrument time line.
+  - Frames are painted at runtime from the case video (`videoForCase('VID01')`), so no source imagery is committed. Without the video, cards keep a gradient fallback.
+  - The player scene should switch to a stronger real detection once stage 3 localization works.
+  - Every link was checked on 2026-11-14. The classifier is scikit-learn `MLPClassifier`, not PyTorch; PyTorch runs SurgVLP extraction and the detector only.
+  - Phones drop the pin: intro, block, then each layer's copy and scene in reading order, each scene playing as it crosses the viewport. Reduced motion shows each layer in its final state and swaps layers without movement.
+- **Model notes:** Aadhi's held-out F1 scores (final model, MLflow `9d18d20a`).
+  - Instrument, best action and best target bars grow, and their numbers count up, once in view.
+  - A v1→v2 comparison, three reading notes, and a link to the full `model-evals.md`.
+
 ## Case page
 
 `src/case.css` restyles the case page to match the homepage. It uses the off-white page, the rounded product cards (video, overlay strip, timeline, charts, quiz, model) with the soft teal shadow, and a frosted topbar. A single plus-dithered sky band holds the case title, with the VID01/VID02 toggles in a white pill. The content filter is an eye icon button overlaid on the footage, top right; the top bar action is "Open your own video". Spatial/player markup and logic are unchanged; only presentation was overridden, so coordinate with Mihir before changing it further. Shared type tokens were raised to a 13px minimum (`--text-xs` 13, `--text-sm` 14, `--text-md` 15, `--text-base` 16).

@@ -31,10 +31,19 @@ from .interpret import (
     SYNONYMS,
     genie_actions,
 )
-from .models import AnswerData, ChatResponse, Clip, SearchResponse, StudyQuiz, StudyQuizItem
+from .models import (
+    AnswerData,
+    ChatResponse,
+    Clip,
+    ModelData,
+    SearchResponse,
+    StudyQuiz,
+    StudyQuizItem,
+)
 from .quiz import QuizService
 from .repository import RepositoryError
 from .service import CaseNotFoundError, SearchService, TimelineService
+from .steps import StepsService
 
 CASE_ID = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
 # Words that ask for the instrument timeline, on top of the chart words /interpret knows.
@@ -42,7 +51,25 @@ TIMELINE = re.compile(
     r"\b(timeline|order|sequence|overview|tools used|instruments used|tools? were used|"
     r"instruments? were used)\b"
 )
-MODEL_COMMAND = re.compile(r"(?<!\S)/model\b")
+# The 3D anatomy view. A bare "model" also counts, unless the message is about the
+# machine-learning model ("model predictions", "how accurate is the model").
+MODEL_VIEW = re.compile(
+    r"(?<!\S)/model\b|\b(3d|3-d|three[- ]dimension\w*|anatom\w+)\b|"
+    r"\bmodel\b(?!\s+(predict|accura|score|perform))"
+)
+ML_MODEL = re.compile(r"\b(predict\w*|accura\w*|f1|trained|training)\b")
+# Words that name each step of the operation, checked in this order. Calot comes before the
+# gallbladder dissection because "Calot's triangle dissection" contains "dissection".
+STEP_WORDS: dict[str, re.Pattern] = {
+    "CalotTriangleDissection": re.compile(r"\b(calot\w*|triangle)\b"),
+    "ClippingCutting": re.compile(r"\b(clip\w*|cut\w*)\b"),
+    "GallbladderPackaging": re.compile(r"\b(bag\w*|packag\w*)\b"),
+    "CleaningCoagulation": re.compile(r"\b(clean\w*|rins\w*|coagulat\w*|bleed\w*)\b"),
+    "GallbladderRetraction": re.compile(r"\b(retract\w*|remov\w*|extract\w*|pull\w*|taken? out)\b"),
+    "GallbladderDissection": re.compile(r"\b(dissect\w*|free\w*|peel\w*|detach\w*)\b"),
+    "Preparation": re.compile(r"\b(prepar\w*|ports?|set ?up|start|beginning)\b"),
+}
+STEP_NUMBER = re.compile(r"\bstep\s+(\d)\b")
 
 STUDY_AID_REPLY = (
     "I'm a study aid, so I can't give medical advice, answer about a specific patient or "
@@ -71,11 +98,10 @@ VIDEO_LENGTH = re.compile(
 )
 EDUCATIONAL = re.compile(
     r"\b(typical(ly)?|usually|generally|in general|normally|commonly|explain|define|"
-    r"definition|why (is|are|do|does|would)|purpose of|anatomy|anatomical|calot|"
+    r"definition|why (is|are|do|does|would)|purpose of|calot|"
     r"critical view)\b"
 )
 WHAT_IS = re.compile(r"\bwhat (is|are) (a|an|the)\b")
-NO_MODEL_REPLY = "This video has no 3D model yet. Try an instrument name, a quiz or a chart."
 DATA_DOWN_REPLY = "The clip data is unavailable right now. The quiz still works: try 'quiz me'."
 
 SYSTEM_PROMPT = """You are a study-aid router for one operation: a laparoscopic \
@@ -86,6 +112,8 @@ one of: {labels}. Map synonyms: {synonyms}.
 - make_quiz(): the user wants to be quizzed or to practise.
 - show_timeline(case_id): the user wants a chart, timeline, order or overview of the tools \
 used in a video. The open video is {case_id}.
+- show_3d(step): the user wants the 3D model or anatomy view. step is optional: give it \
+only when the user names a step of the operation. One of: {steps}.
 - clips_in_range(q, after_sec, before_sec): moments for one instrument inside a time window. \
 Give times in seconds from the start of the video: minute 10 is 600.
 - rank_instruments(order): which instrument was used longest, shortest, most_often or \
@@ -137,6 +165,12 @@ def tool_specs(with_genie: bool) -> list[dict]:
             "show_timeline",
             "Show the timeline and usage chart of all instruments in one video.",
             {"case_id": {"type": "string", "description": "Video ID, for example VID01"}},
+            [],
+        ),
+        tool(
+            "show_3d",
+            "Open the 3D model of the gallbladder area, optionally at one step of the operation.",
+            {"step": {"type": "string", "enum": list(STEP_WORDS), "description": "Step to show"}},
             [],
         ),
         tool(
@@ -206,6 +240,7 @@ class LLMRouter:
             synonyms="; ".join(f"{', '.join(p)} = {label}" for label, p in SYNONYMS.items()),
             case_id=case_id,
             genie_line=GENIE_LINE if with_genie else "",
+            steps=", ".join(STEP_WORDS),
         )
         body = {
             "model": self.endpoint,
@@ -381,11 +416,13 @@ class ChatService:
         search: SearchService,
         timeline: TimelineService,
         quiz: QuizService,
+        steps: StepsService | None = None,
         llm: LLMRouter | None = None,
         genie: GenieClient | None = None,
         llm_timeout_sec: float = 8.0,
     ):
         self.search, self.timeline, self.quiz = search, timeline, quiz
+        self.steps = steps
         self.llm, self.genie = llm, genie
         self.llm_timeout_sec = llm_timeout_sec
         self._pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="chat-llm")
@@ -427,7 +464,11 @@ class ChatService:
     @staticmethod
     def _for_genie(lower: str) -> bool:
         """Quiz requests, video length and general surgery questions."""
-        if QUIZ_ASK.search(lower) or VIDEO_LENGTH.search(lower) or EDUCATIONAL.search(lower):
+        if QUIZ_ASK.search(lower):
+            return True
+        if MODEL_VIEW.search(lower) and not ML_MODEL.search(lower):
+            return False  # "show me the anatomy" opens the 3D view
+        if VIDEO_LENGTH.search(lower) or EDUCATIONAL.search(lower):
             return True
         # "what is the Calot triangle" yes; "what is the total time of the hook" stays a tool.
         return bool(WHAT_IS.search(lower)) and not COMPLEX.search(lower)
@@ -459,6 +500,11 @@ class ChatService:
             wanted = str(choice.arguments.get("case_id") or case_id)
             return self._run("timeline", wanted if CASE_ID.match(wanted) else case_id, "llm")
         args = choice.arguments
+        if choice.name == "show_3d":
+            step = args.get("step") or None
+            if step is not None and step not in STEP_WORDS:
+                raise LLMError("invalid tool call: unknown step")
+            return self._run("model", case_id, "llm", step=step)
         if choice.name == "clips_in_range":
             label = self._label(args.get("q"))
             after, before = (
@@ -538,6 +584,8 @@ class ChatService:
         case_id = named_case(message, case_id)
         if QUIZ_ASK.search(lower):
             return self._run("quiz", case_id, "rules")
+        if MODEL_VIEW.search(lower) and not ML_MODEL.search(lower):
+            return self._run("model", case_id, "rules", step=self._named_step(lower, case_id))
         labels = mentioned_labels(lower)
         after, before = time_window(lower)
         if len(labels) >= 2 and TOGETHER.search(lower):
@@ -555,8 +603,8 @@ class ChatService:
         label = labels[0] if labels else None
         if label:
             return self._run("search", case_id, "rules", label)
-        reply = NO_MODEL_REPLY if MODEL_COMMAND.search(lower) else STUDY_AID_REPLY
-        return ChatResponse(reply=reply, action="none", data=None, router="rules"), None
+        response = ChatResponse(reply=STUDY_AID_REPLY, action="none", data=None, router="rules")
+        return response, None
 
     # --- actions: call the existing services directly ---------------------------
 
@@ -575,6 +623,38 @@ class ChatService:
             response = ChatResponse(reply=DATA_DOWN_REPLY, action="none", data=None, router=router)
             return response, f"repository: {exc}"
         return ChatResponse(reply=reply, action=action, data=data, router=router), None
+
+    def _case_steps(self, case_id: str) -> list:
+        """The saved steps of a video, or an empty list when it has none."""
+        if self.steps is None:
+            return []
+        try:
+            return self.steps.steps(case_id).steps
+        except CaseNotFoundError:
+            return []
+
+    def _named_step(self, lower: str, case_id: str) -> str | None:
+        """The step a message names: "step 3", or a word such as "clipping"."""
+        number = STEP_NUMBER.search(lower)
+        if number:
+            by_order = {step.order: step.key for step in self._case_steps(case_id)}
+            return by_order.get(int(number.group(1)))
+        return next((key for key, words in STEP_WORDS.items() if words.search(lower)), None)
+
+    def _do_model(self, case_id, label, step=None):
+        found = next((s for s in self._case_steps(case_id) if s.key == step), None)
+        if found:
+            reply = f"Opening the 3D model at step {found.order}, {found.label.lower()}."
+        elif step:
+            reply = f"Opening the 3D model. {case_id} has no saved step for that part."
+        else:
+            reply = "Opening the 3D model of the gallbladder and the organs around it."
+        data = ModelData(
+            case_id=case_id,
+            step_key=found.key if found else None,
+            step_label=found.label if found else None,
+        )
+        return reply, "model", data
 
     def _do_quiz(self, case_id, label):
         return "Here is a five-question quiz on the operation.", "quiz", self.quiz.quiz(None)

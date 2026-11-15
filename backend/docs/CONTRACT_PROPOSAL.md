@@ -46,6 +46,8 @@ Status: **proposal, 2026-11-14 (Rohan).** The backend serves these endpoints on 
 - **`answer` data shape:** `{"columns": [], "rows": [], "sql": null}` or null. It has no matching GET endpoint. Tables the backend computes (rankings, one instrument's usage) always have the columns `label`, `count`, `total_sec`, `first_sec`; Genie tables have no fixed columns. Examples: `backend/fixtures/chat.examples.json`.
 - **Chat search scope:** annotation rows for the requested case only. `GET /search` keeps returning every case and both sources.
 
+- **`model` action (added 2026-11-14):** `POST /chat` can return `action: "model"` with `data: {"case_id": "VID01", "step_key": "ClippingCutting", "step_label": "Clipping and cutting"}`. `step_key` is a phase name from `GET /cases/{case_id}/steps`, or null when the message names no step or the video has no such step. The backend serves no 3D data; the model file and the per-step pictures live in the frontend.
+
 **Still open:**
 
 - Should `/search` keep mixing `annotation` and `prediction` rows (current behavior), or take the same `source` filter as the timeline? Changing it would be a contract change.

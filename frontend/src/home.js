@@ -1,3 +1,5 @@
+import { architectureSection, updateArchitecture, digScrollTop } from './architecture.js';
+
 /* Brand: "surg" and "f" as keycaps joined by "+", read like the Ctrl+F shortcut. Same markup in the hero
    and the small lockup; colors follow currentColor, so it works white-on-teal and teal-on-light.
    The text content is "surg+f". The favicon (public/favicon.svg) is a teal plus with a mini plus in each quadrant. */
@@ -176,10 +178,45 @@ function quizPreview(quiz) {
     <ul class="fx-options">${q.options.map(o => `<li class="${o.id === q.correct_option_id ? 'is-correct' : ''}"><span class="opt-key">${o.id.toUpperCase()}</span>${esc(o.text)}</li>`).join('')}</ul></div>`;
 }
 
-const feature = ({id, title, body, action, command, horizon, preview, flip}) => `<section class="feature ${flip ? 'is-flipped' : ''}" aria-labelledby="${id}">
+const feature = ({id, title, body, action, command, horizon, preview, index}) => `<section class="feature stack-card" style="--i:${index}" aria-labelledby="${id}">
   <div class="feature-copy"><h2 id="${id}">${title}</h2><p>${body}</p><button type="button" class="btn-secondary" data-open-sample ${command ? `data-command="${command}"` : ''}>${action}</button></div>
   <div class="feature-visual"><canvas class="sky-dither" data-horizon="${horizon}" data-ceiling="7.2" aria-hidden="true"></canvas>${preview}</div>
 </section>`;
+
+/* Model notes: numbers from frontend/public/model-evals.md (Aadhi), final model MLflow run 9d18d20a,
+   F1 on 4 held-out surgeries. */
+const F1 = {
+  instruments: [['Grasper', .89], ['Hook', .83], ['Bipolar', .52], ['Scissors', .29], ['Irrigator', .26], ['Clipper', .19]],
+  actions: [['Retract', .86], ['Dissect', .78], ['Coagulate', .46], ['Grasp', .40]],
+  targets: [['Gallbladder', .88], ['Specimen bag', .75], ['Liver', .51], ['Omentum', .21]],
+};
+const f1Bars = rows => `<ul class="f1-bars">${rows.map(([label, v]) => `<li><span>${label}</span><span class="f1-track"><span style="--v:${v}"></span></span><span class="f1-num" data-count="${v}" data-digits="2">${v.toFixed(2)}</span></li>`).join('')}</ul>`;
+function modelSection() {
+  return `<section class="model" id="model-notes" aria-labelledby="model-heading">
+    <div class="model-head">
+      <div><h2 id="model-heading">How well the model sees.</h2><p>Scored on 4 surgeries it never saw in training. F1 runs from 0 to 1 and is measured second by second.</p></div>
+      <div class="model-avg"><span class="model-avg-num" data-count=".34" data-digits="2">0.34</span><span>average F1 across all 29 labels</span></div>
+    </div>
+    <div class="model-grid">
+      <div class="m-card m-wide"><h3>Instruments</h3>${f1Bars(F1.instruments)}</div>
+      <div class="m-card"><h3>Best actions</h3>${f1Bars(F1.actions)}</div>
+      <div class="m-card"><h3>Best targets</h3>${f1Bars(F1.targets)}</div>
+      <div class="m-card m-wide m-compare"><h3>From v1 to v2</h3>
+        <dl>
+          <div><dt>Training surgeries</dt><dd><span>12</span><span aria-hidden="true">→</span><strong data-count="42" data-digits="0">42</strong></dd></div>
+          <div><dt>Average F1</dt><dd><span>0.30</span><span aria-hidden="true">→</span><strong data-count=".34" data-digits="2">0.34</strong></dd></div>
+          <div><dt>Scissors F1</dt><dd><span>0.07</span><span aria-hidden="true">→</span><strong data-count=".29" data-digits="2">0.29</strong></dd></div>
+        </dl>
+      </div>
+    </div>
+    <ul class="model-notes">
+      <li><strong>Labeled clips</strong> come from surgeons. Treat them as ground truth.</li>
+      <li><strong>AI-predicted clips</strong> are suggested moments. They land in the right part of the video, but start and end times are approximate.</li>
+      <li><strong>Common events are reliable:</strong> grasper, hook, retract, dissect, gallbladder and specimen bag. Rare labels are not.</li>
+    </ul>
+    <p class="model-source">Test surgeries were never used for training or tuning. Final model: MLflow run <code>9d18d20a</code>. <a href="/model-evals.md">Read the full evaluation</a></p>
+  </section>`;
+}
 
 export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}}) {
   return `<main class="landing" id="main-content">
@@ -203,15 +240,19 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
       <div class="preview-video surgical-media ${filterOn ? 'filtered' : ''}">${filterButton}<video src="${videoUrl}" muted playsinline preload="metadata" aria-label="Surgical footage from the VID01 demo case"></video><span class="preview-unavailable" hidden>Video preview unavailable. You can still open the case.</span></div>
       <button type="button" id="sample-event" class="find-result"><span class="find-query">${searchGlyph}When is the cystic duct clipped?</span><span class="find-time">11:38 <span aria-hidden="true">↗</span></span></button><div class="console-caption"><span>Annotated: clipper clips the cystic duct</span><span>Jump to this moment</span></div></div>
     </section>
-    ${feature({id: 'feature-steps', title: 'Follow the operation, step by step.', body: 'Each case is split into its surgical phases. Select a step to jump straight to it.', action: 'Open the case timeline', horizon: .62, preview: stepsPreview(showcase.steps)})}
-    ${feature({id: 'feature-chart', title: 'See which instruments appear, and for how long.', body: 'Time on screen for each instrument, totalled from the dataset annotations.', action: 'Show the instrument chart', command: '/chart instruments', horizon: .62, flip: true, preview: instrumentsPreview(showcase.timeline)})}
-    ${feature({id: 'feature-quiz', title: 'Test yourself on the procedure.', body: 'Five questions on step order and instruments, each with an explanation and example clips.', action: 'Start the quiz', command: '/quiz', horizon: .62, preview: quizPreview(showcase.quiz)})}
+    <div class="feature-stack">
+    ${feature({index: 0, id: 'feature-steps', title: 'Follow the operation, step by step.', body: 'Each case is split into its surgical phases. Select a step to jump straight to it.', action: 'Open the case timeline', horizon: .62, preview: stepsPreview(showcase.steps)})}
+    ${feature({id: 'feature-chart', title: 'See which instruments appear, and for how long.', body: 'Time on screen for each instrument, totalled from the dataset annotations.', action: 'Show the instrument chart', command: '/chart instruments', horizon: .62, index: 1, preview: instrumentsPreview(showcase.timeline)})}
+    ${feature({id: 'feature-quiz', title: 'Test yourself on the procedure.', body: 'Five questions on step order and instruments, each with an explanation and example clips.', action: 'Start the quiz', command: '/quiz', horizon: .62, index: 2, preview: quizPreview(showcase.quiz)})}
+    </div>
+    ${architectureSection()}
+    ${modelSection()}
     <section class="local-section" aria-labelledby="local-heading"><div><h2 id="local-heading">Open your own video.</h2><p>MP4 and MOV files open for local playback. Indexed search covers the demo cases.</p></div><button type="button" id="drop-zone" class="btn-secondary local-open" aria-label="Open a local MP4 or MOV for playback only">Open a video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>${error ? `<p class="home-error" role="alert">${error}</p>` : ''}</section>
     <footer class="site-footer" aria-label="About surg+f">
       <div class="footer-sticky">
         <div class="footer-top">
           <div class="footer-identity">${wordmark()}<p>Search surgical video.</p></div>
-          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#feature-steps">Features</a><a href="#top">Back to top</a><button type="button" class="btn-primary" data-open-sample>Open a case</button></nav>
+          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#architecture">The stack</a><a href="#model-notes">Model</a><a href="#top">Back to top</a><button type="button" class="btn-primary" data-open-sample>Open a case</button></nav>
         </div>
         <canvas class="footer-word" aria-hidden="true"></canvas>
         <div class="footer-legal"><span>Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>
@@ -220,11 +261,28 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
   </main>`;
 }
 
+function countUp(scope) {
+  const items = [...scope.querySelectorAll('[data-count]')];
+  const start = performance.now(), duration = 1100;
+  const tick = now => {
+    const t = Math.min(1, (now - start) / duration), eased = 1 - Math.pow(1 - t, 3);
+    for (const el of items) {
+      const target = Number(el.dataset.count), digits = Number(el.dataset.digits);
+      el.textContent = (target * eased).toFixed(digits);
+    }
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
 export function mountHome(root) {
   if (!root) return () => {};
   const intro = root.querySelector('.landing-intro');
   const canvases = [...root.querySelectorAll('.sky-dither')];
   const footer = root.querySelector('.site-footer');
+  const stack = [...root.querySelectorAll('.stack-card')];
+  const model = root.querySelector('.model');
+  let modelShown = false;
   const footerWord = root.querySelector('.footer-word');
   const footerCache = {};
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -240,12 +298,34 @@ export function mountHome(root) {
       footer.style.setProperty('--footer-progress', fp.toFixed(4));
       if (footerWord) paintFooterWord(footerWord, fp, footerCache);
     }
+    const vh = window.innerHeight;
+    /* Stacked cards: each card shrinks and dims as the next one slides over it. */
+    stack.forEach((card, i) => {
+      const next = stack[i + 1];
+      const cover = !next || media.matches ? 0 : Math.max(0, Math.min(1, (vh - next.getBoundingClientRect().top) / (vh - card.getBoundingClientRect().top || 1)));
+      // Cards keep their size (like Hangar's stack); only the covered card's content dims.
+      card.style.setProperty('--cover', cover.toFixed(3));
+    });
+    updateArchitecture(root, media.matches);
+    /* Model notes: bars grow and numbers count up once, when the section comes into view. */
+    if (model && !modelShown && (media.matches || model.getBoundingClientRect().top < vh * .78)) {
+      modelShown = true;
+      model.classList.add('is-in');
+      if (!media.matches) countUp(model);
+    }
     canvases.forEach(paintDither);
   };
   const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
   /* In-page links scroll the window only. scrollIntoView would also scroll the clipped hero layers
      (the old logo-click glitch). "#top" returns to the start, where the frame is fully inset. */
   const jump = event => {
+    /* Layer map: each label digs straight to its layer. */
+    const dig = event.target.closest?.('[data-dig]');
+    if (dig) {
+      const top = digScrollTop(root, Number(dig.dataset.dig));
+      if (top !== null) window.scrollTo({top, behavior: media.matches ? 'auto' : 'smooth'});
+      return;
+    }
     const link = event.target.closest?.('a[href^="#"]');
     if (!link) return;
     const id = link.getAttribute('href').slice(1);
@@ -259,6 +339,13 @@ export function mountHome(root) {
   window.addEventListener('resize', schedule);
   media.addEventListener('change', schedule);
   root.addEventListener('click', jump);
+  /* Keyboard focus on a hidden layer's link brings that layer into view. */
+  const reveal = event => {
+    const layer = event.target.closest?.('.layer:not(.is-on)');
+    const top = layer ? digScrollTop(root, Number(layer.dataset.layer)) : null;
+    if (top !== null) window.scrollTo({top, behavior: 'auto'});
+  };
+  root.addEventListener('focusin', reveal);
   /* Hero keys: pressing a key sinks only that key, like a real keycap. Purely visual: it does not move
      focus or touch the search box, and the browser's own Ctrl+F is never intercepted. */
   const press = root.querySelector('.sf-hero');
@@ -276,5 +363,5 @@ export function mountHome(root) {
   video.addEventListener('error', unavailable);
   update();
   root.ownerDocument?.fonts?.ready?.then(() => { footerCache.size = null; schedule(); });
-  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
+  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
 }
