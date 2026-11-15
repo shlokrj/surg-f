@@ -1,4 +1,4 @@
-import { architectureSection, updateArchitecture, digScrollTop, digScenes } from './architecture.js';
+import { architectureSection, updateArchitecture, digScrollTop } from './architecture.js';
 import { modelSection } from './modelnotes.js';
 import { databricksSection } from './databricks.js';
 import { problemSection } from './problem.js';
@@ -190,8 +190,7 @@ const feature = ({id, title, body, action, command, horizon, preview, index}) =>
 </section>`;
 
 /* Homepage versions. Each lists its sections in order, with options: `only` picks a stage's chapters and
-   `per` sets its pace (viewport heights of scroll per chapter). `playMs` is how long the hidden arrow-key
-   playback takes per scene.
+   `per` sets its pace (viewport heights of scroll per chapter).
    - public (/): the product.
    - demo (/demo, ?demo): the original presentation version, kept as it was.
    - presentation-demo (/presentation-demo): the 5-minute in-person pitch, four speakers.
@@ -199,16 +198,16 @@ const feature = ({id, title, body, action, command, horizon, preview, index}) =>
      Databricks first.
    Scripts: pitch/ at the repo root. */
 const VERSIONS = {
-  public: {playMs: 5200, sections: [['find'], ['features'], ['architecture'], ['model'], ['local'], ['sources']]},
-  demo: {playMs: 5200, sections: [
+  public: {sections: [['find'], ['features'], ['architecture'], ['model'], ['local'], ['sources']]},
+  demo: {sections: [
     ['problem', {only: ['length', 'needle', 'uses', 'index']}], ['solution', {only: ['label', 'ask', 'jump']}],
     ['features'], ['architecture'], ['model'], ['databricks'], ['future'], ['sources'],
   ]},
-  'presentation-demo': {playMs: 5000, sections: [
+  'presentation-demo': {sections: [
     ['problem', {only: ['needle', 'docs', 'uses']}], ['solution', {only: ['label', 'ask', 'jump', 'record', 'practice']}],
     ['features'], ['architecture'], ['model', {only: ['test', 'instruments', 'versions', 'boxes']}], ['databricks'], ['future'], ['sources'],
   ]},
-  'video-demo': {playMs: 3800, sections: [
+  'video-demo': {sections: [
     ['problem', {only: ['needle', 'docs'], per: 1.6}], ['solution', {only: ['ask', 'jump', 'practice'], per: 1.6}],
     ['databricks', {per: 1.6}], ['sources'],
   ]},
@@ -243,7 +242,7 @@ export function homePage({videoUrl, filterOn, filterButton, blurButton = '', err
     sources: () => sourcesSection(),
   };
   const links = sections.filter(id => FOOTER_LINKS[id]).map(id => `<a href="#${FOOTER_LINKS[id][0]}">${FOOTER_LINKS[id][1]}</a>`).join('');
-  return `<main class="landing${demo ? ' is-demo' : ''}${filterOn ? ' is-blurred' : ''}" id="main-content" data-version="${VERSIONS[mode] ? mode : 'public'}" data-play-ms="${version.playMs}">
+  return `<main class="landing${demo ? ' is-demo' : ''}${filterOn ? ' is-blurred' : ''}" id="main-content" data-version="${VERSIONS[mode] ? mode : 'public'}">
     <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><span class="nav-actions">${blurButton}<button type="button" id="open-sample" class="nav-case">Open a case</button></span></nav>
     <section class="landing-intro" aria-labelledby="landing-title">
       <div class="intro-sticky">
@@ -316,9 +315,7 @@ export function mountHome(root) {
     const dig = event.target.closest?.('[data-dig]');
     if (dig) {
       const top = digScrollTop(dig.closest('.dig'), Number(dig.dataset.dig));
-      const section = dig.closest('.dig');
-      const scene = digScenes(root).find(sc => sc.section === section && sc.index === Number(dig.dataset.dig));
-      if (scene) playScene(scene); else if (top !== null) window.scrollTo(0, top);
+      if (top !== null) window.scrollTo({top, behavior: media.matches ? 'auto' : 'smooth'});
       return;
     }
     const link = event.target.closest?.('a[href^="#"]');
@@ -341,102 +338,6 @@ export function mountHome(root) {
     if (top !== null) window.scrollTo({top, behavior: 'auto'});
   };
   root.addEventListener('focusin', reveal);
-  /* Presenter shortcut (deliberately not shown on the page). Right moves quickly to the start of the next
-     scene, then plays the whole scene slowly (PLAY_MS, the same for every scene however long its scroll).
-     Left plays the current scene backwards, then moves quickly to the previous scene's finished state.
-     From anywhere mid-scene, Right finishes the scene and Left rewinds it, at the same speed. A press
-     during a glide counts from where the glide is headed, so every press is one scene. Ignored while
-     typing in a visible field or with a modifier held. Chapter buttons use the same motion. */
-  const PLAY_MS = Number(root.dataset.playMs) || 5200;
-  let glide = 0, aim = null, glideStart = 0, lastWheel = 0;
-  const stopGlide = () => { cancelAnimationFrame(glide); glide = 0; aim = null; };
-  const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  const easeSine = t => .5 - Math.cos(Math.PI * t) / 2;
-  const moveLeg = (from, to) => ({to, ms: Math.min(1400, 420 + Math.abs(to - from) / window.innerHeight * 240), ease: easeInOut});
-  /* A scene's play leg lasts PLAY_MS for the whole scene, or its share when starting mid-scene. */
-  const playLeg = (from, to, scene) => ({to, ms: Math.max(350, PLAY_MS * Math.min(1, Math.abs(to - from) / Math.max(1, scene.end - scene.start))), ease: easeSine});
-  /* Runs legs one after another; each leg is {to, ms, ease}. Legs that would not move are skipped. */
-  const run = (legs, target) => {
-    cancelAnimationFrame(glide);
-    if (media.matches) { aim = null; window.scrollTo(0, target); return; }
-    let from = window.scrollY;
-    const todo = legs.filter(leg => { const keep = Math.abs(leg.to - from) > 1; from = leg.to; return keep; });
-    if (!todo.length) { aim = null; return; }
-    aim = target; glideStart = performance.now();
-    let i = 0, start = performance.now();
-    from = window.scrollY;
-    const tick = now => {
-      const leg = todo[i];
-      const t = Math.min(1, (now - start) / leg.ms);
-      window.scrollTo(0, from + (leg.to - from) * leg.ease(t));
-      if (t < 1) { glide = requestAnimationFrame(tick); return; }
-      i += 1; from = leg.to; start = now;
-      if (i < todo.length) glide = requestAnimationFrame(tick); else { glide = 0; aim = null; }
-    };
-    glide = requestAnimationFrame(tick);
-  };
-  /* The feature cards are stops too: each card's scroll position when it reaches its sticky top. Sticky
-     cards report their stuck position, so natural tops are summed from the container instead. */
-  const cardScenes = () => {
-    const box = root.querySelector('.feature-stack');
-    if (!box || window.matchMedia?.('(max-width: 860px)').matches) return [];
-    const cs = getComputedStyle(box), gap = parseFloat(cs.rowGap) || 0;
-    let y = box.getBoundingClientRect().top + window.scrollY + (parseFloat(cs.paddingTop) || 0);
-    return [...box.querySelectorAll('.stack-card')].map(card => {
-      const at = Math.round(y - (parseFloat(getComputedStyle(card).top) || 0));
-      y += card.offsetHeight + gap;
-      return {start: at, end: at};
-    });
-  };
-  const allScenes = () => [...digScenes(root), ...cardScenes()].sort((a, b) => a.start - b.start);
-  const playScene = scene => { const y = window.scrollY; run([moveLeg(y, scene.start), playLeg(scene.start, scene.end, scene)], scene.end); };
-  const forward = from => {
-    const scenes = allScenes();
-    const next = scenes.find(sc => sc.end > from + 4);
-    if (!next) return null;
-    const y = window.scrollY;
-    /* Inside the scene (or a glide already heading into it): finish it from where the page is. */
-    if (from >= next.start - 4) return [[playLeg(Math.max(y, next.start), next.end, next)], next.end];
-    return [[moveLeg(y, next.start), playLeg(next.start, next.end, next)], next.end];
-  };
-  const backward = from => {
-    const scenes = allScenes();
-    const k = scenes.findLastIndex(sc => sc.start < from - 4);
-    const y = window.scrollY;
-    if (k < 0) return from > 4 ? [[moveLeg(y, 0)], 0] : null;
-    const cur = scenes[k], prev = scenes[k - 1], back = prev ? prev.end : 0;
-    /* Past the scene's end (between scenes): go back to its finished state. */
-    if (from > cur.end + 4) return [[moveLeg(y, cur.end)], cur.end];
-    return [[playLeg(Math.min(y, cur.end), cur.start, cur), moveLeg(cur.start, back)], back];
-  };
-  const typingIn = target => {
-    const field = target.closest?.('input, textarea, select, [contenteditable="true"]');
-    if (!field) return false;
-    /* A field scrolled out of view keeps focus but is not being typed in: let the arrows work. */
-    const r = field.getBoundingClientRect();
-    if (r.bottom < 0 || r.top > window.innerHeight) { field.blur(); return false; }
-    return true;
-  };
-  const step = event => {
-    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.defaultPrevented || event.repeat) return;
-    if (typingIn(event.target) || event.target.closest?.('video')) return;
-    event.preventDefault();
-    const plan = (event.key === 'ArrowRight' ? forward : backward)(aim ?? window.scrollY);
-    if (plan) run(...plan);
-  };
-  /* Taking over: a click or touch stops a glide. A wheel stops it only when it is a new gesture; the
-     trackpad's momentum from a scroll made just before the key press is absorbed instead of cancelling. */
-  const onWheel = event => {
-    const now = performance.now(), gap = now - lastWheel;
-    lastWheel = now;
-    if (!glide) return;
-    if (gap > 140 && now - glideStart > 250) { stopGlide(); return; }
-    event.preventDefault();
-  };
-  window.addEventListener('wheel', onWheel, {passive: false});
-  ['touchstart', 'mousedown'].forEach(type => window.addEventListener(type, stopGlide, {passive: true}));
-  window.addEventListener('keydown', step);
   /* Hero keys: pressing a key sinks only that key, like a real keycap. Purely visual: it does not move
      focus or touch the search box, and the browser's own Ctrl+F is never intercepted. */
   const press = root.querySelector('.sf-hero');
@@ -454,5 +355,5 @@ export function mountHome(root) {
   video?.addEventListener('error', unavailable); // the demo version has no preview video
   update();
   root.ownerDocument?.fonts?.ready?.then(() => { footerCache.size = null; schedule(); });
-  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); window.removeEventListener('keydown', step); stopGlide(); window.removeEventListener('wheel', onWheel); ['touchstart', 'mousedown'].forEach(type => window.removeEventListener(type, stopGlide)); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video?.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
+  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video?.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
 }

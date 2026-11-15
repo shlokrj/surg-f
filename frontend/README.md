@@ -19,7 +19,7 @@ npm run dev
 
 Run the backend as described in [backend/README.md](../backend/README.md). `VITE_BACKEND_URL` defaults to `http://localhost:8000`; `VITE_USE_FIXTURE=true` in `frontend/.env.local` reads `shared/search.fixture.json` instead. The video owner hosts prepared footage in the Databricks Volume. From the repo root with the team `.env`, run `python scripts/fetch_videos.py VID01` to download the Git-ignored demo video into `frontend/public/videos/`. You can also set `VITE_VIDEO_BASE_URL` to a host with `VID01.mp4` and `VID02.mp4`.
 
-**Homepage versions.** `/` is the product site. `/demo` is the original presentation version. `/presentation-demo` is the 5-minute pitch and `/video-demo` the 3-minute Databricks-track video; scripts are in [../pitch/](../pitch/README.md). `?mode=<name>` (or `?demo`) on any URL does the same, which also works on a host that does not serve `index.html` for unknown paths. While presenting, the Right arrow moves to the next scene and plays it; Left rewinds.
+**Homepage versions.** `/` is the product site. `/demo` is the original presentation version. `/presentation-demo` is the 5-minute pitch and `/video-demo` the 3-minute Databricks-track video; scripts are in [../pitch/](../pitch/README.md). `?mode=<name>` (or `?demo`) on any URL does the same, which also works on a host that does not serve `index.html` for unknown paths.
 
 Put playable assets at `frontend/public/videos/VID01.mp4`, etc., or set `VITE_VIDEO_BASE_URL` to a URL containing the same filenames. The case manifest maps `VID01` and `VID02`.
 

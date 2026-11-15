@@ -2,14 +2,14 @@
 
 Page: `/video-demo`, recorded full screen. Devpost limit: **3:00**. This video is for the Databricks sponsorship track, so more than half of it shows how we used Databricks, and it names each product on screen.
 
-The voiceover is split across the four of us by topic. Record each part separately and lay it over the screen recording, or record it live in one take. **→** means press Right once (each scene plays in about 3.8 s).
+The voiceover is split across the four of us by topic. Record each part separately and lay it over the screen recording, or record it live in one take. **→** means scroll on to the next scene and let it play; scroll steadily so each scene finishes before the next.
 
 | # | Segment | Voice | Time | On screen |
 |---|---|---|---|---|
 | 1 | Problem | Shlok | 0:00–0:25 | hero, 2 problem scenes |
 | 2 | Solution | Mihir | 0:25–1:00 | 3 solution scenes |
 | 3 | Databricks: storage, compute, tracking | Aadhitya | 1:00–1:50 | Volume, serverless jobs, MLflow |
-| 4 | Databricks: data and serving | Rohan | 1:50–2:35 | Lakeflow and Delta; SQL, Genie and Llama |
+| 4 | Databricks: data, serving and hosting | Rohan | 1:50–2:35 | Lakeflow and Delta; SQL, Genie and Llama; Databricks Apps |
 | 5 | Live in the app, then close | Shlok | 2:35–3:00 | case page, Lil Doc answering through Genie |
 
 About 400 spoken words. Leave a short pause at each **→** so the scene can play.
@@ -25,6 +25,7 @@ Name each one while its scene is on screen. Judges are scoring how many we used 
 5. **Databricks SQL**: the warehouse behind search.
 6. **Genie**: free-form questions over our quiz-facts view.
 7. **Foundation Model APIs**: Llama 3.3 70B routes each chat message.
+8. **Databricks Apps** (next, not deployed yet): where the whole app will run. Say "next" or "we're moving to".
 
 ---
 
@@ -70,7 +71,7 @@ Name each one while its scene is on screen. Judges are scoring how many we used 
 
 > MLflow tracks every run. We picked the smoothing setting on tuning surgeries before reading the test, and the demo model is run 9d18d20a, with a test F1 of 0.34 across all 29 labels.
 
-## 4. Databricks: data and serving: Rohan (1:50–2:35)
+## 4. Databricks: data, serving and hosting: Rohan (1:50–2:35)
 
 **→ Lakeflow and Delta**
 
@@ -79,6 +80,10 @@ Name each one while its scene is on screen. Judges are scoring how many we used 
 **→ SQL, Genie and Llama**
 
 > Search runs parameterized queries on a Databricks SQL warehouse. Chat goes to Llama 3.3 70B on the Foundation Model APIs, which picks a tool, and free-form questions go to a Genie space built on our quiz-facts view.
+
+**→ Databricks Apps** (marked "Planned")
+
+> And next, the whole app moves onto Databricks Apps, running inside the workspace under its own service principal.
 
 ## 5. Live in the app, then close: Shlok (2:35–3:00)
 

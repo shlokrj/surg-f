@@ -1,6 +1,6 @@
 # Presentation script: 5 minutes, 4 speakers
 
-Page: `/presentation-demo`. One person drives the arrows for the whole talk (the speaker, or a teammate beside the laptop). **→** means press Right once and wait for the scene to play (about 5 s). Talk over the animation; it is paced for that.
+Page: `/presentation-demo`. One person scrolls for the whole talk (the speaker, or a teammate beside the laptop). **→** means scroll on to the next scene and let it play; each scene holds once it has played, so talk over it and move on when you finish the line.
 
 Speaker assignments follow who built each part (see `agent-kit/PROGRESS.md`). Swap names freely; the segments stand on their own.
 
@@ -9,8 +9,8 @@ Speaker assignments follow who built each part (see `agent-kit/PROGRESS.md`). Sw
 | 1 | Hook and problem | Shlok | 0:00–1:05 | hero, 3 problem scenes |
 | 2 | Solution and features | Mihir | 1:05–2:25 | 5 solution scenes, 3 feature cards |
 | 3 | How it works | Rohan | 2:25–3:20 | the block, 6 stack layers |
-| 4 | Model and Databricks | Aadhitya | 3:20–4:35 | 4 model scenes, 5 Databricks scenes |
-| 5 | What's next and close | Shlok | 4:35–5:00 | 4 future scenes |
+| 4 | Model and Databricks | Aadhitya | 3:20–4:40 | 4 model scenes, 6 Databricks scenes |
+| 5 | What's next and close | Shlok | 4:40–5:00 | 4 future scenes |
 
 About 690 spoken words at roughly 140 words a minute. If you run long, cut the lines marked *(optional)*.
 
@@ -96,7 +96,7 @@ About 690 spoken words at roughly 140 words a minute. If you run long, cut the l
 
 ---
 
-## 4. Model and Databricks: Aadhitya (3:20–4:35)
+## 4. Model and Databricks: Aadhitya (3:20–4:40)
 
 **→ Held-out test** (49 tiles sort into 42, 3 and 4)
 
@@ -134,11 +134,15 @@ About 690 spoken words at roughly 140 words a minute. If you run long, cut the l
 
 > And search and chat run on Databricks SQL, Genie and the Foundation Model APIs.
 
+**→ Databricks Apps** (marked "Planned")
+
+> Next, we're moving the whole app onto Databricks Apps, so it runs inside the workspace with its own service principal and no personal tokens.
+
 ---
 
-## 5. What's next and close: Shlok (4:35–5:00)
+## 5. What's next and close: Shlok (4:40–5:00)
 
-**→ Lil Counsel → Lil Ledger → Lil Watch → Lil Pal** (press once per agent; they reveal beside Lil Doc)
+**→ Lil Counsel → Lil Ledger → Lil Watch → Lil Pal** (scroll through; they reveal beside Lil Doc)
 
 > Lil Doc teaches today. Next, the same index can serve everyone around an operation: a legal review, billing, quality and safety, and the patient.
 
@@ -149,5 +153,5 @@ About 690 spoken words at roughly 140 words a minute. If you run long, cut the l
 ## If something goes wrong
 
 - **A scene shows a gradient instead of real frames:** the video did not load. Keep talking; the scenes still make sense.
-- **You pressed too far:** press **Left**. It rewinds one scene.
+- **You scrolled too far:** scroll back, or click the chapter name on the right.
 - **Live question from a judge:** click **Open a case** (top right), ask Lil Doc, or enter `/model` to open the 3D view.
