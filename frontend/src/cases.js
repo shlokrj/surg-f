@@ -6,3 +6,8 @@ export function videoForCase(caseId) {
   const file = knownCases[caseId];
   return file ? `${videoBase}/${file}` : null;
 }
+
+// Binding for the hosted, unmodified Cholec80 25 fps assets.
+export function videoAssetForCase(caseId) {
+  return knownCases[caseId] ? `${caseId}-cholec80-25fps-v1` : null;
+}
