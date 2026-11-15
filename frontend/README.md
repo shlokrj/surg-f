@@ -53,8 +53,14 @@ On the home page, **View clipper event at 11:14** opens VID01 at 674 seconds. Th
 
 With the backend returning real rows and `VID01.mp4` available, search `clipper`. Click the first result and confirm `VID01` seeks to `11:14` (674 s). Repeat with VID02: the first `clipper` annotation is `VID02 1255–1268` (20:55). Also check a result from a case without video (for example any `clipper` hit outside VID01/VID02), a `prediction` result, and a no-match query. Run `npm run build` for a production build.
 
-## Planned stage 3: video localization
+## Experimental bounding boxes
 
-Planned stage 3: a player toggle for instrument/anatomy boxes and readable labels/scores, with later supported action links. Proposed behavior includes clearing stale overlays on seek/case change and correct fullscreen/letterbox scaling. Use explicitly labeled fixtures only after schema agreement. The reference screenshot is not our procedure taxonomy or real prediction output.
+Stage 3 is owned by Shlok on `feat/spatial-overlays`; stage 2 continues independently on `ml-dev`. Enable **Bounding boxes**, then choose a **Sampled frame**. Instrument/anatomy filters hide categories; the minimum-score slider hides lower-scoring detections (scores are not calibrated probabilities). Use **Fullscreen with overlays** to expand the video container; the native video fullscreen button may omit HTML overlays.
 
-See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.
+The included VID01 artifact contains real Grounding DINO predictions for frames 674, 680 and 689 only. Boxes expire after 120 ms, so ordinary playback mostly has no boxes. Some predictions are visibly incorrect (including scissors/irrigator in the clipper example); scores are not calibrated accuracy. This is a pipeline prototype, not reviewed annotations or continuous tracking. VID02 has no artifact, and local uploads are deliberately unsupported.
+
+The player checks case, versioned asset ID, dimensions, timestamps, labels and coordinates before rendering. Keep the existing 854×480 25 fps VID01 asset; replacement videos need a new asset ID and timebase verification. See [runner setup and provenance](../ml/localization/README.md).
+
+Checks: `node --test frontend/test/*.test.js` from the repository root and `npm --prefix frontend run build`. During the `frontend/dev` merge, local Chrome confirmed that the home clipper link seeks to 11:14 and the custom controls, content filter, and overlay toggle appear together. The current VID01 MP4 reports `videoWidth=854` and `videoHeight=484` in Chrome, while `public/overlays/VID01.json` declares `854×480`; the overlay's dimension guard correctly hides all boxes. Shlok needs to verify the source-to-video pixel mapping and update the artifact or video binding before browser box acceptance. Then enable boxes, choose all three frames, filter categories, play/seek beyond 120 ms and confirm clearing, resize/fullscreen, and switch to VID02 and a local upload to confirm unavailable states.
+
+Player DOM integration checks: `node --test frontend/test/*.test.js`. These simulate media state and do not replace real-browser playback/fullscreen verification.
