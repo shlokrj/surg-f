@@ -19,8 +19,24 @@ async function getJson(path) {
   }
   return response.json();
 }
+function tripletRows() {
+  return tripletCsv.trim().split(/\r?\n/).slice(1).map(line => {
+    const [id, start, end, instrument, verb, target, source] = line.split(',');
+    return { case_id: id, start_sec: Number(start), end_sec: Number(end), instrument, verb, target, source };
+  });
+}
 export async function searchClips(query) {
-  if (fixtureMode) return fixture.results.filter(result => result.label.toLowerCase() === query.toLowerCase().trim());
+  if (fixtureMode) {
+    // Fixture mode still answers instrument searches for the hosted demo cases from the verified
+    // annotation intervals bundled in shared/triplets.annotation.csv (one hit per interval).
+    const label = query.toLowerCase().trim();
+    const seen = new Set();
+    const annotated = tripletRows().filter(row => row.instrument === label).filter(row => {
+      const key = `${row.case_id}:${row.start_sec}:${row.end_sec}`;
+      return !seen.has(key) && seen.add(key);
+    }).map(row => ({ case_id: row.case_id, start_sec: row.start_sec, end_sec: row.end_sec, label: row.instrument, source: row.source }));
+    return [...fixture.results.filter(result => result.label.toLowerCase() === label), ...annotated];
+  }
   const data = await getJson(`/search?q=${encodeURIComponent(query)}`);
   if (!Array.isArray(data.results)) throw new Error('Invalid search response');
   return data.results;
@@ -72,8 +88,5 @@ export const instrumentLabels = ['clipper', 'hook', 'grasper', 'irrigator', 'bip
 
 // Verified CholecT50 annotation intervals supplied by Data/ML for VID01 and VID02.
 export function getActionRows(caseId) {
-  return tripletCsv.trim().split(/\r?\n/).slice(1).map(line => {
-    const [id, start, end, instrument, verb, target, source] = line.split(',');
-    return { case_id: id, start_sec: Number(start), end_sec: Number(end), instrument, verb, target, source };
-  }).filter(row => row.case_id === caseId);
+  return tripletRows().filter(row => row.case_id === caseId);
 }

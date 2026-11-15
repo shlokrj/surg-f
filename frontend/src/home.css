@@ -1,6 +1,6 @@
 /* Homepage only. The inset frame expands with native scroll; no scroll interception.
    Colors, buttons and type sizes come from the shared tokens in style.css. Minimum text size is 14px. */
-body:has(.landing){background:#fff;color:var(--ink)}
+body:has(.landing){background:var(--page);color:var(--ink)}
 body:has(.landing)>.topbar,body:has(.landing) #app>.topbar{display:none}
 
 /* Shared wordmark (hero, nav, footer, dashboard). One geometry at every size; see home.js. */
@@ -8,7 +8,7 @@ body:has(.landing)>.topbar,body:has(.landing) #app>.topbar{display:none}
 .sf-plus{font-size:0;letter-spacing:0}
 .sf-lens{display:inline-block;flex:none;width:.72em;height:.72em;margin:0 .015em 0 .075em;position:relative;top:.125em;overflow:visible}
 
-.landing{--journey:0;--frame-gap:clamp(10px,1.3vw,22px);background:#fff;font-family:'Inclusive Sans Variable',sans-serif;color:var(--ink)}
+.landing{--journey:0;--frame-gap:clamp(10px,1.3vw,22px);background:var(--page);font-family:'Inclusive Sans Variable',sans-serif;color:var(--ink)}
 .landing button,.landing a{font-family:inherit}.landing a{color:inherit}
 .landing h2{font-weight:400;letter-spacing:-.04em;line-height:1.08;text-wrap:balance}
 .landing p{text-wrap:balance}
@@ -19,7 +19,7 @@ body:has(.landing)>.topbar,body:has(.landing) #app>.topbar{display:none}
 /* Hero: plus-mark dithered teal sky in a rounded frame that opens to full bleed as you scroll. */
 .landing-intro{height:145svh;min-height:850px}
 .intro-sticky{position:sticky;top:0;height:100svh;min-height:580px;overflow:clip;padding:calc(var(--frame-gap)*(1 - var(--journey)))}
-.hero-frame{position:relative;height:100%;overflow:clip;border-radius:calc(28px*(1 - var(--journey)));background:linear-gradient(#1a8a81,#52b4a8 55%,#e8f7f3);color:#fff;isolation:isolate}
+.hero-frame{position:relative;height:100%;overflow:clip;border-radius:calc(28px*(1 - var(--journey)));background:linear-gradient(#1a8a81,#52b4a8 55%,#f7f9f6);color:#fff;isolation:isolate}
 .sky-dither{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:-1}
 .hero-dither{inset:auto;left:50%;top:50%;width:100vw;height:max(100svh,580px);translate:-50% -50%;transform:scale(calc(1 + var(--journey)*.08))}
 .hero-nav{position:absolute;left:clamp(20px,3vw,44px);right:clamp(20px,3vw,44px);top:22px;display:flex;align-items:center;justify-content:space-between;gap:20px;z-index:2}
@@ -81,7 +81,6 @@ body:has(.landing)>.topbar,body:has(.landing) #app>.topbar{display:none}
 
 .local-section{background:var(--page);padding:80px 7vw 96px;display:flex;justify-content:space-between;align-items:center;gap:40px;border-top:1px solid var(--line)}
 .local-section h2{font-size:clamp(30px,3vw,44px);margin:0 0 14px}.local-section p{color:var(--ink-muted);font-size:18px;line-height:1.6;margin:0;max-width:34ch}
-.landing-footer{background:var(--page);padding:28px 4vw 36px;display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:15px;border-top:1px solid var(--line)}.landing-footer .sf-mark{font-size:30px;color:var(--brand-strong)}.landing-footer a{text-decoration:none;color:var(--ink-muted)}.landing-footer a:hover{color:var(--ink)}
 
 .landing :focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:6px}
 .hero-frame :focus-visible{outline-color:#fff}
@@ -100,3 +99,19 @@ body:has(.landing)>.topbar,body:has(.landing) #app>.topbar{display:none}
 .local-open.drag{background:var(--surface-tint);border-color:#9db5aa}
 .landing .hero-search input:focus-visible{outline:none}
 @media(max-width:480px){.hero-search .glyph{display:none}.landing .hero-search{padding-left:16px}}
+.hs-case{flex:none;padding:5px 9px;border-radius:var(--radius-sm);background:var(--brand-tint);color:var(--brand-strong);font-size:14px;font-weight:600}
+
+/* Footer, after Hangar: a tall section with a sticky panel. The giant mark widens, darkens and gains
+   weight as the footer scrolls in (--footer-progress 0 → 1). The lens stroke follows the measured stem
+   (84 units at weight 400, 113 at 600). Reduced motion shows the final state. */
+.site-footer{--footer-progress:0;position:relative;height:165svh;min-height:900px;background:#edf3f1;color:var(--ink-muted)}
+.footer-sticky{position:sticky;top:0;height:100svh;min-height:600px;display:grid;grid-template-rows:auto 1fr auto;padding:40px clamp(20px,3vw,44px) 26px;border-top:1px solid var(--line);overflow:clip}
+.footer-top{display:flex;justify-content:space-between;align-items:flex-start;gap:40px;z-index:1}
+.footer-identity{display:flex;align-items:flex-start;gap:16px}.footer-identity .sf-mark{font-size:26px;color:var(--brand-strong)}.footer-identity p{margin:3px 0 0;font-size:15px;line-height:1.5}
+.footer-links{display:flex;gap:28px;font-size:15px}.footer-links a{text-decoration:none}.footer-links a:hover{color:var(--ink)}
+.footer-word{place-self:center;color:#0f4b46;opacity:calc(.06 + .07 * var(--footer-progress));transform:scaleX(calc(.78 + .23 * var(--footer-progress)));transform-origin:50%;will-change:transform,opacity;white-space:nowrap;line-height:.8}
+.footer-word .sf-mark{font-size:clamp(110px,26vw,400px);font-weight:calc(400 + 200 * var(--footer-progress));letter-spacing:-.07em}
+.footer-word .sf-lens{stroke-width:calc(84 + 29 * var(--footer-progress))}
+.footer-legal{display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:14px;z-index:1}
+@media(max-width:860px){.site-footer{height:140svh;min-height:760px}.footer-sticky{padding:28px 20px 20px}.footer-top{flex-direction:column;gap:20px}.footer-links{gap:20px}.footer-word .sf-mark{font-size:27vw}.footer-legal{flex-direction:column;align-items:flex-start;gap:6px}}
+@media(prefers-reduced-motion:reduce){.site-footer{height:100svh;min-height:600px}}

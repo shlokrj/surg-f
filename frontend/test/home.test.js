@@ -57,7 +57,8 @@ test('logo and back-to-top scroll only the window, never the clipped hero layers
  globalThis.requestAnimationFrame=()=>1;globalThis.cancelAnimationFrame=()=>{};
  const root=document.querySelector('.landing');
  assert.equal(root.querySelector('.small-brand').getAttribute('href'),'#top');
- assert.equal(root.querySelector('#hero-q').value,'When is the cystic duct clipped?');
+ assert.equal(root.querySelector('#hero-q').value,'When is the cystic duct cut?');
+ assert.equal(root.querySelector('.hs-case').textContent,'VID01');
  assert.equal(root.querySelector('.hero-search').tagName,'FORM');
  assert.equal(root.querySelector('.hs-time'),null,'no timestamp chip in the hero search');
  const calls=[];window.scrollTo=o=>calls.push(o);

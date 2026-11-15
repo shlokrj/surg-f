@@ -120,8 +120,8 @@ function detectRequest(input) {
     if (/3d|model|anatomy/.test(lower)) modes.push('model');
     if (/when|timestamp|show me|find|where|used|occurred|happen/.test(lower) || !modes.length) modes.unshift('timestamp');
   }
-  // "clip", "clipped", "clipping" mean the clipper (for example "When is the cystic duct clipped?").
-  const label = instrumentLabels.find(item => new RegExp(`\\b${item}\\b`).test(lower)) ?? (/\bclip(?:s|ped|ping)?\b/.test(lower) ? 'clipper' : undefined);
+  // "clipped" means the clipper and "cut" the scissors (for example "When is the cystic duct cut?").
+  const label = instrumentLabels.find(item => new RegExp(`\\b${item}\\b`).test(lower)) ?? (/\bclip(?:s|ped|ping)?\b/.test(lower) ? 'clipper' : /\bcut(?:s|ting)?\b/.test(lower) ? 'scissors' : undefined);
   return { modes, label };
 }
 function parseChartRequest(input) {

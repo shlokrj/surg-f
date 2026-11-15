@@ -6,7 +6,8 @@ const lens = `<svg class="sf-lens" aria-hidden="true" viewBox="-300 -300 720 720
 export const wordmark = (cls = '') => `<span class="sf-mark ${cls}">surg<span class="sf-plus">+</span>${lens}f</span>`;
 
 /* Sky palette, darkest at the top. */
-const SKY = ['#1a8a81', '#2a988e', '#3ba69b', '#52b4a8', '#6cc3b7', '#8ad2c6', '#acdfd5', '#cdece5', '#e8f7f3', '#f8fdfb'];
+/* The last stop is the page color (--page), so the hero fades into the section below with no seam. */
+const SKY = ['#1a8a81', '#2a988e', '#3ba69b', '#52b4a8', '#6cc3b7', '#8ad2c6', '#acdfd5', '#cdece5', '#e6f2ee', '#f7f9f6'];
 const RGB = SKY.map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
 const BAYER = [0,32,8,40,2,34,10,42,48,16,56,24,50,18,58,26,12,44,4,36,14,46,6,38,60,28,52,20,62,30,54,22,3,35,11,43,1,33,9,41,51,19,59,27,49,17,57,25,15,47,7,39,13,45,5,37,63,31,55,23,61,29,53,21].map(n => (n + .5) / 64);
 
@@ -31,6 +32,7 @@ const sky = g => {
 const STEP = .42, LIFT = STEP * 4;
 export function ditherCells(cols, rows, {horizon: base = .6, ceiling = 9, ramp = 1} = {}) {
   const bg = new Uint8ClampedArray(cols * rows * 3), mark = new Uint8ClampedArray(cols * rows * 4);
+  const top = SKY.length - 1;
   const aspect = cols / Math.max(1, rows);
   for (let x = 0; x < cols; x++) {
     const u = x / Math.max(1, cols - 1);
@@ -41,9 +43,10 @@ export function ditherCells(cols, rows, {horizon: base = .6, ceiling = 9, ramp =
       if (t > 0) g += (smooth(Math.min(1, t)) * 5 + (noise(u * aspect * 9, v * 9) - .5) * 1.6 * Math.min(1, t * 2.5)) * ramp;
       g = Math.max(0, Math.min(ceiling, g));
       const level = Math.floor(g / STEP) * STEP, frac = (g - level) / STEP, i = y * cols + x;
-      const [r, gr, b] = sky(level);
+      const settled = g >= top - .35; // fully faded: exact page color, no marks
+      const [r, gr, b] = settled ? RGB[top] : sky(level);
       bg[i * 3] = r; bg[i * 3 + 1] = gr; bg[i * 3 + 2] = b;
-      if (frac > BAYER[(y & 7) * 8 + (x & 7)]) {
+      if (!settled && frac > BAYER[(y & 7) * 8 + (x & 7)]) {
         const [mr, mg, mb] = sky(level + LIFT);
         mark[i * 4] = mr; mark[i * 4 + 1] = mg; mark[i * 4 + 2] = mb; mark[i * 4 + 3] = 255;
       }
@@ -76,9 +79,9 @@ export function paintDither(canvas) {
   }
 }
 
-/* The prefilled hero question; it opens VID01 at the annotated clipper-clips-cystic-duct triplet (698 s). */
-export const DEMO_QUESTION = 'When is the cystic duct clipped?';
-export const DEMO_SEEK = 698;
+/* The prefilled hero question. VID01 has one annotated scissors-cut-cystic-duct triplet, 860–877 s. */
+export const DEMO_QUESTION = 'When is the cystic duct cut?';
+export const DEMO_SEEK = 860;
 
 const searchGlyph = `<svg class="glyph" aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 5 5"/></svg>`;
 const clock = seconds => { const n = Math.floor(Number(seconds) || 0); return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`; };
@@ -123,7 +126,7 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
           <div class="intro-copy"><h1 id="landing-title">${wordmark()}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="#case-preview">See the demo <span aria-hidden="true">↓</span></a></div>
           <form class="hero-search" id="hero-search" role="search">
             <label class="sr-only" for="hero-q">Ask about the VID01 demo case</label>
-            ${searchGlyph}<input id="hero-q" name="q" value="${DEMO_QUESTION}" autocomplete="off" spellcheck="false" required>
+            ${searchGlyph}<span class="hs-case" aria-hidden="true">VID01</span><input id="hero-q" name="q" value="${DEMO_QUESTION}" autocomplete="off" spellcheck="false" required>
             <button type="submit" aria-label="Search VID01"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
           </form>
         </div>
@@ -139,7 +142,16 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
     ${feature({id: 'feature-chart', title: 'See which instruments appear, and for how long.', body: 'Time on screen for each instrument, totalled from the dataset annotations.', action: 'Show the instrument chart', command: '/chart instruments', horizon: .62, flip: true, preview: instrumentsPreview(showcase.timeline)})}
     ${feature({id: 'feature-quiz', title: 'Test yourself on the procedure.', body: 'Five questions on step order and instruments, each with an explanation and example clips.', action: 'Start the quiz', command: '/quiz', horizon: .62, preview: quizPreview(showcase.quiz)})}
     <section class="local-section" aria-labelledby="local-heading"><div><h2 id="local-heading">Open your own video.</h2><p>MP4 and MOV files open for local playback. Indexed search covers the demo cases.</p></div><button type="button" id="drop-zone" class="btn-secondary local-open" aria-label="Open a local MP4 or MOV for playback only">Open a video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>${error ? `<p class="home-error" role="alert">${error}</p>` : ''}</section>
-    <footer class="landing-footer">${wordmark()}<a href="#top">Back to top ↑</a></footer>
+    <footer class="site-footer" aria-label="About surg+f">
+      <div class="footer-sticky">
+        <div class="footer-top">
+          <div class="footer-identity">${wordmark()}<p>Search surgical video.<br>Built at MadHacks 2026.</p></div>
+          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#feature-steps">Features</a><a href="#top">Back to top</a></nav>
+        </div>
+        <div class="footer-word" aria-hidden="true">${wordmark()}</div>
+        <div class="footer-legal"><span>Shlok Jadhav, Aadhitya Balaji, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>
+      </div>
+    </footer>
   </main>`;
 }
 
@@ -147,12 +159,19 @@ export function mountHome(root) {
   if (!root) return () => {};
   const intro = root.querySelector('.landing-intro');
   const canvases = [...root.querySelectorAll('.sky-dither')];
+  const footer = root.querySelector('.site-footer');
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
   let frame = 0;
   const update = () => {
     frame = 0;
     const progress = media.matches ? 0 : Math.max(0, Math.min(1, -intro.getBoundingClientRect().top / Math.max(1, intro.offsetHeight - window.innerHeight)));
     root.style.setProperty('--journey', progress.toFixed(4));
+    /* Footer word widens and gains weight across the footer's extra scroll length, like Hangar's. */
+    if (footer) {
+      const span = Math.max(1, footer.offsetHeight - window.innerHeight);
+      const fp = media.matches ? 1 : Math.max(0, Math.min(1, -footer.getBoundingClientRect().top / span));
+      footer.style.setProperty('--footer-progress', fp.toFixed(4));
+    }
     canvases.forEach(paintDither);
   };
   const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
