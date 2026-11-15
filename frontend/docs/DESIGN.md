@@ -54,7 +54,7 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
   3. MLflow: v1 (3ce73d86, 0.304) against v2 (9d18d20a, 0.343), then the six-setting smoothing sweep with 2:2 selected.
   4. Lakeflow and Delta: clips_all.csv rides through stage and MERGE into surgf_clips (11,264 labels, 1,658 predictions), and a rerun inserts 0.
   5. SQL, Genie and Llama: three logged chat checks with their route and time, and the Genie space's view, table and function.
-  6. Databricks Apps (next, marked "Planned"): the app card with the web app, the FastAPI backend and its service principal; wires reach the SQL warehouse, Genie space, Llama endpoint and Volume, and a key travels down each. The caption says it is not deployed yet.
+  6. Databricks Apps: "Hosted on Databricks Apps." An app card with the databricks logo, the web app, the FastAPI backend and its service principal; wires reach the SQL warehouse, Genie space, Llama endpoint and Volume, and a key travels down each. The team asked for this to read as done; deploy before judging.
   Numbers follow the scroll (`data-scrub`). Class names are scoped per section; check for collisions with `architecture.css` before adding generic names.
 - **Homepage versions** (`VERSIONS` in `home.js`, chosen from the URL in `main.js`). Each lists its sections in order; `only` picks a stage's chapters and `per` its pace. Scripts and the fact sheet are in `pitch/` at the repo root.
   - **Product** (`/`): hero, Find the clip, the three feature cards, the stack, model notes, Open your own video.

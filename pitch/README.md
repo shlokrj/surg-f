@@ -20,7 +20,7 @@ Locally, add the path to the dev server URL, for example `http://localhost:5173/
 3. Features, 3 cards: step timeline, instrument chart, quiz.
 4. The stack: the block, then 6 layers.
 5. Model, 4 scenes: held-out test; instruments; v1 to v2; boxes on the video.
-6. Databricks, 6 scenes: Volume; serverless jobs; MLflow; Lakeflow and Delta; SQL, Genie and Llama; next, Databricks Apps.
+6. Databricks, 6 scenes: Volume; serverless jobs; MLflow; Lakeflow and Delta; SQL, Genie and Llama; Databricks Apps.
 7. What's next, 4 scenes: Lil Counsel, Lil Ledger, Lil Watch, Lil Pal.
 
 **Video demo** (faster pace):
@@ -71,5 +71,5 @@ Every version ends with a **Sources** section listing the papers, datasets and t
 - **"The labels are the record"** shows that our labels hold what a record needs. Surg+F does not write clinical notes yet.
 - **Your own video** opens for playback today. Search and the model's labels cover the indexed demo cases; indexing uploads is next.
 - **What's next agents** are concepts. The page says they are not built yet.
-- **Databricks Apps** is planned, not deployed. The chapter says "Next" and "Planned"; say "we're moving to", not "we host on".
+- **Databricks Apps:** the page says Surg+F is hosted on Databricks Apps. Deploy it before you present or record, and share the app link with judges.
 - **Cadaver cost and documentation time:** these are our framing from research. We do not show a number for either, so do not quote one unless you have a source to point to.
