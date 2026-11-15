@@ -3,29 +3,31 @@
 .dig-future .dig-labels::after{background:#2f9c8a}
 .dig-future .mn-heading h2{margin:0}
 .dig-future .mn-heading p{margin:12px 0 0;max-width:34ch;color:var(--ink-muted);font-size:17px;letter-spacing:0;line-height:1.5;text-wrap:pretty}
-.fu-scene{--rv:clamp(0, calc((var(--p) - .1) / .42), 1);--sy:clamp(0, calc((var(--p) - .56) / .2), 1)}
 .fu-badge{position:relative;display:block;border-radius:50%}
 .fu-badge svg{display:block;width:100%;height:100%;border-radius:50%}
 .fu-doc{position:absolute;left:50%;top:24px;display:grid;justify-items:center;gap:4px;translate:-50% 0;color:#fff}
 .fu-doc .fu-badge{width:104px;height:104px;box-shadow:0 0 0 5px #ffffffcc,0 18px 40px #052a2650}
 .fu-doc b{margin-top:6px;font-size:18px}.fu-doc small{font-size:14px;color:#cfe6dc}
 .fu-links{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.fu-links path{fill:none;stroke:#ffffff40;stroke-width:2;stroke-dasharray:.02 .02}
-.fu-links path.met{stroke:#ffffffa0;stroke-dasharray:none}
-.fu-links path.now{stroke:#fff;stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--rv));filter:drop-shadow(0 0 6px #fff)}
+.fu-links path{--r:0;--em:0;fill:none;stroke:color-mix(in srgb,#ffffff40,#fff calc(var(--em) * 100%));stroke-width:2;stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--r))}
 .fu-row{position:absolute;left:14px;right:14px;top:250px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.fu-agent{--r:0;display:grid;justify-items:center;gap:3px;text-align:center;color:#fff}
-.fu-agent .fu-badge{width:96px;height:96px;box-shadow:0 0 0 4px #ffffff55,0 14px 30px #052a2640}
+.fu-agent{--r:0;--em:0;display:grid;justify-items:center;gap:3px;text-align:center;color:#fff;opacity:calc(.82 + .18 * var(--em));transform:translateY(calc(var(--em) * -10px)) scale(calc(1 + .16 * var(--em)))}
+.fu-agent .fu-badge{width:96px;height:96px;box-shadow:0 0 0 4px color-mix(in srgb,#ffffff55,#fff calc(var(--em) * 100%)),0 0 calc(var(--em) * 36px) #9ff3dfaa,0 14px 30px #052a2640}
 .fu-agent .fu-badge svg{filter:saturate(var(--r)) brightness(calc(.14 + .86 * var(--r)))}
 .fu-q{position:absolute;inset:0;display:grid;place-items:center;font:700 44px/1 var(--mono);font-style:normal;color:#9ff3df;text-shadow:0 0 18px #9ff3df99;opacity:calc(1 - var(--r))}
 .fu-agent b{display:grid;margin-top:8px;font-size:16px}
 .fu-agent b > span{grid-area:1/1}
 .fu-agent .real{opacity:var(--r)}.fu-agent .mystery{opacity:calc(1 - var(--r));color:#cfe6dc;letter-spacing:.2em}
 .fu-agent small{font-size:13px;color:#cfe6dc;opacity:var(--r)}
-.fu-agent.is-met{--r:1;opacity:.82}
-.fu-agent.is-now{--r:var(--rv);transform:translateY(calc(var(--rv) * -10px)) scale(calc(1 + .16 * var(--rv)))}
-.fu-agent.is-now .fu-badge{box-shadow:0 0 0 4px #fff,0 0 calc(var(--rv) * 36px) #9ff3dfaa,0 18px 36px #052a2650}
-.fu-agent.is-now .fu-badge::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid #9ff3df;opacity:calc(clamp(0, calc((var(--rv) - .7) * 6), 1) * (1 - clamp(0, calc((var(--p) - .62) * 5), 1)));transform:scale(calc(1 + clamp(0, calc((var(--p) - .45) * 2.5), 1) * .5))}
-.fu-say{position:absolute;left:14px;right:14px;top:420px;display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:16px;background:#fff;color:var(--ink);box-shadow:0 18px 40px #052a2650;opacity:var(--sy);transform:translateY(calc((1 - var(--sy)) * 16px))}
+.fu-say{--say:0;position:absolute;left:14px;right:14px;top:420px;display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:16px;background:#fff;color:var(--ink);box-shadow:0 18px 40px #052a2650;opacity:var(--say);transform:translateY(calc((1 - var(--say)) * 16px))}
 .fu-mini{flex:none;width:46px;height:46px}.fu-mini svg{display:block;width:100%;height:100%;border-radius:50%}
 .fu-say p{margin:0;font-size:16px;line-height:1.4}
+
+/* Desktop: one card for the whole section. Only the first chapter's card is shown, it stays put while
+   the copy changes, and the scroll drives every agent inside it. */
+@media(min-width:861px){
+  .dig-future .layer:not([data-layer="0"]) .pit{visibility:hidden}
+  .dig-future .layer[data-layer="0"] .pit{opacity:clamp(0, calc(1 - var(--s) * 1.4), 1)}
+  .dig-future .layer[data-layer="0"] .fit{opacity:1;transform:translateY(calc(max(var(--s), 0) * 70%)) scale(var(--fit))}
+  .dig-future .layer[data-layer="0"] .v-cap{opacity:1}
+}

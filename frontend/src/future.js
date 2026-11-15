@@ -3,6 +3,7 @@
    says so. Avatars are original inline drawings in Lil Doc's style (round badge, flat colors, closed
    happy eyes). A pinned stage (architecture.js): each chapter reveals one mystery agent. */
 import { avatar as lilDoc } from './lildoc.js';
+import { onStage } from './architecture.js';
 
 const face = (skin, extra = '') => `<circle cx="17" cy="31" r="3" fill="${skin}"/><circle cx="47" cy="31" r="3" fill="${skin}"/><circle cx="32" cy="30" r="15" fill="${skin}"/>${extra}`;
 const eyes = '<path d="M23.5 30.5q2.5-3.5 5 0M35.5 30.5q2.5-3.5 5 0" fill="none" stroke="#2a2a2a" stroke-width="2" stroke-linecap="round"/>';
@@ -56,15 +57,17 @@ const AGENTS = [
   },
 ];
 
-/* One scene per chapter: Lil Doc up top, the four agents in a row. Agents before this chapter are already
-   met, this chapter's agent is revealed by the scroll, and the rest stay mystery silhouettes. */
-const scene = k => `<div class="sc fu-scene" style="--me:${k}">
+/* The scene: Lil Doc up top, the four agents in a row, one speech bubble per agent. Every agent's state
+   (--r reveal, --em spotlight, --say bubble) is set from the scroll, so on desktop one card stays in place
+   and the agents reveal one after another without the scene restarting. On phones each chapter shows
+   its own copy of the scene, revealing that chapter's agent. */
+const scene = () => `<div class="sc fu-scene">
   <div class="fu-doc"><span class="fu-badge">${lilDoc}</span><b>Lil Doc</b><small>Teaching, today</small></div>
-  <svg class="fu-links" viewBox="0 0 560 540" aria-hidden="true">${[76, 212, 348, 484].map((x, j) => `<path class="${j < k ? 'met' : j === k ? 'now' : ''}" pathLength="1" d="M280 210C280 236 ${x} 224 ${x} 248"/>`).join('')}</svg>
-  <div class="fu-row">${AGENTS.map((a, j) => `<div class="fu-agent ${j < k ? 'is-met' : j === k ? 'is-now' : 'is-next'}">
+  <svg class="fu-links" viewBox="0 0 560 540" aria-hidden="true">${[76, 212, 348, 484].map((x, j) => `<path data-j="${j}" pathLength="1" d="M280 210C280 236 ${x} 224 ${x} 248"/>`).join('')}</svg>
+  <div class="fu-row">${AGENTS.map((a, j) => `<div class="fu-agent" data-j="${j}">
     <span class="fu-badge">${a.art}<i class="fu-q" aria-hidden="true">?</i></span>
     <b><span class="real">${a.name}</span><span class="mystery">???</span></b><small>${a.role}</small></div>`).join('')}</div>
-  <div class="fu-say"><span class="fu-mini">${AGENTS[k].art}</span><p>${AGENTS[k].says}</p></div></div>`;
+  ${AGENTS.map((a, j) => `<div class="fu-say" data-j="${j}"><span class="fu-mini">${a.art}</span><p>${a.says}</p></div>`).join('')}</div>`;
 
 export function futureSection() {
   return `<section class="dig dig-model dig-future" id="future" aria-labelledby="future-heading" data-intro="0" data-per="2" style="--travel:8;--nav:1">
@@ -73,8 +76,26 @@ export function futureSection() {
       <div class="dig-map"><ol class="dig-labels" aria-label="Future agents">${AGENTS.map((a, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${a.name}</button></li>`).join('')}</ol></div>
       ${AGENTS.map((a, i) => `<div class="layer" id="future-${a.id}" data-layer="${i}" style="--p:0;--s:1">
         <div class="dig-copy layer-copy"><h3>${a.title}</h3><p>${a.body}</p></div>
-        <div class="pit" style="--k:${i}" role="img" aria-label="${a.name}, a planned agent, revealed beside Lil Doc"><canvas class="sky-dither" data-horizon=".72" data-ceiling="4.6" aria-hidden="true"></canvas><div class="fit">${scene(i)}</div><p class="v-cap">Concept agents, not built yet. Each would read the same Surg+F index as Lil Doc.</p></div>
+        <div class="pit" style="--k:${i}" role="img" aria-label="${a.name}, a planned agent, revealed beside Lil Doc"><canvas class="sky-dither" data-horizon=".72" data-ceiling="4.6" aria-hidden="true"></canvas><div class="fit">${scene()}</div><p class="v-cap">Concept agents, not built yet. Each would read the same Surg+F index as Lil Doc.</p></div>
       </div>`).join('')}
     </div>
   </section>`;
 }
+
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const reveal = p => clamp((p - .1) / .42);
+const speak = p => clamp((p - .56) / .2);
+onStage((section, ps, reduced, {d, stacked}) => {
+  if (section.id !== 'future') return;
+  section.querySelectorAll('.layer').forEach((layer, k) => {
+    layer.querySelectorAll('[data-j]').forEach(el => {
+      const j = Number(el.dataset.j);
+      let r, em, say;
+      if (stacked) { r = j < k ? 1 : j === k ? reveal(ps[k]) : 0; em = j === k ? r : 0; say = j === k ? speak(ps[k]) : 0; }
+      else { r = reveal(ps[j]); const near = clamp(1 - Math.abs(j - d) * 2); em = r * near; say = speak(ps[j]) * clamp(1 - Math.abs(j - d) * 2.5); }
+      el.style.setProperty('--r', r.toFixed(3));
+      el.style.setProperty('--em', em.toFixed(3));
+      el.style.setProperty('--say', say.toFixed(3));
+    });
+  });
+});
