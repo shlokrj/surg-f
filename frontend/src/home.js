@@ -303,6 +303,22 @@ export function mountHome(root) {
     if (top !== null) window.scrollTo({top, behavior: 'auto'});
   };
   root.addEventListener('focusin', reveal);
+  /* Presenter shortcut (deliberately not shown on the page): Left and Right arrows step to the previous or
+     next chapter of the pinned stages (problem, solution, the stack, model notes, Databricks), with the top
+     of the page as the first stop. Ignored while typing or with a modifier held. */
+  const step = event => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.defaultPrevented) return;
+    if (event.target.closest?.('input, textarea, select, [contenteditable="true"], video')) return;
+    const stops = [0, ...[...root.querySelectorAll('.dig')].flatMap(section => [...section.querySelectorAll('.layer')].map((_, i) => digScrollTop(section, i)))]
+      .filter(top => top !== null).map(top => Math.round(Math.max(0, top))).sort((a, b) => a - b);
+    const y = window.scrollY, forward = event.key === 'ArrowRight';
+    const target = forward ? stops.find(top => top > y + 4) : [...stops].reverse().find(top => top < y - 4);
+    if (target === undefined) return;
+    event.preventDefault();
+    window.scrollTo({top: target, behavior: media.matches ? 'auto' : 'smooth'});
+  };
+  window.addEventListener('keydown', step);
   /* Hero keys: pressing a key sinks only that key, like a real keycap. Purely visual: it does not move
      focus or touch the search box, and the browser's own Ctrl+F is never intercepted. */
   const press = root.querySelector('.sf-hero');
@@ -320,5 +336,5 @@ export function mountHome(root) {
   video?.addEventListener('error', unavailable); // the demo version has no preview video
   update();
   root.ownerDocument?.fonts?.ready?.then(() => { footerCache.size = null; schedule(); });
-  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video?.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
+  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); window.removeEventListener('keydown', step); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video?.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
 }
