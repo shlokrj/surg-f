@@ -13,6 +13,9 @@ from evaluate_anatomy_coco import evaluate
 
 CATEGORIES = [{'id': 1, 'name': 'cystic duct', 'supercategory': 'anatomy'},
               {'id': 2, 'name': 'gallbladder', 'supercategory': 'anatomy'}]
+# Optional 3-class layout: Endoscapes' generic instrument boxes as class 3 (no subtype).
+CATEGORIES_WITH_TOOL = CATEGORIES + [{'id': 3, 'name': 'tool', 'supercategory': 'instrument'}]
+LAYOUTS = (CATEGORIES, CATEGORIES_WITH_TOOL)
 
 
 def sha(path):
@@ -33,14 +36,16 @@ def ready_data(root, max_train=None, max_val=None):
         if recorded_hash and recorded_hash != prepared_hash:
             raise ValueError(f'{partition} prepared annotations changed')
         prepared_hashes[partition] = prepared_hash
-        if data['categories'] != CATEGORIES or not data['images']:
+        if data['categories'] not in LAYOUTS or not data['images']:
             raise ValueError(f'{partition} anatomy categories/images are invalid')
+        if partition == 'val' and data['categories'] != subsets['train']['categories']:
+            raise ValueError('train and validation use different categories')
         images = sorted(data['images'], key=lambda image: image['id'])
         if limit is not None:
             images = images[:limit]
         ids = {image['id'] for image in images}
         annotations = [a for a in data['annotations'] if a['image_id'] in ids]
-        if any(a['category_id'] not in (1, 2) for a in annotations):
+        if any(a['category_id'] not in {c['id'] for c in data['categories']} for a in annotations):
             raise ValueError('out-of-scope anatomy annotation')
         for image in images:
             name = image['file_name']
@@ -55,7 +60,7 @@ def ready_data(root, max_train=None, max_val=None):
                     raise ValueError(f'image dimensions changed: {key}')
                 decoded.verify()
             selected_hashes[key] = manifest['files'][key]
-        subsets[partition] = dict(images=images, annotations=annotations, categories=CATEGORIES)
+        subsets[partition] = dict(images=images, annotations=annotations, categories=data['categories'])
     train_cases = {i['video_id'] for i in subsets['train']['images']}
     val_cases = {i['video_id'] for i in subsets['val']['images']}
     if train_cases & val_cases:
@@ -70,7 +75,7 @@ def ready_data(root, max_train=None, max_val=None):
 ARCHITECTURES = ('mobilenet_v3_320', 'mobilenet_v3_hires')
 
 
-def build_model(architecture='mobilenet_v3_320', pretrained=True):
+def build_model(architecture='mobilenet_v3_320', pretrained=True, classes=2):
     """Two-class anatomy Faster R-CNN; returns (model, pretrained weights enum or None).
 
     mobilenet_v3_320 resizes frames to a 320-pixel short side; mobilenet_v3_hires keeps
@@ -87,7 +92,7 @@ def build_model(architecture='mobilenet_v3_320', pretrained=True):
         model = fasterrcnn_mobilenet_v3_large_fpn(weights=weights, weights_backbone=None, min_size=480, max_size=854)
     else:
         raise ValueError(f'unknown architecture: {architecture}')
-    model.roi_heads.box_predictor = FastRCNNPredictor(model.roi_heads.box_predictor.cls_score.in_features, 3)
+    model.roi_heads.box_predictor = FastRCNNPredictor(model.roi_heads.box_predictor.cls_score.in_features, classes + 1)
     return model, weights
 
 
@@ -201,7 +206,8 @@ def main():
     val = Images(args.data_dir, 'val', subsets['val'])
     loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=0,
                         collate_fn=lambda batch: tuple(zip(*batch)), generator=torch.Generator().manual_seed(args.seed))
-    model, weights = build_model(args.architecture)
+    categories = subsets['train']['categories']
+    model, weights = build_model(args.architecture, classes=len(categories))
     weight_file = Path(torch.hub.get_dir()) / 'checkpoints' / Path(urlparse(weights.url).path).name
     weights_sha256 = sha(weight_file)
     expected_prefix = weight_file.stem.rsplit('-', 1)[-1]
@@ -217,6 +223,8 @@ def main():
         config['architecture'] = args.architecture
     if args.hflip:
         config['hflip'] = True
+    if categories != CATEGORIES:
+        config['categories'] = [c['name'] for c in categories]
     start, best_ap, history = 0, -1.0, []
     if args.resume:
         previous = torch.load(out / 'last.pt', map_location=args.device, weights_only=False)
@@ -253,7 +261,7 @@ def main():
             best_ap = ap
         checkpoint = dict(model=model.state_dict(), optimizer=optimizer.state_dict(), epoch=epoch,
                           best_ap=best_ap, history=history, baseline_validation=baseline,
-                          data_signature=signature, architecture=args.architecture,
+                          data_signature=signature, architecture=args.architecture, categories=categories,
                           seed=args.seed, config=config, torch_rng_state=torch.get_rng_state(),
                           loader_rng_state=loader.generator.get_state())
         atomic_torch_save(torch, checkpoint, out / 'last.pt')
@@ -263,7 +271,7 @@ def main():
         report = dict(status='bounded pipeline check' if args.max_train_images or args.max_val_images else 'full validation run',
                       architecture=args.architecture, hflip=args.hflip, initial_weights=weights.name,
                       initial_weights_sha256=weights_sha256,
-                      categories=CATEGORIES, seed=args.seed, device=args.device, epochs_requested=args.epochs,
+                      categories=categories, seed=args.seed, device=args.device, epochs_requested=args.epochs,
                       learning_rate=args.learning_rate, batch_size=args.batch_size, grad_clip=args.grad_clip,
                       train_images=len(train), validation_images=len(val), data_signature=signature,
                       torch=torch.__version__, torchvision=torchvision.__version__,

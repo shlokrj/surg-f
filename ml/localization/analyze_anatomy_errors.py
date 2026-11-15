@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 SCOPE = {1: 'cystic duct', 2: 'gallbladder'}
+SCOPE_WITH_TOOL = {**SCOPE, 3: 'tool'}
 THRESHOLDS = [round(0.05 * i, 2) for i in range(1, 20)]
 SIZE_BINS = (('small', 0.01), ('medium', 0.05), ('large', float('inf')))  # box area / image area
 
@@ -57,8 +58,9 @@ def match_image(references, detections, iou_threshold):
 
 def analyze(annotations, predictions, iou_threshold=0.5):
     images = {i['id']: i for i in annotations['images']}
-    if {c['id']: c['name'] for c in annotations['categories']} != SCOPE:
-        raise ValueError('reference must contain exactly the two anatomy categories')
+    scope = {c['id']: c['name'] for c in annotations['categories']}
+    if scope not in (SCOPE, SCOPE_WITH_TOOL):
+        raise ValueError('reference must contain the two anatomy categories (optionally plus tool)')
     refs = {identity: [] for identity in images}
     for a in annotations['annotations']:
         x, y, w, h = a['bbox']
@@ -67,25 +69,25 @@ def analyze(annotations, predictions, iou_threshold=0.5):
     for p in predictions:
         if p['image_id'] not in images:
             raise ValueError('prediction for unknown image')
-        preds[p['image_id']] = [(l, b, s) for b, l, s in zip(p['boxes'], p['labels'], p['scores']) if l in SCOPE]
+        preds[p['image_id']] = [(l, b, s) for b, l, s in zip(p['boxes'], p['labels'], p['scores']) if l in scope]
 
     def run(threshold):
-        stats = {name: dict(tp=0, fp=0, fn=0) for name in SCOPE.values()}
-        errors = {name: dict(duplicate=0, localization=0, class_confusion=0, background=0) for name in SCOPE.values()}
-        misses = {name: {b: [0, 0] for b, _ in SIZE_BINS} for name in SCOPE.values()}  # [missed, support]
+        stats = {name: dict(tp=0, fp=0, fn=0) for name in scope.values()}
+        errors = {name: dict(duplicate=0, localization=0, class_confusion=0, background=0) for name in scope.values()}
+        misses = {name: {b: [0, 0] for b, _ in SIZE_BINS} for name in scope.values()}  # [missed, support]
         surgeries = {}
         for identity, image in images.items():
             references = refs[identity]
             detections = [d for d in preds[identity] if d[2] >= threshold]
             kinds, matched = match_image(references, detections, iou_threshold)
             for (label, _, _), kind in zip(sorted(detections, key=lambda d: -d[2]), kinds):
-                name = SCOPE[label]
+                name = scope[label]
                 if kind == 'tp':
                     stats[name]['tp'] += 1
                 else:
                     stats[name]['fp'] += 1; errors[name][kind] += 1
             for index, (label, box) in enumerate(references):
-                name, bin_name = SCOPE[label], size_bin(box, image)
+                name, bin_name = scope[label], size_bin(box, image)
                 surgery = surgeries.setdefault(name, {}).setdefault(image['video_id'], dict(tp=0, fn=0))
                 misses[name][bin_name][1] += 1
                 if index in matched:
@@ -102,7 +104,7 @@ def analyze(annotations, predictions, iou_threshold=0.5):
     sweep = {str(t): {name: {k: s[k] for k in ('precision', 'recall', 'f1')} for name, s in run(t)[0].items()}
              for t in THRESHOLDS}
     selected = {}
-    for name in SCOPE.values():
+    for name in scope.values():
         scored = [(sweep[str(t)][name]['f1'] or 0, t) for t in THRESHOLDS]
         selected[name] = max(scored, key=lambda pair: (pair[0], pair[1]))[1]
     detail = {}
@@ -114,8 +116,8 @@ def analyze(annotations, predictions, iou_threshold=0.5):
             per_surgery_recall=dict(min=recalls[0], median=recalls[len(recalls)//2], max=recalls[-1],
                                     surgeries=len(recalls)) if recalls else None)
     negatives = [i for i in images if not refs[i]]
-    false_alarm_negatives = {name: sum(any(SCOPE[l] == name and s >= selected[name] for l, _, s in preds[i]) for i in negatives)
-                             for name in SCOPE.values()}
+    false_alarm_negatives = {name: sum(any(scope[l] == name and s >= selected[name] for l, _, s in preds[i]) for i in negatives)
+                             for name in scope.values()}
     return dict(iou_threshold=iou_threshold, images=len(images), anatomy_negative_images=len(negatives),
                 size_bins='box area / image area: small < 0.01, medium < 0.05, large otherwise',
                 threshold_sweep=sweep, selected_by_validation_f1=detail,

@@ -10,6 +10,7 @@ from pathlib import Path
 from audit_coco import audit
 
 SCOPE = {1: 'cystic duct', 2: 'gallbladder'}
+SCOPE_WITH_TOOL = {**SCOPE, 3: 'tool'}
 
 
 def evaluate(annotations, predictions):
@@ -18,8 +19,9 @@ def evaluate(annotations, predictions):
     inventory = audit(annotations)
     if inventory['excluded'] or inventory['duplicate_image_ids']:
         raise ValueError('invalid reference annotations')
-    if {c['id']:c['name'] for c in annotations['categories']} != SCOPE:
-        raise ValueError('reference must explicitly contain exactly the two anatomy categories')
+    scope = {c['id']:c['name'] for c in annotations['categories']}
+    if scope not in (SCOPE, SCOPE_WITH_TOOL):
+        raise ValueError('reference must contain exactly the two anatomy categories (optionally plus tool)')
     images = {i['id']:i for i in annotations['images']}
     if not images or any(i.get('is_det_keyframe') is not True for i in images.values()):
         raise ValueError('nonempty reviewed detection frames required')
@@ -35,7 +37,7 @@ def evaluate(annotations, predictions):
             if len(box)!=4 or any(type(v) not in (int,float) or not math.isfinite(v) for v in [*box,score]):raise ValueError('nonfinite detection')
             x1,y1,x2,y2=box
             if not (0<=x1<x2<=images[identity]['width']+1e-4 and 0<=y1<y2<=images[identity]['height']+1e-4 and 0<=score<=1):raise ValueError('invalid detection geometry/score')
-            if label not in SCOPE:
+            if label not in scope:
                 ignored+=1
                 continue
             rows.append(dict(image_id=identity,category_id=label,bbox=[x1,y1,x2-x1,y2-y1],score=score))
@@ -49,17 +51,17 @@ def evaluate(annotations, predictions):
         if rows:dt=gt.loadRes(rows)
         else:
             dt=COCO();dt.dataset=dict(images=data['images'],categories=data['categories'],annotations=[]);dt.createIndex()
-        evaluator=COCOeval(gt,dt,'bbox');evaluator.params.catIds=sorted(SCOPE)
+        evaluator=COCOeval(gt,dt,'bbox');evaluator.params.catIds=sorted(scope)
         evaluator.evaluate();evaluator.accumulate();evaluator.summarize()
     def mean(values):
         valid=values[values>=0]
         return float(valid.mean()) if valid.size else None
     per_class={}
-    for index,(identity,name) in enumerate(sorted(SCOPE.items())):
+    for index,(identity,name) in enumerate(sorted(scope.items())):
         p=evaluator.eval['precision'][:,:,index,0,-1]
         r=evaluator.eval['recall'][:,index,0,-1]
         per_class[name]=dict(ap=mean(p),ap50=mean(p[0]),recall100=mean(r),support=sum(a['category_id']==identity for a in data['annotations']))
-    return dict(scope=list(SCOPE.values()),images=len(images),missing_prediction_images=len(images)-len(seen),ignored_out_of_scope_predictions=ignored,
+    return dict(scope=list(scope.values()),images=len(images),missing_prediction_images=len(images)-len(seen),ignored_out_of_scope_predictions=ignored,
                 ap=mean(evaluator.eval['precision'][:,:,:,0,-1]),ap50=mean(evaluator.eval['precision'][0,:,:,0,-1]),
                 per_class=per_class,protocol='COCO bbox IoU .50:.05:.95, 101 recall points, maxDets=100, all areas; undefined metrics null')
 

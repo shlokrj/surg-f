@@ -36,6 +36,16 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(detections[1]['bbox_xyxy'], [0, 0, 1, 1])
         self.assertEqual(detections[0]['instance_id'], '000007-0')
 
+    def test_tool_boxes_are_set_aside_for_naming(self):
+        names = {1: 'cystic duct', 2: 'gallbladder', 3: 'tool'}
+        thresholds = thresholds_for(.3, {'tool': .5}, names)
+        result = dict(boxes=FakeTensor([[10, 10, 50, 40], [20, 5, 60, 45], [0, 0, 5, 5]]),
+                      labels=FakeTensor([2, 3, 3]), scores=FakeTensor([.9, .8, .4]))
+        tools = []
+        detections = detections_for(result, (100, 50), 3, thresholds, names, tools)
+        self.assertEqual([d['label'] for d in detections], ['gallbladder'])
+        self.assertEqual(tools, [([.2, .1, .6, .9], .8)])
+
     @unittest.skipUnless(FFMPEG, 'set SURGF_FFMPEG or install ffmpeg')
     def test_single_pass_extracts_exact_frames(self):
         with tempfile.TemporaryDirectory() as temporary:

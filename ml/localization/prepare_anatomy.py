@@ -10,9 +10,12 @@ from audit_coco import audit
 OVERLAP_REVISION = '8347b9f4cb02ebe739747903e6eada272ee9d25e'
 OVERLAPS = {2: 'VID68', 3: 'VID70', 10: 'VID96', 33: 'VID110', 121: 'VID66', 127: 'VID103'}
 LABELS = {'cystic_duct': (1, 'cystic duct'), 'gallbladder': (2, 'gallbladder')}
+# Optional third class: Endoscapes' generic instrument boxes (no instrument subtype).
+TOOL = {'tool': (3, 'tool')}
+SUPERCATEGORY = {'cystic duct': 'anatomy', 'gallbladder': 'anatomy', 'tool': 'instrument'}
 
 
-def prepare(data, split, partition="train"):
+def prepare(data, split, partition="train", include_tool=False):
     if partition not in ("train", "val"):
         raise ValueError("partition must be train or val")
     allowed = range(1,121) if partition == "train" else range(121,162)
@@ -23,8 +26,9 @@ def prepare(data, split, partition="train"):
     if partition == 'val':
         protected.update(split.get('train', []))
     excluded = {case for case, other in OVERLAPS.items() if other in protected}
-    category_map = {c['id']: LABELS[c['name']][0] for c in data['categories'] if c['name'] in LABELS}
-    if len(category_map) != len(LABELS):
+    labels = {**LABELS, **TOOL} if include_tool else LABELS
+    category_map = {c['id']: labels[c['name']][0] for c in data['categories'] if c['name'] in labels}
+    if len(category_map) != len(labels):
         raise ValueError('missing required anatomy categories')
     images = []
     excluded_images = 0
@@ -50,13 +54,13 @@ def prepare(data, split, partition="train"):
     if not images or not annotations:
         raise ValueError('empty prepared training set')
     output = dict(images=images, annotations=annotations,
-                  categories=[dict(id=i,name=name,supercategory='anatomy') for i,name in LABELS.values()])
+                  categories=[dict(id=i,name=name,supercategory=SUPERCATEGORY[name]) for i,name in labels.values()])
     annotated = {a['image_id'] for a in annotations}
-    manifest = dict(dataset='Endoscapes', scope='cystic duct and gallbladder only', split=f'official {partition}',
+    manifest = dict(dataset='Endoscapes', scope='cystic duct, gallbladder and generic tool' if include_tool else 'cystic duct and gallbladder only', split=f'official {partition}',
                     overlap_source=f'https://github.com/CAMMA-public/camma_dataset_overlaps/blob/{OVERLAP_REVISION}/README.md',
                     protected_cholect50_cases=sorted(protected), excluded_endoscapes_cases=sorted(excluded & set(allowed)),
                     excluded_images=excluded_images, retained_surgeries=sorted({i['video_id'] for i in images}),
-                    images=len(images), boxes=len(annotations), anatomy_negative_frames=len(keep-annotated),
+                    images=len(images), boxes=len(annotations), anatomy_negative_frames=len(keep-annotated), include_tool=include_tool,
                     categories=output['categories'], note='No liver or instrument subtype supervision. Overlap protection uses published mapping, not independent visual deduplication.')
     return output, manifest
 

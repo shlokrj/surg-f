@@ -16,6 +16,7 @@ import subprocess
 from PIL import Image
 
 from artifact import validate
+from name_instruments import instrument_seconds, name_tools
 from train_anatomy import CATEGORIES, build_model
 
 NAMES = {c['id']: c['name'] for c in CATEGORIES}
@@ -72,8 +73,8 @@ def iter_frames(ffmpeg, video, indices, width, height):
         raise ValueError(f'decoded {found} frames, expected {len(wanted)}; check requested times and video length')
 
 
-def thresholds_for(default, overrides):
-    thresholds = {name: default for name in NAMES.values()}
+def thresholds_for(default, overrides, names=None):
+    thresholds = {name: default for name in (names or NAMES).values()}
     for name, value in overrides.items():
         if name not in thresholds or not 0 <= value <= 1:
             raise ValueError(f'invalid class threshold: {name}={value}')
@@ -81,11 +82,13 @@ def thresholds_for(default, overrides):
     return thresholds
 
 
-def detections_for(result, size, frame_id, thresholds):
+def detections_for(result, size, frame_id, thresholds, names=None, tools=None):
+    """Anatomy detections for the artifact; generic `tool` boxes go to `tools` as (bbox, score) for naming."""
+    names = names or NAMES
     detections = []
     for index, (box, label, score) in enumerate(zip(result['boxes'].tolist(),
              result['labels'].tolist(), result['scores'].tolist())):
-        if label not in NAMES or score < thresholds[NAMES[label]]:
+        if label not in names or score < thresholds[names[label]]:
             continue
         x1, y1, x2, y2 = box
         x1, x2 = max(0, x1), min(size[0], x2)
@@ -95,28 +98,51 @@ def detections_for(result, size, frame_id, thresholds):
         bbox = [round(x1/size[0], 4), round(y1/size[1], 4), round(x2/size[0], 4), round(y2/size[1], 4)]
         if bbox[0] >= bbox[2] or bbox[1] >= bbox[3]:
             continue
-        detections.append(dict(instance_id=f'{frame_id:06}-{index}', category='anatomy', label=NAMES[label],
+        if names[label] == 'tool':
+            if tools is not None:
+                tools.append((bbox, round(score, 3)))
+            continue
+        detections.append(dict(instance_id=f'{frame_id:06}-{index}', category='anatomy', label=names[label],
                                score=round(score, 3), bbox_xyxy=bbox))
     return detections
 
 
 def export(model, video, seconds, ffmpeg, case_id, asset_id, fps, display_width=None, display_height=None,
-           score_threshold=.3, class_thresholds=None, max_age_sec=.12, provenance=None):
+           score_threshold=.3, class_thresholds=None, max_age_sec=.12, provenance=None, names=None, naming=None):
+    """`naming`: dict(seconds={second: {instrument}}, offset=video minus dataset seconds, source=...) to name tool boxes."""
+    names = names or NAMES
+    if 'tool' in names.values() and naming is None:
+        raise ValueError('a tool-class model needs instrument labels (--triplets) to name its boxes')
     import torch
     from torchvision.transforms.functional import pil_to_tensor
     stream = probe_video(ffmpeg, video)
     if abs(stream['fps'] - fps) > 1e-6:
         raise ValueError('requested frame rate disagrees with the video')
-    thresholds = thresholds_for(score_threshold, class_thresholds or {})
+    thresholds = thresholds_for(score_threshold, class_thresholds or {}, names)
     indices = frame_indices(seconds, fps, stream['start_sec'])
-    frames, source_hashes = [], {}
+    frames, source_hashes, tool_frames = [], {}, []
     model.eval()
     for frame_id, image, digest in iter_frames(ffmpeg, video, indices, stream['width'], stream['height']):
         source_hashes[f'{frame_id:06}'] = digest
         with torch.inference_mode():
             result = model([pil_to_tensor(image).float() / 255])[0]
-        frames.append(dict(frame_id=frame_id, timestamp_sec=round(stream['start_sec'] + frame_id/fps, 6),
-                           detections=detections_for(result, image.size, frame_id, thresholds)))
+        tools = []
+        timestamp = round(stream['start_sec'] + frame_id/fps, 6)
+        frames.append(dict(frame_id=frame_id, timestamp_sec=timestamp,
+                           detections=detections_for(result, image.size, frame_id, thresholds, names, tools)))
+        tool_frames.append((timestamp, tools))
+    naming_report = None
+    if naming is not None and 'tool' in names.values():
+        named, naming_stats = name_tools(tool_frames, naming['seconds'], naming['offset'])
+        for frame, boxes in zip(frames, named):
+            for k, (bbox, score, name, _) in enumerate(boxes):
+                frame['detections'].append(dict(instance_id=f"{frame['frame_id']:06}-t{k}", category='instrument',
+                                                label=name, score=score, bbox_xyxy=bbox))
+        naming_report = dict(naming['source'], offset_sec=naming['offset'], stats=naming_stats,
+                             method='generic tool boxes named from CholecT50 per-second instrument labels: '
+                                    'no listed instrument -> dropped; overlap (IoU >= 0.5) with a box named in the '
+                                    'previous sample -> carried name; exactly one listed name left -> top remaining box; '
+                                    'otherwise dropped. Names are inferred, not detected.')
     artifact = dict(schema_version=1, case_id=case_id, video_asset_id=asset_id,
         source='prediction', image_width=stream['width'], image_height=stream['height'],
         max_age_sec=max_age_sec, frames=frames,
@@ -126,7 +152,8 @@ def export(model, video, seconds, ffmpeg, case_id, asset_id, fps, display_width=
                             digest_input='sorted lines "<frame_id:06>:<sha256 of decoded rgb24 bytes>\\n"'),
                         fps=fps, video_stream=stream,
                         timebase='frame_id is the decoded frame index; timestamp_sec = stream start + frame_id / fps',
-                        class_map={str(k): v for k, v in NAMES.items()}, score_thresholds=thresholds,
+                        class_map={str(k): v for k, v in names.items()}, score_thresholds=thresholds,
+                        **({'instrument_naming': naming_report} if naming_report else {}),
                         quality='experimental, not medically reviewed'))
     if display_width is not None or display_height is not None:
         artifact.update(display_width=display_width, display_height=display_height)
@@ -158,6 +185,8 @@ def main():
     parser.add_argument('--class-threshold', type=parse_class_threshold, action='append', default=[],
                         help='Per-class override, e.g. "cystic duct=0.7"')
     parser.add_argument('--max-age-sec', type=float, default=.12)
+    parser.add_argument('--triplets', help='CholecT50 per-second labels CSV, required for tool-class models')
+    parser.add_argument('--dataset-offset', type=float, help='video seconds minus CholecT50 seconds (VID01 -0.04, VID02 0.08)')
     parser.add_argument('--ffmpeg', default='ffmpeg')
     parser.add_argument('--output', required=True)
     args = parser.parse_args()
@@ -180,7 +209,9 @@ def main():
         seconds = args.seconds
     checkpoint = torch.load(args.checkpoint, map_location='cpu', weights_only=False)
     architecture = checkpoint.get('architecture', 'mobilenet_v3_320')  # checkpoints before the option were 320
-    model, _ = build_model(architecture, pretrained=False)
+    categories = checkpoint.get('categories', CATEGORIES)
+    names = {c['id']: c['name'] for c in categories}
+    model, _ = build_model(architecture, pretrained=False, classes=len(categories))
     model.load_state_dict(checkpoint['model'])
     report = Path(args.checkpoint).parent / 'report.json'
     provenance = dict(checkpoint_sha256=sha(args.checkpoint), checkpoint_epoch=checkpoint.get('epoch'), architecture=architecture,
@@ -188,9 +219,15 @@ def main():
                       training_report_sha256=sha(report) if report.exists() else None,
                       validation_status=json.loads(report.read_text()).get('status') if report.exists() else 'unknown',
                       sampling=dict(every_sec=args.every_sec, start=args.start, end=args.end) if args.every_sec else 'explicit seconds')
+    naming = None
+    if 'tool' in names.values():
+        if not args.triplets or args.dataset_offset is None:
+            parser.error('tool-class checkpoints need --triplets and --dataset-offset to name instrument boxes')
+        naming = dict(seconds=instrument_seconds(args.triplets, args.case_id), offset=args.dataset_offset,
+                      source=dict(triplets_sha256=sha(args.triplets)))
     artifact = export(model, args.video, seconds, args.ffmpeg, args.case_id, args.video_asset_id, args.fps,
         args.display_width, args.display_height, args.score_threshold, dict(args.class_threshold),
-        args.max_age_sec, provenance)
+        args.max_age_sec, provenance, names, naming)
     text = json.dumps(artifact, separators=(',', ':'), allow_nan=False) + '\n'
     with output.open('x') as stream_out:
         stream_out.write(text)
