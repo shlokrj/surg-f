@@ -1,5 +1,27 @@
 # Team handoffs
 
+## Spatial v2 anatomy model replaces v1 on the VID01 overlay (2026-11-14, Mihir)
+
+**Root cause of the NaN stops:** both v1 and v2 stopped in epoch 5 because the shuffled batch at step 421 held two anatomy-negative images (`18_48900.jpg`, `39_27425.jpg`). With no box in the whole batch, torchvision's Faster R-CNN ROI-head losses (`loss_classifier`, `loss_box_reg`) are NaN; RPN losses stay finite. The training data has no degenerate boxes (smallest side 16 px). `train_anatomy.py` now skips a batch only when its loss is nonfinite **and** every image in it is box-free, records the skipped file names per epoch in `report.json`, and still fails on any other nonfinite loss. Gradient clipping (`--grad-clip`) is kept but was not the fix.
+
+**v2 run** (`~/madhacks2026/localization/anatomy-full-v2/`, same data signature, seed 17, lr 0.001, batch 2, `--grad-clip 10`, 8 epochs; only the one all-negative batch was skipped). Best checkpoint is epoch 7 (`best.pt`): validation AP **0.352** (v1 0.345), AP50 0.665 (v1 0.633); cystic duct AP50 0.396 (v1 0.321), gallbladder AP50 0.934 (v1 0.945). Error report `ml/localization/anatomy_full_v2_errors.json`:
+
+| At the deployed thresholds | v1 (epoch 3) | v2 (epoch 7) |
+|---|---|---|
+| Cystic duct ≥ 0.70: precision / recall | 0.66 / 0.22 | 0.66 / **0.37** |
+| Gallbladder ≥ 0.65: precision / recall | 0.95 / 0.93 | 0.93 / 0.93 |
+| Cystic duct best F1 (threshold) | 0.39 (0.45) | 0.48 (0.60) |
+
+v2 finds about 70% more cystic ducts at the same precision and gives up about 2 points of gallbladder precision. Thresholds were kept at 0.65 / 0.70 so the comparison is like-for-like; both were chosen on validation, so they are optimistic.
+
+**Deployed:** `frontend/public/overlays/VID01.json` is now the v2 export (same command as v1 with the v2 checkpoint): 7,221 frames every 0.24 s, 8,461 boxes (6,566 gallbladder, 1,895 cystic duct; v1 had 1,096 duct boxes), 1.46 M characters. A contact sheet at 54, 306, 423, 674, 698 and 860 s now shows a cystic duct box at 698 s on the structure in the clip applier's jaws (the 11:38 "cystic duct clipped" demo moment that v1 missed) and a small duct box at 674 s. Non-expert visual check only; VID01 accuracy is still unmeasured.
+
+**Checks:** localization unit tests 24 passed; `node --test frontend/test/*.test.js` 21 passed; `npm --prefix frontend run build` passed. Headless Chrome 157 on the case page: 854×484 video, boxes at 54/422.7/673.95 s (gallbladder + cystic duct each), 2 boxes in all 20 playback samples, layer aligned after resize, VID02 cleared, Instruments filter disabled, 167 jump entries.
+
+**Merge note (Shlok):** `main`'s footer change conflicted with my "Model results" footer link. I kept your footer unchanged, pointed your Model notes link **Read the full evaluation** at `/evals.html` (the rendered page) instead of the raw `/model-evals.md`, and corrected the player scene in `src/architecture.js`: it said "experimental Grounding DINO boxes", which has not been true on `main` since the anatomy deploy. It now names the Endoscapes-trained Faster R-CNN anatomy boxes, with stack links to torchvision's Faster R-CNN docs and the Endoscapes repo and the source Ren et al. 2015 (all three links checked: HTTP 200, correct titles). Restyle as you like.
+
+**Still open:** instrument and liver boxes (no supervision available), a reviewed VID01 anatomy sample to measure real-video accuracy, and a visible-browser fullscreen recheck. `main` still has the v1 overlay; publishing v2 to `main` needs Shlok's OK.
+
 ## Model results page and spatial follow-up (2026-11-14, Mihir)
 
 **Aadhitya → Mihir request done:** the frontend now renders `frontend/public/model-evals.md` at `/evals.html` (footer link **Model results** on the homepage). `frontend/src/markdown.js` is a small dependency-free renderer (headings, paragraphs, lists, pipe tables including headerless ones, bold, italic, inline code, links); all text is HTML-escaped and non-http/relative links become `#`. `frontend/src/docs.js` allowlists the docs the page may load: `?doc=model-evals` (default) and `?doc=architecture` (`/architecture.md`, currently only on `ml-dev`; until it reaches `main` the page shows "This page is not available yet"). Checks: `node --test frontend/test/*.test.js` passed 20 (5 new renderer/allowlist tests, including one that renders the real `model-evals.md` and counts its 4 tables and 5 sections); `npm --prefix frontend run build` passed with `evals.html` as a second Vite input. Headless Chrome 157 at 1280 px and 390 px: footer link opens the page, 4 tables and 5 sections render, no horizontal scroll, no page errors.
