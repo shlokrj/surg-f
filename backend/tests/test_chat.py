@@ -244,7 +244,15 @@ def test_llm_http_client_parses_tool_calls_and_never_relays_model_text():
     assert seen["path"] == "/serving-endpoints/chat/completions"
     assert seen["body"]["model"] == "endpoint-x"
     names = [t["function"]["name"] for t in seen["body"]["tools"]]
-    assert names == ["search_clips", "make_quiz", "show_timeline"]  # no ask_data, no show_3d
+    assert names == [
+        "search_clips",
+        "make_quiz",
+        "show_timeline",
+        "clips_in_range",
+        "rank_instruments",
+        "instrument_usage",
+        "instruments_together",
+    ]  # no ask_data without Genie, no show_3d
 
     body = ask(client, "what dose of antibiotics should I give")
     assert body["action"] == "none" and body["reply"] == STUDY_AID_REPLY
@@ -283,6 +291,120 @@ def test_llm_is_built_only_with_credentials_and_an_endpoint_name():
     assert build_llm(settings_from(creds)) is None
     assert build_llm(settings_from({"DATABRICKS_CHAT_ENDPOINT": "e"})) is None
     assert build_llm(settings_from({**creds, "DATABRICKS_CHAT_ENDPOINT": "e"})).endpoint == "e"
+
+
+# --- structured data tools (fast answers without Genie) ---------------------------
+
+
+def test_clips_in_range_filters_by_start_time():
+    llm = FakeLLM(ToolChoice("clips_in_range", {"q": "hook", "after_sec": 600}))
+    body = ask(make_client(llm=llm), "when was the hook used after minute 10?")
+    assert (body["action"], body["router"]) == ("search", "llm")
+    starts = [c["start_sec"] for c in body["data"]["results"]]
+    assert starts == [894, 1039, 1182, 1381, 1432, 1438]
+    assert "after 10:00" in body["reply"] and "14:54" in body["reply"]
+
+    llm = FakeLLM(
+        ToolChoice("clips_in_range", {"q": "clipper", "after_sec": 690, "before_sec": 750})
+    )
+    body = ask(make_client(llm=llm), "x")
+    assert first_clips(body) == [(698, 747), (749, 753)]
+    assert "between 11:30 and 12:30" in body["reply"]
+
+
+def test_rank_instruments_orders_the_summary():
+    body = ask(make_client(llm=FakeLLM(ToolChoice("rank_instruments", {"order": "longest"}))), "x")
+    assert (body["action"], body["router"]) == ("answer", "llm")
+    assert body["data"]["columns"] == ["label", "count", "total_sec", "first_sec"]
+    assert body["data"]["rows"][0] == ["grasper", 42, 1141.0, 0.0]
+    assert body["data"]["rows"][-1][0] == "scissors"
+    assert body["data"]["sql"] is None
+    assert body["reply"].startswith("The grasper was used the longest in VID01: 19:01")
+    assert "Next is the hook at 13:08." in body["reply"]
+
+    body = ask(make_client(llm=FakeLLM(ToolChoice("rank_instruments", {"order": "shortest"}))), "x")
+    assert body["data"]["rows"][0][0] == "scissors"
+    body = ask(
+        make_client(llm=FakeLLM(ToolChoice("rank_instruments", {"order": "least_often"}))), "x"
+    )
+    assert body["data"]["rows"][0][:2] == ["scissors", 1]
+
+
+def test_instrument_usage_reports_one_instrument():
+    body = ask(make_client(llm=FakeLLM(ToolChoice("instrument_usage", {"q": "clip applier"}))), "x")
+    assert body["action"] == "answer"
+    assert (
+        body["reply"] == "The clipper was used 5 times in VID01 for 1:42 in total, first at 11:14."
+    )
+    assert body["data"]["rows"] == [["clipper", 5, 102.0, 674.0]]
+
+
+def test_instruments_together_returns_overlapping_ranges():
+    llm = FakeLLM(ToolChoice("instruments_together", {"a": "grasper", "b": "hook"}))
+    body = ask(make_client(llm=llm), "x")
+    assert (body["action"], body["router"]) == ("search", "llm")
+    results = body["data"]["results"]
+    assert len(results) == 13
+    assert (results[0]["start_sec"], results[0]["end_sec"]) == (20, 108)
+    assert {c["label"] for c in results} == {"grasper + hook"}
+    assert all(c["start_sec"] < c["end_sec"] for c in results)
+    assert "13 times" in body["reply"]
+
+
+@pytest.mark.parametrize(
+    "choice",
+    [
+        ToolChoice("clips_in_range", {"q": "antibiotics"}),
+        ToolChoice("clips_in_range", {"q": "hook", "after_sec": "soon"}),
+        ToolChoice("clips_in_range", {"q": "hook", "after_sec": -5}),
+        ToolChoice("rank_instruments", {"order": "best"}),
+        ToolChoice("instrument_usage", {}),
+        ToolChoice("instruments_together", {"a": "hook", "b": "hook"}),
+        ToolChoice("instruments_together", {"a": "hook"}),
+    ],
+)
+def test_invalid_data_tool_arguments_fall_back_to_rules(choice):
+    body = ask(make_client(llm=FakeLLM(choice)), "quiz me")
+    assert (body["action"], body["router"]) == ("quiz", "rules")
+
+
+@pytest.mark.parametrize(
+    ("message", "action", "check"),
+    [
+        (
+            "when was the hook used after minute 10?",
+            "search",
+            lambda b: len(b["data"]["results"]) == 6,
+        ),
+        (
+            "hook before 5:00",
+            "search",
+            lambda b: all(c["start_sec"] < 300 for c in b["data"]["results"]),
+        ),
+        ("clipper after 700 seconds", "search", lambda b: first_clips(b, 1) == [(749, 753)]),
+        (
+            "which instrument was used the longest?",
+            "answer",
+            lambda b: b["data"]["rows"][0][0] == "grasper",
+        ),
+        (
+            "which tool was used the least?",
+            "answer",
+            lambda b: b["data"]["rows"][0][0] == "scissors",
+        ),
+        ("how many times was the clipper used?", "answer", lambda b: "5 times" in b["reply"]),
+        (
+            "when were the grasper and hook used together?",
+            "search",
+            lambda b: len(b["data"]["results"]) == 13,
+        ),
+        ("show me when the clipper is used", "search", lambda b: len(b["data"]["results"]) == 5),
+    ],
+)
+def test_rules_answer_data_questions_without_any_ai_service(message, action, check):
+    body = ask(make_client(), message)
+    assert (body["action"], body["router"]) == (action, "rules")
+    assert check(body), body["reply"]
 
 
 # --- Genie (optional tool) ---------------------------------------------------------
@@ -390,7 +512,8 @@ def test_genie_failure_falls_back_to_rules():
     genie = FakeGenie(error=GenieError("timeout"))
     body = ask(make_client(llm=llm, genie=genie), "how long was the clipper used?")
     assert body["router"] == "rules"
-    assert body["action"] == "search"
+    assert body["action"] == "answer"
+    assert "1:42" in body["reply"]
 
 
 # --- logging, CORS, fixture file -------------------------------------------------------
