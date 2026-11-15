@@ -39,7 +39,8 @@ test('categories absent from the file are disabled, not shown as empty filters',
  const p=setup('anatomy-only-test-asset');p.enable();await settle();
  const instruments=p.controls.querySelector('[data-category="instrument"]');
  assert.equal(instruments.disabled,true);assert.equal(instruments.checked,false);
- assert.match(instruments.parentElement.textContent,/none in this file/);
+ assert.doesNotMatch(instruments.parentElement.textContent,/none in this file/);
+ assert.match(instruments.parentElement.title,/No boxes of this kind/);
  assert.equal(p.controls.querySelector('[data-category="anatomy"]').disabled,false);
  assert.equal(p.boxes().length,1);
  p.dispose();
@@ -52,6 +53,15 @@ test('late failed requests cannot update a disposed player',async()=>{
  let respond;globalThis.fetch=()=>new Promise(resolve=>respond=resolve);
  const p=setup('unavailable-test-asset');p.enable();p.dispose();const before=p.controls.textContent;
  respond({ok:false});await settle();assert.equal(p.controls.textContent,before);assert.equal(p.boxes().length,0);
+});
+test('a video with no overlay file says so without offering a retry',async()=>{
+ for (const response of [{ok:false,status:404},{ok:true,status:200,text:async()=>'<!doctype html><html></html>'}]) {
+  globalThis.fetch=async()=>response;
+  const p=setup(`missing-${response.status}`);p.enable();await settle();
+  assert.match(p.controls.textContent,/No bounding boxes for this video yet/);
+  assert.equal(p.controls.querySelector('[data-overlay-retry]').hidden,true);
+  assert.equal(p.boxes().length,0);p.dispose();
+ }
 });
 test('failed overlay request offers an accessible retry',async()=>{
  let attempts=0;

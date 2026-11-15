@@ -11,7 +11,7 @@ The earlier integrated `frontend/dev` work reached `main` through `6d468dd`. Fur
 
 ## 3D surgery practice v1 (2026-11-15, Rohan)
 
-**Status:** implemented on `feat/surgery-practice` (branched from `main` at `b64845f`, then merged with `origin/main` through `0fc1282`). **Published to `main` by fast-forward at Rohan's request (2026-11-15).** Teammates: pull `main`. The content is still a draft until the clinical review below. Plan: [frontend/docs/SURGERY_PRACTICE_PLAN.md](../frontend/docs/SURGERY_PRACTICE_PLAN.md). Demo steps and file map: [frontend README, Practice](../frontend/README.md#practice-3d-surgery-practice).
+**Status:** implemented on `feat/surgery-practice` (branched from `main` at `b64845f`, then merged with `origin/main` through `26ed6ba`). **Published to `main` by fast-forward at Rohan's request (2026-11-15).** Teammates: pull `main`. The content is still a draft until the clinical review below. Plan: [frontend/docs/SURGERY_PRACTICE_PLAN.md](../frontend/docs/SURGERY_PRACTICE_PLAN.md). Demo steps and file map: [frontend README, Practice](../frontend/README.md#practice-3d-surgery-practice).
 
 **What exists:** Lil Doc takes a practice request ("Let me practice clipping and cutting"), checks that the open video is an **upload** matching VID01 (bytes, sampled SHA-256 from a Web Worker, 1733.04 s), and offers Start and Cancel. Start takes over the case page: compact video, 3D practice model, Lil Doc unchanged. There are four one-action stages (grasp at 670 s, clip at 698 s, clip at 815 s, cut at 860 s), each tied to a VID01 annotation interval. The resident uses a 3D tool tray with drag/tap placement, snap preview, press-and-hold gestures and keyboard equivalents. Feedback is formative (instrument, structure, spot, gesture), with opt-in guidance, reset stage, restart, exit and a recap. The model, chart and quiz panels now have a × close that discards their state. No backend change; nothing is persisted.
 
@@ -32,6 +32,15 @@ The earlier integrated `frontend/dev` work reached `main` through `6d468dd`. Fur
 - (3) Visible-browser checks on real touch devices and of reduced-motion behaviour (headless only so far).
 - (4) **Shlok** to review the presentation, since this touches `main.js`, the chat bubbles and panel heads; **Mihir** to confirm the overlay panel still behaves inside the compact practice video column.
 - (5) Practice lane owner still to be confirmed, per the plan.
+
+## VID02 now has bounding boxes; overlay panel tidied (2026-11-15, Mihir)
+
+**Why VID02 said "Retry loading boxes":** there was no `frontend/public/overlays/VID02.json`. The Vite server answers a missing file with the app's HTML page, which the player read as corrupt data and offered Retry. Now:
+- `VID02.json` exists: same v3 checkpoint and settings as VID01 (every 0.24 s, gallbladder ≥ 0.65, cystic duct ≥ 0.50), 11,830 frames over 47:19, 10,054 gallbladder and 1,255 cystic duct boxes, 2.09 M characters, bound to `VID02-cholec80-25fps-v1` at 854×484 (Chrome reports 854×484 for VID02 too). A contact sheet at 240/971/1192/1255/1317/2000 s shows gallbladder boxes on the gallbladder and duct boxes in the duct region during the annotated dissection (non-expert check; VID02 accuracy unmeasured). VID02 is not in Endoscapes per the CAMMA overlap map.
+- The overlay contract limits were raised to 20,000 frames and 4 M characters (`ml/localization/artifact.py`, `frontend/src/overlays.js`, `agent-kit/CONTRACTS.md`) so the 47-minute video fits at the same sampling.
+- A missing artifact (404 or HTML fallback) now says "No bounding boxes for this video yet." with no Retry; genuine load failures keep Retry.
+- At Mihir's request: "(none in this file)" removed from the Instruments filter (disabled, with a tooltip), and the status line says "1 box" instead of "1 boxes".
+- **Checks:** frontend tests 32 passed (new: deployed VID02 artifact, missing-file state); localization tests 35 passed; build passed. Headless Chrome 157: VID02 reports 854×484; boxes at 970.6/1191.85/1316.65 s (gallbladder + cystic duct each); 1–2 boxes in every playback sample; Retry hidden; Instruments shows only its name with the tooltip; switching back to VID01 still shows boxes; no page errors.
 
 ## UI updated from the eval docs (2026-11-15, Mihir, at Mihir's request)
 
