@@ -1,6 +1,7 @@
 # Surg+F frontend
 
-Current team: Shlok owns model/evaluation, Aadhi owns data/export, Mihir owns player/browser verification. Work and push on `feat/spatial-overlays`; main publication requires Shlok's explicit final request. See [ordered tasks and owned paths](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). This supersedes earlier single-owner notes below.
+Current ownership: **Shlok — general frontend design; Aadhi — spatial data/models/evaluation/export; Mihir — spatial player/browser verification.** Spatial work stays on `feat/spatial-overlays`. Shlok and Mihir coordinate shared frontend markup/styles. See [tasks and handoffs](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). Earlier owner notes below are historical.
+
 
 The dashboard lets users switch between the hosted VID01 and VID02 cases. It keeps the video and timeline on the left and the chat, recent questions, and search field on the right. Search output appears below both as one or more stacked sections. It is scoped to the open case, using the shared `GET /search?q=...` clip contract.
 
