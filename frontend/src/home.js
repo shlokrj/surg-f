@@ -211,7 +211,7 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
       <div class="footer-sticky">
         <div class="footer-top">
           <div class="footer-identity">${wordmark()}<p>Search surgical video.</p></div>
-          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#feature-steps">Features</a><a href="#top">Back to top</a><button type="button" class="btn-primary" data-open-sample>Open a case</button></nav>
+          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#feature-steps">Features</a><a href="/evals.html">Model results</a><a href="#top">Back to top</a><button type="button" class="btn-primary" data-open-sample>Open a case</button></nav>
         </div>
         <canvas class="footer-word" aria-hidden="true"></canvas>
         <div class="footer-legal"><span>Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>

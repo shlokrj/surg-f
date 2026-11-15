@@ -3,4 +3,8 @@ import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   server: { fs: { allow: [fileURLToPath(new URL('..', import.meta.url))] } },
+  build: { rollupOptions: { input: {
+    main: fileURLToPath(new URL('index.html', import.meta.url)),
+    evals: fileURLToPath(new URL('evals.html', import.meta.url)),
+  } } },
 });
