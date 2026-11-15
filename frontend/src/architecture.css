@@ -1,5 +1,6 @@
-/* "Dig into the stack": architecture section. Real CSS-3D cuboids; scroll sets --e (intro explode) and
-   --p (each layer scene). Sub-progress values are derived in CSS with clamp(). */
+/* "Dig into the stack": one pinned stage. Scroll sets --e (block explodes), --nav (block shrinks into
+   the layer map), and per layer --s/--sa (signed/absolute distance from the current layer) and --p
+   (that layer's scene, 0–1). Sub-progress values are derived in CSS with clamp(). */
 
 /* ---- 3D slab primitive. --w × --d footprint, --t thick. Faces: top (lifted on Z), front, side. ---- */
 .slab{--w:220px;--d:220px;--t:30px;--top:#8ad2c6;--front:#3ba69b;--side:#2a988e;position:absolute;left:50%;top:50%;width:var(--w);height:var(--d);margin:calc(var(--d) / -2) 0 0 calc(var(--w) / -2);transform-style:preserve-3d}
@@ -8,126 +9,190 @@
 .slab .front{left:0;top:100%;width:100%;height:var(--t);transform-origin:top;transform:rotateX(90deg);background:var(--front)}
 .slab .side{top:0;left:100%;width:var(--t);height:100%;transform-origin:left;transform:rotateY(-90deg);background:var(--side)}
 
-/* ---- Intro: the block that pulls apart into six layers. ---- */
-.dig{background:var(--page);border-top:1px solid var(--line)}
-.dig-intro{--e:0;position:relative;height:300svh}
-.dig-sticky{position:sticky;top:0;height:100svh;min-height:640px;display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);align-items:center;gap:4vw;padding:0 7vw;overflow:clip}
-.dig-copy h2{font-size:clamp(40px,4.4vw,68px);margin:0 0 18px}
-.dig-copy p{max-width:36ch;margin:0;color:var(--ink-muted);font-size:18px;line-height:1.6}
-.dig-stage{position:relative;height:100%;perspective:2200px}
-.block{--gap:clamp(46px,7vh,78px);position:absolute;left:50%;top:54%;width:0;height:0;transform-style:preserve-3d;transform:rotateX(58deg) rotateZ(calc(45deg - var(--e) * 10deg)) translateZ(calc(-1 * (var(--e) * 2.5 * var(--gap) + 90px)))}
-.block .slab{--w:min(26vw,330px);--d:min(26vw,330px);--t:30px;transform:translateZ(calc((5 - var(--n)) * (var(--t) + var(--e) * var(--gap))))}
-.block .s0{--n:0;--top:#cdece5;--front:#8ad2c6;--side:#6cc3b7}.block .s0 .top{color:var(--brand-strong)}
-.block .s1{--n:1;--top:#acdfd5;--front:#6cc3b7;--side:#52b4a8}.block .s1 .top{color:var(--brand-strong)}
-.block .s2{--n:2;--top:#8ad2c6;--front:#52b4a8;--side:#3ba69b}
-.block .s3{--n:3;--top:#6cc3b7;--front:#3ba69b;--side:#2a988e}
-.block .s4{--n:4;--top:#52b4a8;--front:#2a988e;--side:#1a8a81}
-.block .s5{--n:5;--top:#3ba69b;--front:#1a8a81;--side:#126f68}
-.dig-labels{position:absolute;inset:0;list-style:none;margin:0;padding:0;pointer-events:none}
-.dig-labels li{position:absolute;display:flex;align-items:center;gap:12px;translate:0 -50%;font-size:17px;font-weight:600;color:var(--ink);opacity:calc(var(--e) * 1.4 - .2);transition:top .05s linear}
-.dig-labels li span{display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--line-strong);border-radius:8px;background:#fff;box-shadow:0 2px 0 var(--line-strong);font-size:14px;color:var(--brand-strong)}
+/* ---- The pinned stage ---- */
+.dig{--e:0;--nav:0;--depth:0;position:relative;height:calc(100svh * 10.4);background:var(--page);border-top:1px solid var(--line)}
+.dig-pin{position:sticky;top:0;height:100svh;min-height:640px;display:grid;grid-template-columns:minmax(0,.74fr) minmax(0,2fr);grid-template-areas:"copy stage";align-items:center;column-gap:3vw;padding:0 4vw;overflow:clip}
+.layer{display:contents}
 
-/* ---- Layer scenes. ---- */
-.lv{--p:0;--a:clamp(0, calc((var(--p) - .12) / .58), 1);min-height:100svh;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);align-items:center;gap:5vw;padding:12vh 7vw;border-top:1px solid var(--line)}
-.depth{display:inline-grid;gap:4px;margin-bottom:22px}
-.depth i{display:block;width:46px;height:7px;border-radius:2px;background:#d3e6df;transform:skewX(-40deg)}
-.depth i.on{background:var(--brand)}
-.lv-copy h3{margin:0 0 16px;font-size:clamp(32px,3.2vw,50px);font-weight:400;letter-spacing:-.04em;line-height:1.05}
-.lv-copy > p{max-width:44ch;margin:0 0 28px;color:var(--ink-muted);font-size:18px;line-height:1.6;text-wrap:pretty}
+/* Copy: the intro and one block per layer share the left column and swap as you dig. */
+.dig-copy{grid-area:copy;opacity:clamp(0, calc(1 - var(--sa) * 2.4), 1);transform:translateY(calc(var(--s) * 56px));pointer-events:none}
+.layer.is-on .dig-copy,.dig:not(.is-dug) .dig-intro-copy{pointer-events:auto}
+.dig-intro-copy h2{font-size:clamp(40px,4.4vw,68px);margin:0 0 18px}
+.dig-intro-copy p{max-width:34ch;margin:0;color:var(--ink-muted);font-size:18px;line-height:1.6}
+.layer-copy h3{margin:0 0 14px;font-size:clamp(32px,3vw,48px);font-weight:400;letter-spacing:-.04em;line-height:1.05}
+.layer-copy > p{max-width:42ch;margin:0 0 24px;color:var(--ink-muted);font-size:17px;line-height:1.6;text-wrap:pretty}
 .lv-stack > span,.lv-sources > span{display:block;margin-bottom:10px;color:var(--ink-muted);font-size:14px}
-.lv-stack ul{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0 0 22px;padding:0}
+.lv-stack ul{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0 0 20px;padding:0}
 .lv-stack a{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--line-strong);border-radius:var(--radius);background:#fff;color:var(--ink);font-size:15px;text-decoration:none;transition:background-color .15s,border-color .15s}
 .lv-stack a::after{content:"↗";color:var(--ink-muted);font-size:13px}
 .lv-stack a:hover{background:var(--surface-tint);border-color:#9db5aa}
 .lv-sources ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:15px}
 .lv-sources a{color:var(--brand-strong);text-underline-offset:3px}
-.lv-stage{position:relative;isolation:isolate;overflow:clip;display:grid;place-items:center;height:clamp(420px,44vw,580px);border-radius:28px;background:linear-gradient(#1a8a81,#6cc3b7);perspective:1400px}
-.v-cap{position:absolute;left:24px;bottom:18px;margin:0;color:#fff;font-size:14px;opacity:.9}
 
-/* Player: a tilted window rights itself while the scrubber seeks to 14:20 (860 of 1733 s). */
-.v-player{width:min(82%,560px);perspective:1200px}
-.win{overflow:hidden;border-radius:14px;background:#0f2d2a;box-shadow:0 40px 90px #052a2655;transform:rotateX(calc(30deg * (1 - var(--a)))) rotateY(calc(-26deg * (1 - var(--a)))) rotateZ(calc(7deg * (1 - var(--a)))) scale(calc(.86 + .14 * var(--a)))}
-.win-bar{display:flex;align-items:center;gap:6px;padding:10px 12px;background:#163b37;color:#cfe6dc;font-size:13px}.win-bar i{width:9px;height:9px;border-radius:50%;background:#ffffff40}.win-bar span{margin-left:8px}
-.win-video{position:relative;aspect-ratio:16/8;overflow:hidden}
-.win-video::before{content:"";position:absolute;inset:-20px;background:radial-gradient(circle at 42% 50%,#b0574e 0,#6b2327 40%,#160909 72%);filter:blur(14px)}
-.bbox{position:absolute;left:47%;top:28%;width:22%;height:38%;border:2px dashed #b3a6ff;border-radius:4px;opacity:clamp(0, calc((var(--a) - .75) * 5), 1)}
-.bbox b{position:absolute;left:-2px;bottom:100%;padding:3px 7px;background:#5844bb;color:#fff;font-size:12px;font-weight:600;white-space:nowrap}
+/* Layer map: the block. Big and centered for the intro, then a small exploded tower on the right. */
+.dig-map{grid-area:stage;position:relative;align-self:stretch;z-index:2;pointer-events:none}
+.dig-stage{position:absolute;inset:0;perspective:2200px}
+.block{--gap:clamp(46px,7vh,78px);--navgap:150px;--navx:250px;position:absolute;left:calc(50% + var(--nav) * (50% - var(--navx)));top:52%;width:0;height:0;transform-style:preserve-3d;transform:scale(calc(1 - var(--nav) * .72)) rotateX(58deg) rotateZ(calc(45deg - var(--e) * 10deg)) translateZ(calc(-1 * (var(--e) * 2.5 * var(--gap) + var(--nav) * 2.5 * var(--navgap) + 90px)))}
+.block .slab{--w:min(26vw,330px);--d:min(26vw,330px);--t:30px;--out:0;--dim:0;transform:translateZ(calc((5 - var(--n)) * (var(--t) + var(--e) * var(--gap) + var(--nav) * var(--navgap)))) translate(calc(var(--out) * -130px), calc(var(--out) * 92px))}
+.block .slab .top{background-color:color-mix(in srgb,var(--top),var(--page) calc(var(--dim) * 62%))}
+.block .slab .front{background:color-mix(in srgb,var(--front),var(--page) calc(var(--dim) * 62%))}
+.block .slab .side{background:color-mix(in srgb,var(--side),var(--page) calc(var(--dim) * 62%))}
+.block .s0{--n:0;--top:#cdece5;--front:#8ad2c6;--side:#6cc3b7}
+.block .s1{--n:1;--top:#acdfd5;--front:#6cc3b7;--side:#52b4a8}
+.block .s2{--n:2;--top:#8ad2c6;--front:#52b4a8;--side:#3ba69b}
+.block .s3{--n:3;--top:#6cc3b7;--front:#3ba69b;--side:#2a988e}
+.block .s4{--n:4;--top:#52b4a8;--front:#2a988e;--side:#1a8a81}
+.block .s5{--n:5;--top:#3ba69b;--front:#1a8a81;--side:#126f68}
+.dig-labels{position:absolute;inset:0;list-style:none;margin:0;padding:0}
+.dig-labels li{position:absolute;translate:0 -50%;opacity:clamp(0, calc(var(--e) * 1.6 - .3), 1)}
+.dig-labels button{display:flex;align-items:center;gap:12px;padding:5px 10px 5px 5px;border:0;border-radius:12px;background:none;color:color-mix(in srgb,var(--ink),var(--ink-muted) calc(var(--nav) * 100%));font:600 calc(17px - var(--nav) * 2px)/1.2 inherit;white-space:nowrap;cursor:pointer;pointer-events:none;transition:background-color .15s,color .15s}
+.dig.is-open .dig-labels button{pointer-events:auto}
+.dig-labels button span{display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--line-strong);border-radius:8px;background:#fff;box-shadow:0 2px 0 var(--line-strong);font-size:14px;color:var(--brand-strong);transition:transform .15s,box-shadow .15s,background-color .15s,color .15s}
+.dig-labels button:hover{background:var(--surface-tint);color:var(--ink)}
+.dig-labels button:hover span{transform:translateY(-1px);box-shadow:0 3px 0 var(--line-strong)}
+.dig-labels button:active span{transform:translateY(1px);box-shadow:0 1px 0 var(--line-strong)}
+.dig-labels button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.dig-labels button.is-on{color:var(--ink)}
+.dig-labels button.is-on span{border-color:var(--brand-strong);background:var(--brand);color:#fff;box-shadow:0 2px 0 var(--brand-deep)}
+
+/* ---- The pit: one card per layer, stacked in the stage. Digging down slides the current scene up
+   and out while the next rises from below; deeper layers sit in darker ground. ---- */
+.pit{grid-area:stage;position:relative;isolation:isolate;overflow:clip;height:min(78svh,660px);margin-right:330px;border-radius:28px;background:linear-gradient(#1a8a81,#6cc3b7);perspective:1400px;opacity:calc(clamp(0, calc((.5 - var(--s)) * 40), 1) * clamp(0, calc((var(--s) + 1) * 50), 1))}
+.layer[data-layer="0"] .pit{opacity:calc(clamp(0, calc(1 - var(--s) * 1.4), 1) * clamp(0, calc((var(--s) + 1) * 50), 1))}
+.pit::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(#06302c,#0b3f3a);opacity:calc(var(--depth) * .45);pointer-events:none}
+.fit{position:absolute;left:50%;top:47%;width:560px;height:540px;margin:-270px 0 0 -280px;transform-style:preserve-3d;opacity:clamp(0, calc(1 - var(--sa) * 2), 1);transform:translateY(calc(var(--s) * 70%)) rotateX(calc(var(--s) * -26deg)) scale(var(--fit))}
+.v-cap{position:absolute;left:24px;right:24px;bottom:18px;margin:0;color:#fff;font-size:14px;line-height:1.45;opacity:clamp(0, calc(1 - var(--sa) * 3), 1);text-shadow:0 1px 8px #0a3a3566}
+.sc{position:absolute;inset:0;color:#fff;font-size:16px}
+.vf{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .4s}
+.vf.is-painted{opacity:1}
+
+/* 1. Player: the window rights itself and seeks to 14:20, then the detector searches the frame. A scan
+   sweeps, candidate boxes appear, they converge, and the box locks on the real prediction. */
+.sc-player{--a:clamp(0, calc(var(--p) / .3), 1);--b:clamp(0, calc((var(--p) - .26) / .38), 1);--c:clamp(0, calc((var(--p) - .6) / .22), 1);--l:clamp(0, calc((var(--p) - .84) / .12), 1);display:grid;place-items:center;perspective:1100px}
+.win{width:520px;overflow:hidden;border-radius:14px;background:#0f2d2a;box-shadow:0 40px 90px #052a2666;transform:rotateX(calc(34deg * (1 - var(--a)))) rotateY(calc(-30deg * (1 - var(--a)))) rotateZ(calc(8deg * (1 - var(--a)))) scale(calc(.82 + .18 * var(--a)))}
+.win-bar{display:flex;align-items:center;gap:6px;padding:10px 12px;background:#163b37;color:#cfe6dc;font-size:14px}.win-bar i{width:9px;height:9px;border-radius:50%;background:#ffffff40}.win-bar span{margin-left:8px}
+.win-video{position:relative;aspect-ratio:854/480;overflow:hidden;background:radial-gradient(circle at 42% 40%,#b0574e 0,#6b2327 42%,#160909 75%)}
+.anchors{position:absolute;inset:0;background-image:linear-gradient(#ffffff2e 1px,transparent 1px),linear-gradient(90deg,#ffffff2e 1px,transparent 1px);background-size:12.5% 16.667%;opacity:calc(clamp(0, calc(var(--b) * 5), 1) * (1 - var(--l)))}
+.scanline{position:absolute;left:0;right:0;top:calc(var(--b) * 100%);height:2px;background:#9ff3df;box-shadow:0 0 18px 2px #9ff3df;opacity:calc(clamp(0, calc(var(--b) * 10), 1) * (1 - var(--c)))}
+.scanline::before{content:"";position:absolute;left:0;right:0;bottom:2px;height:60px;background:linear-gradient(transparent,#9ff3df33)}
+.cand{--ap:clamp(0, calc((var(--b) - var(--i) * .11) * 6), 1);position:absolute;left:calc(var(--x0) + (var(--bx) - var(--x0)) * var(--c));top:calc(var(--y0) + (var(--by) - var(--y0)) * var(--c));width:calc(var(--w0) + (var(--bw) - var(--w0)) * var(--c));height:calc(var(--h0) + (var(--bh) - var(--h0)) * var(--c));border:1.5px solid #ffffffc0;border-radius:3px;opacity:calc(var(--ap) * (1 - var(--l)) * (.95 - var(--c) * .4))}
+.lock{position:absolute;left:var(--bx);top:var(--by);width:var(--bw);height:var(--bh);border:2px solid #b3a6ff;border-radius:3px;background:#5844bb22;opacity:var(--l);transform:scale(calc(1.14 - .14 * var(--l)))}
+.lock i{position:absolute;width:16px;height:16px;border:0 solid #fff}
+.lock i:nth-child(1){left:-4px;top:-4px;border-width:3px 0 0 3px}.lock i:nth-child(2){right:-4px;top:-4px;border-width:3px 3px 0 0}.lock i:nth-child(3){left:-4px;bottom:-4px;border-width:0 0 3px 3px}.lock i:nth-child(4){right:-4px;bottom:-4px;border-width:0 3px 3px 0}
+.lock b{position:absolute;left:6px;bottom:6px;padding:3px 8px;border-radius:5px;background:#5844bb;color:#fff;font-size:14px;font-weight:600;white-space:nowrap}
 .win-scrub{position:relative;height:6px;margin:14px 14px 0;border-radius:3px;background:#ffffff26}
 .win-scrub .fill{position:absolute;inset:0 auto 0 0;width:calc(49.6% * var(--a));border-radius:3px;background:#8bd5b7}
 .win-scrub .knob{position:absolute;top:50%;left:calc(49.6% * var(--a));width:14px;height:14px;border-radius:50%;background:#fff;translate:-50% -50%;box-shadow:0 0 0 5px #8bd5b740}
 .win-meta{display:flex;gap:12px;padding:12px 14px 14px;color:#cfe6dc;font-size:14px}.win-meta .t{color:#fff;font-family:var(--mono)}
 
-/* Search and chat: a question packet goes to FastAPI, splits to SQL and Genie, and the answer returns. */
-.v-search{position:relative;width:92%;height:82%;perspective:1300px}
-.plane{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateX(50deg) rotateZ(-6deg)}
+/* 2. Search and chat: the question types itself, the request lights its path App → FastAPI → SQL, the
+   real query unfolds, and the matching clip comes back. Genie's branch stays dim for this question. */
+.sc-search{--g:clamp(0, calc((var(--p) - .2) / .3), 1);--q:clamp(0, calc((var(--p) - .46) / .12), 1);--r:clamp(0, calc((var(--p) - .6) / .22), 1);--h:clamp(0, calc((var(--p) - .82) / .12), 1)}
+.ask{position:absolute;left:30px;right:30px;top:22px;display:flex;align-items:center;gap:12px;height:56px;padding:0 18px;border-radius:14px;background:#fff;color:var(--ink);font-size:18px;box-shadow:0 16px 40px #052a2640}
+.ask-icon{position:relative;width:16px;height:16px;border:2.5px solid var(--brand);border-radius:50%;flex:none;margin-right:4px}
+.ask-icon::after{content:"";position:absolute;right:-6px;bottom:-5px;width:7px;height:2.5px;background:var(--brand);rotate:45deg}
+.caret{width:2px;height:22px;margin-left:-10px;background:var(--brand);opacity:calc(1 - var(--g))}
+.sc-search .plane{position:absolute;left:10px;right:10px;top:150px;height:280px;transform-style:preserve-3d;transform:rotateX(54deg) rotateZ(-8deg)}
 .wires{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.wires path{fill:none;stroke:#ffffffa0;stroke-width:2;stroke-dasharray:6 7}
-.node{position:absolute;transform-style:preserve-3d}
-.node .slab{--w:118px;--d:118px;--t:30px;--top:#fff;--front:#cdece5;--side:#acdfd5}.node .slab .top{color:var(--brand-strong);font-size:16px}
-.n-q{left:15%;top:50%;translate:-50% -50%;padding:12px 16px;border-radius:12px;background:#fff;color:var(--brand-strong);font-weight:600;font-size:15px;box-shadow:0 10px 30px #052a2640}
-.n-api{left:50%;top:50%}.n-sql{left:85%;top:22.2%}.n-genie{left:85%;top:77.8%}
-.pkt{position:absolute;width:16px;height:16px;border-radius:4px;background:#fff;box-shadow:0 0 16px #fff;translate:-50% -50%;transform:translateZ(36px)}
-.pkt.p1{--t1:clamp(0, calc(var(--a) / .33), 1);left:calc(15% + 35% * var(--t1));top:50%;opacity:calc(1 - clamp(0, calc((var(--a) - .33) * 20), 1))}
-.pkt.p2{--t2:clamp(0, calc((var(--a) - .33) / .33), 1);left:calc(50% + 35% * var(--t2));top:calc(50% - 27.8% * var(--t2));opacity:calc(clamp(0, calc((var(--a) - .33) * 20), 1) - clamp(0, calc((var(--a) - .68) * 20), 1))}
-.pkt.p3{--t3:clamp(0, calc((var(--a) - .33) / .33), 1);left:calc(50% + 35% * var(--t3));top:calc(50% + 27.8% * var(--t3));opacity:calc(clamp(0, calc((var(--a) - .33) * 20), 1) - clamp(0, calc((var(--a) - .68) * 20), 1))}
-.pkt.p4{--t4:clamp(0, calc((var(--a) - .68) / .32), 1);left:calc(50% - 35% * var(--t4));top:50%;background:#8bd5b7;box-shadow:0 0 18px #8bd5b7;opacity:clamp(0, calc((var(--a) - .68) * 20), 1)}
-.answer{position:absolute;left:50%;bottom:6%;translate:-50% 0;padding:10px 16px;border-radius:12px;background:#fff;color:var(--brand-strong);font-weight:600;font-size:16px;box-shadow:0 14px 34px #052a2640;opacity:clamp(0, calc((var(--a) - .9) * 10), 1)}
+.wires path{fill:none;stroke-width:2;vector-effect:non-scaling-stroke}
+.wires .w-hot{stroke:#fff;stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--g));stroke-linecap:round}
+.wires .w-cold{stroke:#ffffff80;stroke-dasharray:5 6}
+.wires .w-base{stroke:#ffffff55;stroke-dasharray:5 6}
+.sc-search .node{position:absolute;transform-style:preserve-3d}
+.sc-search .node .slab{--w:96px;--d:96px;--t:28px;--top:#fff;--front:#cdece5;--side:#acdfd5}
+.sc-search .node .slab .top{color:var(--brand-strong);font-size:16px}
+.n-app{left:14%;top:50%}.n-api{left:50%;top:50%}.n-sql{left:86%;top:22%}.n-genie{left:86%;top:80%}
+.sc-search .n-genie .slab{--top:#ffffff8c;--front:#cdece58c;--side:#acdfd58c}
+.n-api .slab .top{background-color:color-mix(in srgb,#fff,#9ff3df calc(clamp(0, calc((var(--g) - .45) * 8), 1) * (1 - var(--r)) * 100%))}
+.n-sql .slab .top{background-color:color-mix(in srgb,#fff,#9ff3df calc(var(--q) * (1 - var(--h)) * 100%))}
+.pkt{position:absolute;width:16px;height:16px;border-radius:4px;translate:-50% -50%;transform:translateZ(44px)}
+.pkt.go{--g1:clamp(0, calc(var(--g) * 2), 1);--g2:clamp(0, calc(var(--g) * 2 - 1), 1);left:calc(14% + 36% * var(--g1) + 36% * var(--g2));top:calc(50% - 28% * var(--g2));background:#fff;box-shadow:0 0 18px #fff;opacity:calc(clamp(0, calc(var(--g) * 40), 1) * clamp(0, calc((1 - var(--g)) * 40), 1))}
+.pkt.back{--r1:clamp(0, calc(var(--r) * 2), 1);--r2:clamp(0, calc(var(--r) * 2 - 1), 1);left:calc(86% - 36% * var(--r1) - 36% * var(--r2));top:calc(22% + 28% * var(--r1));background:var(--hit);box-shadow:0 0 18px var(--hit);opacity:calc(clamp(0, calc(var(--r) * 40), 1) * clamp(0, calc((1 - var(--r)) * 40), 1))}
+.route{position:absolute;left:160px;top:318px;padding:7px 12px;border-radius:9px;background:#0f2d2a;color:#cfe6dc;font:500 14px var(--mono);box-shadow:0 10px 26px #052a2640;opacity:clamp(0, calc((var(--g) - .4) * 8), 1);transform:translateY(calc((1 - clamp(0, calc((var(--g) - .4) * 8), 1)) * 10px))}
+.query{position:absolute;right:18px;top:104px;margin:0;padding:12px 14px;border-radius:12px;background:#0f2d2a;color:#cfe6dc;font:500 13.5px/1.55 var(--mono);box-shadow:0 18px 40px #052a2650;opacity:var(--q);transform:translateY(calc((1 - var(--q)) * 14px)) scale(calc(.94 + .06 * var(--q)));transform-origin:top right}
+.hit{position:absolute;left:50%;bottom:22px;display:grid;gap:2px;padding:12px 18px;border-radius:12px;background:#fff;color:var(--ink);box-shadow:0 16px 36px #052a2650;translate:-50% 0;opacity:var(--h);transform:translateY(calc((1 - var(--h)) * 16px))}
+.hit b{font-size:18px;color:var(--brand-strong)}.hit span{font-size:14px;color:var(--ink-muted)}
+.hit::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:0 3px 3px 0;background:var(--hit)}
 
-/* Clip index: real clip rows drop into a Delta table stack. */
-.v-index{position:relative;width:100%;height:100%;perspective:1800px}
-.v-index .iso{position:absolute;left:50%;top:66%;width:0;height:0;transform-style:preserve-3d;transform:rotateX(58deg) rotateZ(38deg)}
-.v-index .row{--drop:clamp(0, calc((var(--a) * 1.5 - var(--k) * .16) * 2.4), 1);position:absolute;transform-style:preserve-3d;opacity:var(--drop);transform:translateZ(calc(var(--k) * 46px + (1 - var(--drop)) * 300px))}
-.v-index .row .slab{--w:330px;--d:64px;--t:18px;--top:#fff;--front:#cdece5;--side:#acdfd5}
-.v-index .row .top{display:grid;grid-template-columns:1fr .7fr .7fr 1fr;padding:0 14px;color:var(--brand-strong);font:600 14px var(--mono)}
-.v-index .base .slab{--w:370px;--d:110px;--t:22px;--top:#1a8a81;--front:#126f68;--side:#0f5a54;transform:translateZ(-26px)}
-.tbl{position:absolute;left:24px;bottom:18px;padding:6px 10px;border-radius:8px;background:#ffffffe0;color:var(--brand-strong);font-size:13px}
+/* 3. Clip index: real rows rain into a Delta table, a scan rises through it (the WHERE clause), and the
+   scissors row lifts out highlighted while the rest dim. */
+.sc-index{--sc:clamp(0, calc((var(--p) - .5) / .24), 1);--lift:clamp(0, calc((var(--p) - .76) / .2), 1);perspective:1800px}
+.sc-index .iso{position:absolute;left:58%;top:62%;width:0;height:0;transform-style:preserve-3d;transform:rotateX(58deg) rotateZ(38deg)}
+.sc-index .row{--drop:clamp(0, calc((var(--p) * 1.7 - var(--k) * .12) * 3), 1);position:absolute;transform-style:preserve-3d;opacity:var(--drop);transform:translateZ(calc(var(--k) * 40px + (1 - var(--drop)) * 320px))}
+.sc-index .row .slab{--w:340px;--d:58px;--t:16px;--top:#fff;--front:#cdece5;--side:#acdfd5}
+.sc-index .row .top{display:grid;grid-template-columns:1fr .7fr .7fr 1fr;padding:0 14px;background-color:color-mix(in srgb,#fff,#7fc4b8 calc(var(--lift) * 70%));color:var(--brand-strong);font:600 15px var(--mono)}
+.sc-index .row.is-hit{transform:translateZ(calc(var(--k) * 40px + (1 - var(--drop)) * 320px + var(--lift) * 60px)) translate(calc(var(--lift) * -20px), calc(var(--lift) * 120px))}
+.sc-index .row.is-hit .top{background-color:color-mix(in srgb,#fff,var(--hit) calc(var(--lift) * 100%));color:color-mix(in srgb,var(--brand-strong),var(--hit-ink) calc(var(--lift) * 100%));box-shadow:0 0 0 calc(var(--lift) * 3px) #fff}
+.sc-index .beam{position:absolute;left:-200px;top:-50px;width:400px;height:100px;border:1.5px solid #9ff3df;border-radius:6px;background:#9ff3df30;box-shadow:0 0 30px #9ff3df80;transform:translateZ(calc(var(--sc) * 300px - 8px));opacity:calc(clamp(0, calc(var(--sc) * 12), 1) * (1 - clamp(0, calc((var(--sc) - .92) * 12), 1)))}
+.sc-index .base .slab{--w:380px;--d:110px;--t:22px;--top:#1a8a81;--front:#126f68;--side:#0f5a54;transform:translateZ(-26px)}
+.tbl{position:absolute;left:24px;top:20px;padding:6px 10px;border-radius:8px;background:#ffffffe6;color:var(--brand-strong);font-size:14px}
 
-/* Label model: input, hidden and output planes pull apart in depth; reliable labels light up. */
-.v-model{width:100%;height:100%;display:grid;place-items:center;perspective:1500px}
-.rig{position:relative;width:min(330px,62%);height:300px;transform-style:preserve-3d;transform:rotateY(-40deg) rotateX(10deg)}
-.layer{position:absolute;inset:0;display:flex;flex-direction:column;gap:12px;padding:16px;border:1px solid #ffffffd0;border-radius:16px;background:#ffffffe6;box-shadow:0 20px 50px #052a2640;color:var(--brand-strong)}
-.layer b{font-size:15px}.layer small{font-size:13px;color:var(--ink-muted)}
-.l-in{transform:translateZ(calc(-1 * (40px + 150px * var(--a))))}
+/* 4. Label model: three planes pull apart, the five-second input lights row by row, signals fly through
+   in depth, and the reliable outputs light with their F1. */
+.sc-model{--a:clamp(0, calc(var(--p) / .3), 1);--w:clamp(0, calc((var(--p) - .2) / .3), 1);--f:clamp(0, calc((var(--p) - .44) / .32), 1);--o:clamp(0, calc((var(--p) - .74) / .2), 1);display:grid;place-items:center;perspective:1500px}
+.rig{position:relative;width:290px;height:330px;transform-style:preserve-3d;transform:translateY(-14px) translateX(-30px) rotateX(8deg) rotateY(44deg)}
+.rig .mplane{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;padding:16px;border:1px solid #ffffffd0;border-radius:16px;background:#ffffffeb;box-shadow:0 20px 50px #052a2640;color:var(--brand-strong)}
+.rig .mplane b{font-size:16px}.rig .mplane small{font-size:14px;color:var(--ink-muted)}
+.l-in{transform:translateZ(calc(-1 * (30px + 120px * var(--a))))}
 .l-hid{transform:translateZ(0)}
-.l-out{transform:translateZ(calc(40px + 150px * var(--a)))}
-.l-in .grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}.l-in .grid i{aspect-ratio:1;border-radius:3px;background:#acdfd5}
-.l-hid .dots{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;padding-top:6px}.l-hid .dots i{aspect-ratio:1;border-radius:50%;background:#6cc3b7}
-.outs{display:flex;flex-wrap:wrap;gap:4px}.outs i{padding:2px 6px;border-radius:5px;background:#eef6f3;font-size:12px;font-style:normal;color:var(--ink-muted)}
-.outs i.hot{background:color-mix(in srgb,var(--brand) calc(clamp(0, calc((var(--a) - .7) * 4), 1) * 100%),#eef6f3);color:color-mix(in srgb,#fff calc(clamp(0, calc((var(--a) - .7) * 4), 1) * 100%),var(--ink-muted))}
+.l-out{transform:translateZ(calc(30px + 120px * var(--a)))}
+.row-in{display:grid;grid-template-columns:36px 1fr;align-items:center;gap:8px;font:500 13px var(--mono);color:var(--ink-muted)}
+.row-in .cells{display:grid;grid-template-columns:repeat(16,1fr);gap:3px}
+.row-in .cells i{aspect-ratio:1;border-radius:2px;background:color-mix(in srgb,#cfe9e2,#1a8a81 calc(clamp(0, calc(var(--w) * 5 - var(--r)), 1) * 100%))}
+.l-hid .dots{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;padding:14px 8px}
+.l-hid .dots i{aspect-ratio:1;border-radius:50%;background:color-mix(in srgb,#acdfd5,#1a8a81 calc(clamp(0, calc((var(--f) - .3 - var(--j) * .012) * 4), 1) * 100%));box-shadow:0 0 0 calc(clamp(0, calc((var(--f) - .3 - var(--j) * .012) * 4), 1) * 4px) #9ff3df66}
+.outs{display:flex;flex-wrap:wrap;gap:4px}
+.outs i{display:inline-flex;gap:5px;padding:2px 6px;border-radius:5px;background:#eef6f3;font-size:12.5px;font-style:normal;color:var(--ink-muted)}
+.outs i.hot{background:color-mix(in srgb,var(--brand) calc(var(--o) * 100%),#eef6f3);color:color-mix(in srgb,#fff calc(var(--o) * 100%),var(--ink-muted))}
+.outs em{font-style:normal;font-family:var(--mono);opacity:var(--o);max-width:calc(var(--o) * 40px);overflow:hidden}
+.spark{--fi:clamp(0, calc(var(--f) * 1.7 - var(--i) * .1), 1);position:absolute;left:calc(18% + var(--i) * 10.5%);top:var(--y);width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 14px 3px #9ff3df;transform:translateZ(calc((var(--fi) * 2 - 1) * (30px + 120px * var(--a))));opacity:calc(clamp(0, calc(var(--fi) * 30), 1) * clamp(0, calc((1 - var(--fi)) * 30), 1))}
 
-/* Frame features: a frame enters the SurgVLP encoder; a feature vector rises out as bars. */
-.v-features{position:relative;width:100%;height:100%;perspective:1400px}
-.lane{position:absolute;inset:0;display:grid;grid-template-columns:.9fr 1fr 1.5fr;align-items:center;padding:0 5%;transform-style:preserve-3d;transform:rotateX(18deg) rotateY(-14deg)}
-.frame{justify-self:center;display:grid;place-items:end start;width:118px;aspect-ratio:16/10;padding:8px;border-radius:10px;background:radial-gradient(circle at 40% 45%,#b0574e,#5a1f22 55%,#1a0b0c);color:#fff;font-size:13px;font-weight:600;box-shadow:0 18px 40px #052a2650;transform:translateX(calc(130% * clamp(0, calc(var(--a) / .4), 1))) scale(calc(1 - .5 * clamp(0, calc((var(--a) - .25) / .2), 1)));opacity:calc(1 - clamp(0, calc((var(--a) - .38) * 8), 1))}
-.enc-wrap{position:relative;justify-self:center;display:grid;justify-items:center;gap:96px}
-.enc-label{display:grid;justify-items:center;padding:8px 14px;border-radius:10px;background:#fff;color:var(--brand-strong);font-weight:600;font-size:15px;box-shadow:0 10px 26px #052a2640}.enc-label small{font-weight:500;font-size:13px;color:var(--ink-muted)}
-.enc{position:relative;width:1px;height:1px;transform-style:preserve-3d;transform:rotateX(55deg) rotateZ(45deg)}
-.enc .slab{--w:120px;--d:120px;--t:56px;--top:#fff;--front:#cdece5;--side:#acdfd5}.enc .slab .top{color:var(--brand-strong);font-size:15px;transform:translateZ(56px)}
-.enc .slab .top span,.enc .slab .top{text-shadow:none}
-.vec{display:flex;align-items:flex-end;gap:5px;height:62%;padding:10px;border-radius:12px;background:#ffffff26}
-.vec i{flex:1;height:calc(var(--h) * 100%);border-radius:2px 2px 0 0;background:#fff;transform-origin:bottom;transform:scaleY(clamp(0, calc((var(--a) - .42 - var(--j) * .008) * 4), 1))}
+/* 5. Frame features: a real frame flies into ResNet-50's four stages (wider channels, smaller maps),
+   each stage lights in turn, and a 768-number vector rises out. */
+.sc-features{--m:clamp(0, calc(var(--p) / .3), 1);--v:clamp(0, calc((var(--p) - .66) / .3), 1)}
+.in-frame{position:absolute;left:26px;top:120px;width:150px;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:radial-gradient(circle at 40% 45%,#b0574e,#5a1f22 55%,#1a0b0c);box-shadow:0 18px 40px #052a2650;transform:translateX(calc(var(--m) * 150px)) scale(calc(1 - .55 * clamp(0, calc((var(--m) - .5) * 2), 1)));opacity:calc(1 - clamp(0, calc((var(--m) - .85) * 8), 1))}
+.in-frame span{position:absolute;left:6px;bottom:5px;padding:2px 6px;border-radius:4px;background:#0f2d2acc;font-size:13px;font-weight:600}
+.tower{position:absolute;left:190px;top:110px;width:300px;height:150px}
+.stage{--li:clamp(0, calc((var(--p) - .24 - var(--i) * .09) * 8), 1);position:absolute;left:calc(40px + var(--i) * 72px);top:70px;width:1px;height:1px;transform-style:preserve-3d}
+.stage .slab{--w:var(--sw);--d:var(--sw);--t:calc(14px + var(--i) * 12px);--top:color-mix(in srgb,#fff,#9ff3df calc(var(--li) * 100%));--front:#cdece5;--side:#acdfd5;transform:rotateX(58deg) rotateZ(45deg) translateZ(calc(var(--li) * 8px))}
+.stage > span{position:absolute;left:-30px;top:72px;width:60px;text-align:center;font:600 15px var(--mono)}
+.proj{position:absolute;right:30px;top:58px;padding:7px 12px;border-radius:9px;background:#fff;color:var(--brand-strong);font:600 14px var(--mono);box-shadow:0 10px 26px #052a2640;opacity:clamp(0, calc((var(--p) - .6) * 10), 1)}
+.sc-features .vec{position:absolute;left:30px;right:30px;top:300px;height:170px;display:flex;align-items:flex-end;gap:5px;padding:12px;border-radius:14px;background:#ffffff26;transform:rotateX(calc(28deg * (1 - var(--v))));transform-origin:bottom}
+.sc-features .vec i{flex:1;height:calc(var(--h) * 100%);border-radius:2px 2px 0 0;background:#fff;transform-origin:bottom;transform:scaleY(clamp(0, calc((var(--v) - var(--j) * .016) * 3), 1))}
 
-/* Surgery video: a deck of one-second frames fans out into a labeled timeline. */
-.v-video{position:relative;width:100%;height:100%;perspective:1300px}
-.deck{position:absolute;left:50%;top:46%;width:7.6%;aspect-ratio:16/11;transform-style:preserve-3d;transform:translate(-50%,-50%) rotateX(calc(16deg + 20deg * (1 - var(--a))))}
-.fr{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:6px;border:1px solid #ffffff60;border-radius:8px;background:radial-gradient(circle at 40% 45%,#a5504a,#4a1a1d 60%,#140809);box-shadow:0 14px 30px #052a2650;color:#fff;font:600 12px var(--mono);transform:translateX(calc((var(--i) - 4.5) * 118% * var(--a))) translateY(calc(var(--i) * -7px * (1 - var(--a)))) translateZ(calc(var(--i) * -18px * (1 - var(--a)))) rotateY(calc(-34deg * (1 - var(--a))))}
-.fr .tags{display:grid;gap:2px;justify-items:start}
-.fr.is-cut{border-color:#fff;box-shadow:0 0 0 2px #fff,0 14px 30px #052a2650}
-.fr em{padding:2px 5px;border-radius:4px;background:#fff;color:var(--brand-strong);font:600 11px 'Inclusive Sans Variable',sans-serif;font-style:normal;opacity:clamp(0, calc((var(--a) - .8) * 6), 1)}
+/* 6. Surgery video: a deck of real VID01 frames fans into an arc, surgeon labels drop in (scissors from
+   14:20), and the full VID01 instrument time line rises to show where these ten seconds sit. */
+.sc-video{--a:clamp(0, calc(var(--p) / .42), 1);--t:clamp(0, calc((var(--p) - .38) / .16), 1);--z:clamp(0, calc((var(--p) - .56) / .32), 1);perspective:1300px}
+.arc{position:absolute;left:50%;top:40px;width:62px;height:120px;margin-left:-31px;transform-style:preserve-3d;transform:rotateX(calc(8deg + 22deg * (1 - var(--a)))) translateY(calc(var(--z) * -10px))}
+.fr{position:absolute;inset:0;transform-style:preserve-3d;transform:translateZ(-560px) rotateY(calc((var(--i) - 3.5) * 7deg * var(--a))) translateZ(560px) translate(calc((1 - var(--a)) * var(--i) * 3px), calc((1 - var(--a)) * var(--i) * -5px + var(--t) * var(--cut, 0) * -12px))}
+.fr canvas{position:relative;display:block;width:62px;height:35px;border-radius:6px;background:radial-gradient(circle at 40% 45%,#a5504a,#4a1a1d 60%,#140809);box-shadow:0 10px 24px #052a2650}
+.fr .ts{display:block;margin-top:5px;font:600 12px var(--mono);text-align:center}
+.fr .tags{display:grid;gap:3px;justify-items:center;margin-top:4px}
+.fr em{padding:2px 4px;border-radius:4px;background:#fff;color:var(--brand-strong);font-size:12px;font-style:normal;font-weight:600;opacity:clamp(0, calc(var(--t) * 3 - .4), 1)}
+.fr.is-cut{--cut:1}
+.fr.is-cut canvas{box-shadow:0 0 0 calc(var(--t) * 2px) var(--hit),0 10px 24px #052a2650}
+.fr.is-cut em + em{background:var(--hit);color:var(--hit-ink)}
+.tl{position:absolute;left:22px;right:22px;top:234px;height:230px;perspective:900px}
+.tl-plane{position:relative;display:grid;gap:7px;padding:14px 16px 16px;border-radius:14px;background:#0f2d2ad9;transform-origin:top;transform:rotateX(calc(20deg + 60deg * (1 - var(--z))));opacity:var(--z)}
+.lane{display:grid;grid-template-columns:76px 1fr;align-items:center;gap:8px;font-size:13.5px;color:#cfe6dc}
+.lane .track{position:relative;height:16px;border-radius:3px;background:#ffffff1a}
+.lane .track i{position:absolute;top:0;bottom:0;min-width:2px;border-radius:2px;background:#8bd5b7;transform-origin:left;transform:scaleX(clamp(0, calc(var(--z) * 1.6 - .3), 1))}
+.lane.is-cut{color:#fff;font-weight:600}.lane.is-cut .track i{background:var(--hit);box-shadow:0 0 10px var(--hit)}
+.here{position:absolute;top:6px;bottom:6px;width:2px;background:#fff;box-shadow:0 0 10px #fff;opacity:clamp(0, calc((var(--z) - .7) * 6), 1)}
 
+/* ---- Phones: no pin. Intro, map, then each layer's copy and scene in reading order. ---- */
 @media(max-width:860px){
-  .dig-intro{height:240svh}
-  .dig-sticky{grid-template-columns:1fr;grid-template-rows:auto 1fr;align-content:start;padding:10vh 6vw 4vh}
-  .dig-labels{display:none}
+  .dig{height:auto}
+  .dig-pin{position:relative;height:auto;min-height:0;display:block;padding:12vh 6vw 6vh;overflow:visible}
+  .dig-copy{opacity:1;transform:none;pointer-events:auto}
+  .dig-map{height:min(110vw,520px);margin:20px 0 10vh}
   .block .slab{--w:46vw;--d:46vw;--t:22px}
-  .block .slab .top span{font-size:12px}
-  .lv{grid-template-columns:1fr;padding:9vh 6vw;gap:28px;min-height:0}
-  .lv-stage{height:360px}
-  .v-index .row .slab{--w:240px;--d:52px}.v-index .row .top{font-size:11px}.v-index .base .slab{--w:270px}
-  .rig{height:260px}
-  .v-search,.v-index,.v-features{scale:.64}
+  .dig-labels{display:none}
+  .layer{display:block;padding:8vh 0 4vh;border-top:1px solid var(--line)}
+  .pit{height:min(100vw,460px);margin:28px 0 0;opacity:1}
+  .fit{opacity:1;transform:scale(var(--fit))}
+  .v-cap{opacity:1}
 }
 @media(prefers-reduced-motion:reduce){
-  .dig-intro{height:auto}.dig-sticky{position:relative;height:auto;min-height:900px}
-  .dig-labels li,.win,.fr,.v-index .row{transition:none}
+  .vf,.dig-labels button,.dig-labels button span{transition:none}
 }

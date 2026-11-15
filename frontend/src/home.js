@@ -1,4 +1,4 @@
-import { architectureSection, updateArchitecture } from './architecture.js';
+import { architectureSection, updateArchitecture, digScrollTop } from './architecture.js';
 
 /* Brand: "surg" and "f" as keycaps joined by "+", read like the Ctrl+F shortcut. Same markup in the hero
    and the small lockup; colors follow currentColor, so it works white-on-teal and teal-on-light.
@@ -319,6 +319,13 @@ export function mountHome(root) {
   /* In-page links scroll the window only. scrollIntoView would also scroll the clipped hero layers
      (the old logo-click glitch). "#top" returns to the start, where the frame is fully inset. */
   const jump = event => {
+    /* Layer map: each label digs straight to its layer. */
+    const dig = event.target.closest?.('[data-dig]');
+    if (dig) {
+      const top = digScrollTop(root, Number(dig.dataset.dig));
+      if (top !== null) window.scrollTo({top, behavior: media.matches ? 'auto' : 'smooth'});
+      return;
+    }
     const link = event.target.closest?.('a[href^="#"]');
     if (!link) return;
     const id = link.getAttribute('href').slice(1);
@@ -332,6 +339,13 @@ export function mountHome(root) {
   window.addEventListener('resize', schedule);
   media.addEventListener('change', schedule);
   root.addEventListener('click', jump);
+  /* Keyboard focus on a hidden layer's link brings that layer into view. */
+  const reveal = event => {
+    const layer = event.target.closest?.('.layer:not(.is-on)');
+    const top = layer ? digScrollTop(root, Number(layer.dataset.layer)) : null;
+    if (top !== null) window.scrollTo({top, behavior: 'auto'});
+  };
+  root.addEventListener('focusin', reveal);
   /* Hero keys: pressing a key sinks only that key, like a real keycap. Purely visual: it does not move
      focus or touch the search box, and the browser's own Ctrl+F is never intercepted. */
   const press = root.querySelector('.sf-hero');
@@ -349,5 +363,5 @@ export function mountHome(root) {
   video.addEventListener('error', unavailable);
   update();
   root.ownerDocument?.fonts?.ready?.then(() => { footerCache.size = null; schedule(); });
-  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
+  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
 }
