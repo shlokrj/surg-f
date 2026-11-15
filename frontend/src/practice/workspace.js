@@ -297,7 +297,7 @@ function buildElement(exercise) {
       </div>
       <div class="pr-head-actions">
         <button type="button" class="btn-secondary pr-small" data-pr="restart">Restart practice</button>
-        <button type="button" class="pr-close" data-pr="exit" aria-label="Exit practice" title="Exit practice">×</button>
+        <button type="button" class="pr-close" data-pr="exit" aria-label="Exit practice" title="Exit practice"><i class="ico ico-close" aria-hidden="true"></i></button>
       </div>
     </header>
     <ol class="pr-rail" id="pr-rail" aria-label="Stages"></ol>
@@ -310,8 +310,8 @@ function buildElement(exercise) {
         <span class="pr-ring" id="pr-ring" aria-hidden="true"></span>
         <span class="pr-pass" id="pr-pass" hidden><span aria-hidden="true">✓</span> Passed</span>
         <div class="anat-tools" role="group" aria-label="View">
-          <button type="button" data-zoom="0.8" aria-label="Zoom in">+</button>
-          <button type="button" data-zoom="1.25" aria-label="Zoom out">−</button>
+          <button type="button" data-zoom="0.8" aria-label="Zoom in"><i class="ico ico-plus" aria-hidden="true"></i></button>
+          <button type="button" data-zoom="1.25" aria-label="Zoom out"><i class="ico ico-minus" aria-hidden="true"></i></button>
           <button type="button" data-pr="camera">Reset camera</button>
         </div>
       </div>

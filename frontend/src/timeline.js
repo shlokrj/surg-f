@@ -67,8 +67,8 @@ export function timelinePanel(state, stepNotes = {}) {
   return `<section class="panel" id="sec-timeline" aria-labelledby="timeline-title">
     <div class="panel-head tl-head"><div><h2 id="timeline-title">Timeline</h2><p>${intro}</p></div>
       ${steps.length ? `<div class="step-nav-group" role="group" aria-label="Move between steps">
-        <button type="button" class="step-nav" data-step-nav="-1" aria-label="Previous step">←</button>
-        <button type="button" class="step-nav" data-step-nav="1" aria-label="Next step">→</button></div>` : ''}</div>
+        <button type="button" class="step-nav" data-step-nav="-1" aria-label="Previous step"><i class="ico ico-left" aria-hidden="true"></i></button>
+        <button type="button" class="step-nav" data-step-nav="1" aria-label="Next step"><i class="ico ico-right" aria-hidden="true"></i></button></div>` : ''}</div>
     <div class="panel-body">${search}${track}${stepList}</div>
   </section>`;
 }

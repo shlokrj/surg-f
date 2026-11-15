@@ -125,21 +125,48 @@
 @keyframes search-rise { from { opacity: 0; translate: -50% 6px; } to { opacity: 1; translate: -50% 0; } }
 #app.page-enter .hero-search { animation: search-rise .42s cubic-bezier(.16, 1, .3, 1) calc(.08s + var(--enter-offset, 0ms)) backwards; }
 
-/* Panel buttons (minimize, close): borderless, centred on the head, with the step arrows' 40px hit area. */
+/* ---- Icon buttons: one system for the whole case page ----
+   Icons are drawn from one set of 16px, 2px-stroke SVGs (.ico, coloured by currentColor), never typed
+   characters, so ×, chevrons, arrows, + and − always match.
+   1. Panel icons (panel-head close, minimize, step arrows; the practice exit): 40px, borderless,
+      brand ink, soft tint on hover. Close and minimize sit on the head's centre line.
+   2. Floating controls on media (3D zoom and reset, the blur eye on the video): 40px rounded squares
+      (12px radius) on a glass background so they read over any picture. */
+.ico { display: block; width: 16px; height: 16px; background: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
+.ico-close { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 3.5l9 9M12.5 3.5l-9 9' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.ico-chevron { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 10.5l5-5 5 5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.ico-left { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13 8H3M7.5 3.5L3 8l4.5 4.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.ico-right { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8h10M8.5 3.5L13 8l-4.5 4.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.ico-plus { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 3v10M3 8h10' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.ico-minus { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8h10' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+
+.dash .step-nav, .panel-min, .dash .panel-close, .dash .pr-close {
+  width: 40px; height: 40px; display: grid; place-items: center; flex: none; padding: 0;
+  border: 0; border-radius: 10px; background: transparent; color: var(--brand-strong); line-height: 1; cursor: pointer;
+  transition: background-color .15s, color .15s;
+}
+.dash .step-nav:hover:not(:disabled), .panel-min:hover, .dash .panel-close:hover, .dash .pr-close:hover { background: var(--surface-tint); border-color: transparent; }
+.dash .step-nav:disabled { color: #a9b8b1; background: transparent; cursor: default; }
+.dash .step-nav:focus-visible, .panel-min:focus-visible, .dash .panel-close:focus-visible, .dash .pr-close:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.dash .step-nav-group { gap: 4px; }
 .dash .panel-head { position: relative; padding-right: 78px; }
 .dash .panel-head:has(.panel-close) { padding-right: 122px; }
-.panel-min, .dash .panel-close {
-  position: absolute; top: calc(50% + 2px); translate: 0 -50%; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; /* +2px: the head has 4px more padding on top */
-  border: 0; border-radius: 10px; background: transparent; color: var(--brand-strong);
-  font-size: 24px; line-height: 1; cursor: pointer; transition: background-color .15s, color .15s;
-}
+.panel-min, .dash .panel-close { position: absolute; top: calc(50% + 2px); translate: 0 -50%; } /* +2px: the head has 4px more padding on top */
 .panel-min { right: 26px; }
 .dash .panel-close { right: 70px; }
-.panel-min:hover, .dash .panel-close:hover { background: var(--surface-tint); }
-.panel-min:focus-visible, .dash .panel-close:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-/* A chevron, like the dropdowns: up while open (fold it away), turning down when minimized. */
-.panel-min i { width: 14px; height: 9px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 9'%3E%3Cpath d='M1.5 7.5l5.5-5.5 5.5 5.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 9'%3E%3Cpath d='M1.5 7.5l5.5-5.5 5.5 5.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; transition: transform .3s cubic-bezier(.4, 0, .2, 1); }
-.panel.is-min .panel-min i { transform: rotate(180deg); }
+.panel-min .ico { transition: transform .3s cubic-bezier(.4, 0, .2, 1); }
+.panel.is-min .panel-min .ico { transform: rotate(180deg); }
+
+.dash .anat-tools { gap: 8px; }
+.dash .anat-tools button {
+  min-width: 40px; height: 40px; display: inline-grid; place-items: center; padding: 0 14px;
+  border: 1px solid #ffffffb3; border-radius: 12px; background: #ffffffd9; color: var(--brand-strong);
+  font-size: var(--text-sm); font-weight: 600; backdrop-filter: blur(10px); box-shadow: 0 6px 18px #0b4d461f;
+  transition: background-color .15s;
+}
+.dash .anat-tools button:has(.ico) { width: 40px; padding: 0; }
+.dash .anat-tools button:hover { background: #fff; }
+.eye-toggle { width: 40px; height: 40px; border-radius: 12px; }
 .panel.is-min > :not(.panel-head) { display: none; }
 .panel.is-folding > :not(.panel-head) { overflow: hidden; }
 .panel.is-min .panel-head p, .panel.is-min .step-nav-group { display: none; }

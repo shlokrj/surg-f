@@ -385,6 +385,9 @@ async function answerPractice(intent) {
   return { role: 'doc', text: practiceOffer(exercise), offer: { exerciseId: exercise.exercise_id, status: 'open' } };
 }
 
+/* What practice sets aside and restores on exit. */
+const PRACTICE_KEEP = ['outputs', 'results', 'queryLabel', 'quiz', 'quizAnswers', 'quizSubmitted', 'chartRequest', 'studyQuiz', 'actionRows'];
+
 function beginPractice(index) {
   const message = state.messages[index];
   const exercise = message?.offer && exerciseById(message.offer.exerciseId);
@@ -392,7 +395,9 @@ function beginPractice(index) {
   const verdict = checkEligibility(exercise, videoFacts());
   if (!verdict.ok) { message.offer.status = 'expired'; state.messages.push({ role: 'doc', text: verdict.message }); render(); return; }
   message.offer.status = 'started';
-  // Take over the workspace: close every assistant-opened panel and discard its state.
+  // Take over the workspace: set the open panels aside (with their answers and search) and bring them
+  // back on exit, so a quiz, chart or 3D model made earlier is still there afterwards.
+  state.beforePractice = Object.fromEntries(PRACTICE_KEEP.map(key => [key, state[key]]));
   Object.assign(state, { outputs: [], results: [], queryLabel: '', quiz: null, quizAnswers: {}, quizSubmitted: false, chartRequest: null, studyQuiz: null, actionRows: [] });
   state.practice = { exerciseId: exercise.exercise_id, surface: 'model' };
   startPractice(exercise, { seek: practiceSeek, playRange: practicePlayRange, onExit: () => endPractice() });
@@ -415,6 +420,10 @@ function endPractice({ quiet = false } = {}) {
   disposePractice();
   state.practice = null;
   practiceStopAt = null;
+  // Exit restores what was open before practice. A quiet end (switching video or leaving the page)
+  // discards it: those panels belonged to the old video.
+  if (!quiet && state.beforePractice) Object.assign(state, state.beforePractice);
+  state.beforePractice = null;
   if (!quiet) render();
 }
 
@@ -526,7 +535,7 @@ function wirePanels() {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'panel-min';
-    button.innerHTML = '<i aria-hidden="true"></i>'; // a chevron that turns over when minimized (CSS)
+    button.innerHTML = '<i class="ico ico-chevron" aria-hidden="true"></i>'; // turns over when minimized (CSS)
     const sync = () => {
       const min = state.minimized.has(panel.id);
       panel.classList.toggle('is-min', min);
@@ -547,7 +556,7 @@ function wirePanels() {
     const close = document.createElement('button');
     close.type = 'button';
     close.className = 'panel-close';
-    close.textContent = '×';
+    close.innerHTML = '<i class="ico ico-close" aria-hidden="true"></i>';
     close.title = 'Close';
     close.setAttribute('aria-label', `Close ${title}`);
     close.addEventListener('click', () => closePanel(mode));

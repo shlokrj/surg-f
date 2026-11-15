@@ -18,11 +18,7 @@
 .pr-objective { margin-top: 4px; max-width: 64ch; color: var(--ink-muted); font-size: var(--text-md); }
 .pr-head-actions { display: flex; align-items: center; gap: 8px; flex: none; }
 .pr-small { min-height: 36px; padding: 0 14px; font-size: var(--text-sm); }
-.pr-close, .panel-close {
-  width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%;
-  background: #fff; color: var(--ink-muted); font-size: 22px; line-height: 1;
-}
-.pr-close:hover, .panel-close:hover { border-color: #9db5aa; color: var(--ink); }
+/* .pr-close shares the case page's icon-button style (case.css, "Icon buttons"). */
 
 /* Stage rail: done ✓ / current / future (no content revealed). */
 .pr-rail { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 14px 24px; border-bottom: 1px solid var(--line); }
