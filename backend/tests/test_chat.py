@@ -664,3 +664,10 @@ def test_genie_routing_words(message, to_genie):
     genie = FakeGenie(GenieAnswer(conversation_id="c", text="Generally, an answer."))
     ask(make_client(genie=genie), message)
     assert bool(genie.questions) is to_genie
+
+
+def test_markdown_headings_are_flattened():
+    text = "## Typical tools\n\n**Generally**, a grasper and a hook. Then clips."
+    genie = FakeGenie(GenieAnswer(conversation_id="c", text=text))
+    body = ask(make_client(genie=genie), "what tools are typically used in a cholecystectomy")
+    assert body["reply"] == "Typical tools: Generally, a grasper and a hook. Then clips."

@@ -258,6 +258,7 @@ SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
 LIST_MARK = re.compile(r"(?m)^\s*(?:[-*\u2022]|\d+\.)\s+")
+HEADING = re.compile(r"(?m)^\s*#{1,6}\s+(.*?)\s*$")
 
 
 def short_reply(text: str | None, prose: bool = False) -> str | None:
@@ -266,6 +267,7 @@ def short_reply(text: str | None, prose: bool = False) -> str | None:
     if not text:
         return None
     text = text.strip().replace("**", "").replace("`", "")
+    text = HEADING.sub(r"\1:", text)  # "## Typical tools" -> "Typical tools:"
     if prose:
         text = LIST_MARK.sub("\u2022 ", text)
     else:

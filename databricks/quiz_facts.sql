@@ -28,7 +28,7 @@ INSERT INTO workspace.default.surgf_steps VALUES
   ('VID02', 7, 'GallbladderRetraction', 'Gallbladder removal', 2779.0, 2839.04);
 
 CREATE OR REPLACE VIEW workspace.default.surgf_quiz_facts
-COMMENT 'One row per quiz-ready fact about a video: steps and instrument usage from annotation rows. position = step order for step rows, rank by total time (1 = longest) for instrument rows. Use fact for wording and explanations, start_sec/end_sec for show-in-video.'
+COMMENT 'One row per quiz-ready fact about a video: steps and instrument usage from annotation rows. position = step order for step rows, rank by total time (1 = longest) for instrument rows. Use fact for explanations, time_mss (start as m:ss) or subject or instruments (step rows: instruments seen) as answers, start_sec/end_sec for show-in-video.'
 AS
 WITH tools AS (
   SELECT case_id, label, start_sec, end_sec
@@ -60,7 +60,9 @@ SELECT case_id, 'step' AS fact_type, step_label AS subject, step_order AS positi
        concat('Step ', step_order, ' of ', n_steps, ' is ', step_label, ', from ',
               workspace.default.surgf_clock(start_sec), ' to ', workspace.default.surgf_clock(end_sec),
               '. Instruments seen during it: ', coalesce(nullif(tools_seen, ''), 'none'), '.') AS fact,
-       start_sec, end_sec
+       start_sec, end_sec,
+       workspace.default.surgf_clock(start_sec) AS time_mss,
+       coalesce(nullif(tools_seen, ''), 'none') AS instruments
 FROM step_tools
 UNION ALL
 SELECT case_id, 'instrument_usage', label, CAST(time_rank AS INT),
@@ -68,11 +70,11 @@ SELECT case_id, 'instrument_usage', label, CAST(time_rank AS INT),
               workspace.default.surgf_clock(total_sec), ' in total (', time_rank, ' of ', n_tools,
               ' instruments by total time). It first appears at ',
               workspace.default.surgf_clock(first_start), '-', workspace.default.surgf_clock(first_end), '.'),
-       first_start, first_end
+       first_start, first_end, workspace.default.surgf_clock(first_start), CAST(NULL AS STRING)
 FROM ranked
 UNION ALL
 SELECT case_id, 'instrument_last', label, CAST(time_rank AS INT),
        concat('The ', label, ' is last visible at ', workspace.default.surgf_clock(last_start), '-',
               workspace.default.surgf_clock(last_end), '.'),
-       last_start, last_end
+       last_start, last_end, workspace.default.surgf_clock(last_start), CAST(NULL AS STRING)
 FROM ranked;
