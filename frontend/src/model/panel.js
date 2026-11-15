@@ -39,7 +39,7 @@ export function modelPanel(state) {
         <span>See through:</span>${ORGANS.map(organButton).join('')}
         <button type="button" class="btn-quiet" id="model-show-all">Show all</button>
       </div>
-      <p class="anat-notes">Drag to rotate, scroll to zoom, and select an organ to see through it. This is an illustration on a generic body, not this patient's anatomy${REVIEWED ? '' : ', and it has not yet been medically reviewed'}.</p>
+      <p class="anat-notes">Drag to rotate, scroll to zoom, and click an organ to fade it; click it again to bring it back. Reset view restores everything. This is an illustration on a generic body, not this patient's anatomy${REVIEWED ? '' : ', and it has not yet been medically reviewed'}.</p>
       <p class="anat-credit">Anatomy: BodyParts3D, © The Database Center for Life Science, licensed under CC Attribution 4.0 International. The cystic artery, ports, clips and other step markers are drawn by Surg+F.</p>
     </div>
   </section>`;
