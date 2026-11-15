@@ -23,6 +23,16 @@ class SearchService:
             raise ValueError("q must contain a label")
         return SearchResponse(results=self.repository.find_by_label(label))
 
+    def search_case(
+        self, query: str, case_id: str, source: TimelineSource = "annotation"
+    ) -> SearchResponse:
+        """Clips with this label in one video, from one source. Never returns fixture rows."""
+        label = normalize_label(query)
+        clips = self.repository.find_by_case(case_id)
+        return SearchResponse(
+            results=[c for c in clips if c.label.lower() == label and c.source == source]
+        )
+
 
 def summarize(segments: list[Segment]) -> list[LabelSummary]:
     """Per-label count, total duration and first start, largest total first."""
