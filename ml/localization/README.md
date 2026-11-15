@@ -85,3 +85,15 @@ The downloader selects two positive images from distinct surgeries in each offic
 The smoke runner uses [Torchvision Faster R-CNN MobileNetV3 320](https://docs.pytorch.org/vision/0.21/models/generated/torchvision.models.detection.fasterrcnn_mobilenet_v3_large_320_fpn.html), COCO_V1 pretrained weights, and a new head with background/cystic duct/gallbladder classes. It validates image hashes and surgery separation, performs exactly three CPU optimizer steps with seed 17, checks finite losses/inference and saves a local checkpoint, raw validation predictions and report. This is a lightweight alternative supervised baseline, not a fine-tuned Grounding DINO checkpoint.
 
 The real run succeeded on Endoscapes train surgeries 1/2 and validation 121/122. `anatomy_smoke_report.json` records all losses and versions. Three updates on two images do not establish useful accuracy; the 36/37 validation detections are counts, not correct detections. No checkpoint or image is committed, and the app still uses the old experimental preview. Next: prepare full train/validation imagery, add category-scoped COCO metrics and a bounded full training experiment with best-checkpoint selection on validation only. Browser acceptance remains separate.
+
+## Category-scoped COCO evaluation (Shlok)
+
+Install `requirements-eval.txt` in the localization environment. Run:
+
+```sh
+python ml/localization/evaluate_anatomy_coco.py /path/to/val/annotations.json /path/to/predictions.json --output /path/to/new/metrics.json
+```
+
+Input references must explicitly contain only class 1 cystic duct and class 2 gallbladder, with reviewed detection-keyframe flags. Predictions use the smoke runner format: image_id, pixel xyxy boxes, integer labels and scores. The evaluator includes every reference image, counts missing prediction images, reports ignored out-of-scope detections, rejects invalid geometry/IDs, and leaves undefined metrics null. Uses pycocotools COCO bbox AP at IoU .50:.05:.95 and AP50, plus per-class recall at maxDets 100; bbox areas are computed from geometry. Do not use this category map with a different model without explicit conversion.
+
+`anatomy_smoke_metrics.json` records AP 0.05047 / AP50 0.09926 on only two validation images (three reference boxes) after three optimizer steps. This verifies metrics plumbing, not generalizable performance. No threshold/model was selected from this tiny result. Full training and representative validation remain unfinished; coordinate complete inputs with Aadhi.

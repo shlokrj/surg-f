@@ -1,5 +1,14 @@
 # ML team progress
 
+## Shlok evaluation task started (2026-11-14)
+
+At Shlok's explicit request, published the current spatial team branch and incoming main changes to main at `dd2dfaf`; frontend tests (6) and build passed after integration. New task work continues on `feat/spatial-overlays`, not main.
+
+Shlok added `evaluate_anatomy_coco.py` and pinned pycocotools 2.0.11. It restricts evaluation to the two annotated anatomy categories, validates inputs, retains empty/missing-prediction frames and reports COCO AP/AP50 plus per-class metrics. Real smoke evaluation: 2 validation images, 3 boxes; AP 0.05047, AP50 0.09926. This is pipeline verification, not an accuracy-qualified model. Report hashes/results are in `anatomy_smoke_metrics.json`.
+
+Verification: isolated localization Python `-m unittest discover -s ml/localization -p 'test_*.py'` passed all 13 tests with no skips; evaluator command in README ran successfully. Next Shlok task: configurable full trainer and checkpoint selection using Aadhi's complete train/validation manifests. Aadhi/Mihir ownership remains unchanged.
+
+
 ## Active spatial team assignments (2026-11-14)
 
 **Shlok, Aadhi (Aadhitya), and Mihir now share `feat/spatial-overlays`. Push all new feature work there; do not merge or push to main until Shlok explicitly requests it.** This supersedes older Shlok-only stage-3 ownership, Aadhi-only-stage-2 notes and the previous main publication instruction. Main already has the earlier prototype; it is not the target for this work round.

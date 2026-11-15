@@ -1,0 +1,29 @@
+{
+  "scope": [
+    "cystic duct",
+    "gallbladder"
+  ],
+  "images": 2,
+  "missing_prediction_images": 0,
+  "ignored_out_of_scope_predictions": 0,
+  "ap": 0.050472756903019486,
+  "ap50": 0.09925845068978945,
+  "per_class": {
+    "cystic duct": {
+      "ap": 0.07499999999999998,
+      "ap50": 0.08333333333333336,
+      "recall100": 0.9,
+      "support": 1
+    },
+    "gallbladder": {
+      "ap": 0.025945513806038982,
+      "ap50": 0.1151835680462456,
+      "recall100": 0.2,
+      "support": 2
+    }
+  },
+  "protocol": "COCO bbox IoU .50:.05:.95, 101 recall points, maxDets=100, all areas; undefined metrics null",
+  "annotation_sha256": "fddb2861d40656fdfdbe4f9ead16800327335f11372d8c275b4ccaf9c6497e61",
+  "prediction_sha256": "79455e7f55b6f96297583bfef3b94cbf5ae071bb71cc38762c5e98bdeb43f2d0",
+  "limitation": "Two validation images, three ground-truth boxes, after three optimizer steps. Pipeline verification only; not a representative benchmark."
+}
