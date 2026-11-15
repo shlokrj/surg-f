@@ -9,6 +9,31 @@ Mihir continues spatial work on `feat/spatial-overlays`, retaining the scoped ev
 The earlier integrated `frontend/dev` work reached `main` through `6d468dd`. Further unfinished spatial work remains on `feat/spatial-overlays` until explicitly published. The frontend lane row below records current verification and remaining model/data limits.
 
 
+## 3D surgery practice v1 (2026-11-15, Rohan)
+
+**Status:** implemented on `feat/surgery-practice` (branched from `main` at `b64845f`). Local commits only; not pushed. Plan: [frontend/docs/SURGERY_PRACTICE_PLAN.md](../frontend/docs/SURGERY_PRACTICE_PLAN.md). Demo steps and file map: [frontend README, Practice](../frontend/README.md#practice-3d-surgery-practice).
+
+**What exists:** Lil Doc takes a practice request ("Let me practice clipping and cutting"), checks that the open video is an **upload** matching VID01 (bytes, sampled SHA-256 from a Web Worker, 1733.04 s), and offers Start and Cancel. Start takes over the case page: compact video, 3D practice model, Lil Doc unchanged. There are four one-action stages (grasp at 670 s, clip at 698 s, clip at 815 s, cut at 860 s), each tied to a VID01 annotation interval. The resident uses a 3D tool tray with drag/tap placement, snap preview, press-and-hold gestures and keyboard equivalents. Feedback is formative (instrument, structure, spot, gesture), with opt-in guidance, reset stage, restart, exit and a recap. The model, chart and quiz panels now have a × close that discards their state. No backend change; nothing is persisted.
+
+**Checks run:**
+- `node --test frontend/test/*.test.js` passed 45, including 16 new practice tests (exercise contract, model digest, annotation-backed references, intents, eligibility, every controller transition, and the fingerprint against the real `VID01.mp4`).
+- `npm --prefix frontend run build` passed.
+- A Playwright-driven headless Chrome walkthrough against `VITE_USE_FIXTURE=true` (script kept outside the repo) passed 36 checks with no page errors:
+  - Lil Doc refuses on hosted VID01; the upload is recognised; Cancel leaves layout and time unchanged.
+  - The takeover keeps the same `<video>` and chat.
+  - Mouse and keyboard stages work; wrong tool, structure and spot each get the right feedback without changing the model or video.
+  - Continue seeks to 698 s and pauses; reset, restart, recap replay, a mobile 390 px switch with no horizontal scroll, Exit and a fresh session all behave.
+  - The model and chart close buttons work.
+- One earlier run hit a single 30 s Playwright timeout that did not recur in four later full runs; cause unknown.
+
+**Blockers / next:**
+- (1) **Clinical review**: a surgeon or educator must check the stage order, tools, clip positions, feedback and reference intervals, then set `review.status` (delivery stage 4). Until then the UI says "draft, not yet medically reviewed".
+- (2) A first-time-resident usability walkthrough.
+- (3) Visible-browser checks on real touch devices and of reduced-motion behaviour (headless only so far).
+- (4) **Shlok** to review the presentation, since this touches `main.js`, the chat bubbles and panel heads; **Mihir** to confirm the overlay panel still behaves inside the compact practice video column.
+- (5) Practice lane owner still to be confirmed, per the plan.
+
+
 ## VID01 overlay switched to v3 (2026-11-15, Mihir)
 
 At Mihir's decision, `frontend/public/overlays/VID01.json` is now the **v3** export (native-resolution Faster R-CNN, `anatomy-hires-v3`, validation AP 0.384 vs v2's 0.352; thresholds gallbladder 0.65, cystic duct 0.50). Reason: v3 is the best model on the labelled Endoscapes validation set; the earlier v2-vs-v3 VID01 proxy (32 frames, duct box present or not) favored v2, but it is a weak signal and VID01 accuracy is unmeasured for both. Known trade-off: v3 does **not** box the cystic duct at 11:38 (the clipping demo moment); v2 did. The file is the local export, identical to the Databricks parallel export within rounding. Checks: localization tests 35 and frontend tests 29 passed, build passed; headless Chrome 157 showed boxes at 422.7 and 673.95 s (gallbladder + cystic duct), 2 boxes in every playback sample, aligned after resize, VID02 cleared; a contact sheet at 306/423/674/860 s shows boxes on the gallbladder and duct region. The v2 export remains reproducible from `~/madhacks2026/localization/anatomy-full-v2/best.pt` if anyone wants it back.
