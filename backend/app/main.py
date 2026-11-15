@@ -12,7 +12,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .chat import ChatService, LLMRouter
-from .config import Settings, load_settings
+from .config import REPO_ROOT, Settings, load_settings
 from .genie import GenieClient
 from .interpret import InterpretService
 from .quiz import QuizBank, QuizService
@@ -20,6 +20,7 @@ from .repository import ClipRepository, DatabricksClipRepository, FixtureClipRep
 from .routes import router
 from .service import SearchService, TimelineService
 from .steps import StepsService
+from .web import add_frontend
 
 access_log = logging.getLogger("surgf.access")
 
@@ -151,6 +152,10 @@ def create_app(
         allow_headers=["*"],
         expose_headers=["X-Request-ID"],
     )
+    # Databricks App: also serve the built site and Volume videos (absent in local dev).
+    dist = REPO_ROOT / "frontend" / "dist"
+    if (dist / "index.html").is_file():
+        add_frontend(app, dist, settings.databricks)
     return app
 
 
