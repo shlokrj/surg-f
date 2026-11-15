@@ -1,5 +1,15 @@
 # Team handoffs
 
+## Spatial v3 (native resolution) and Databricks runs (2026-11-14, Mihir)
+
+Model/CV only; no UI files changed. The deployed VID01 overlay is **still v2**; v3 did not show a gain on VID01.
+
+**v3 model.** `train_anatomy.py --architecture mobilenet_v3_hires --hflip --grad-clip 10 --epochs 10` (native 854×480 input, random flips) on the same data and seed. Best epoch 6 (index 5): validation AP **0.384** (v2 0.352), AP50 0.715, cystic duct AP50 0.491 (v2 0.396), gallbladder AP50 0.940. Report `ml/localization/anatomy_hires_v3_errors.json`. At cystic duct 0.50 / gallbladder 0.65, v3 is precision 0.69 / recall 0.39 for duct (v2 at 0.70: 0.66 / 0.37) and 0.93 / 0.93 for gallbladder.
+
+**VID01 proxy check (not accuracy).** On the 60-frame review pack (`prepare_video_review.py`, seed 11), the 32 frames inside CholecT50 cystic_duct intervals almost certainly show the duct. Frames with a duct box: v2@0.70 **18/32**; v3@0.50 12/32; v3@0.30 17/32 (validation precision 0.61). Outside those intervals: v2 7/28, v3 4–5/28 (the duct is often visible there too, so that is ambiguous). A full v3 VID01 export (local, 7,221 frames, 1,589 duct boxes vs v2's 1,895) also misses the duct at 11:38, which v2 boxes. Conclusion: v3 fits Endoscapes better but does not transfer better to Cholec80 VID01 on this proxy, so v2 stays deployed. Reviewed VID01 boxes are needed to decide properly; the pack is ready (see the review-pack section of the runner README).
+
+**Databricks (serverless CPU, at Mihir's request).** New `scripts/run_databricks_anatomy.py` and notebook `ml/localization/anatomy_databricks.py` follow the stage-2 pattern (committed snapshot, `databricks_ml_v6` with pinned torch 2.6.0 / torchvision 0.21.0 / pycocotools 2.0.11, hard timeout, no idle compute). Commands: `upload-data`, `upload-run`, `probe`, `train RUN -- <train_anatomy args>`, `export RUN OUT.json -- <exporter args>`, `status`, `fetch`. Data is on the Volume at `/Volumes/workspace/default/surgf/localization/anatomy-data/` (1,624 files uploaded), runs under `runs/`, exports under `exports/`; training runs log to MLflow experiment `/Users/<token owner>/surg-f-anatomy`. `merge_artifacts.py` joins time-chunk exports from parallel jobs and revalidates. **Measured:** a serverless job has 4 CPUs (`os.cpu_count()`), FFmpeg at `/usr/bin/ffmpeg`, and pretrained weights download fine. The same 10×2048² matmul took 2.54 s there vs 0.14 s on Mihir's M4 Mac, so a single job is much slower than local; parallel jobs (each with 4 CPUs) are the way to use it. The v3 VID01 export ran as 4 parallel chunk jobs; the local export of the same thing finished in about 9 minutes first. The Databricks chunks are being kept to confirm the pipeline reproduces the local boxes. Note: the token in `.env` is Aadhitya's, so these jobs run on that account.
+
 
 
 

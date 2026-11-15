@@ -151,3 +151,22 @@ python ml/localization/evaluate_anatomy_coco.py /path/to/review-VID01/reference.
 ```
 
 The seeded sample (default seed 11) takes half its frames from intervals where `shared/triplets.annotation.csv` names `cystic_duct` as a target and half spread across the video, so it tests both misses and false alarms. `reference.json` is COCO with only cystic duct and gallbladder, **blank by default** (`--prefill SCORE` copies model boxes in but can anchor the reviewer), and every image starts with `is_det_keyframe: false`; the evaluator refuses until a reviewer has boxed every visible instance in a frame and set it to `true`. `predictions.json` holds raw, unthresholded predictions so AP is defined. The manifest binds video, checkpoint (architecture, epoch, data signature), triplets file and frame PNG hashes. The same seed and count reproduce the same frames, so a later checkpoint can be scored on identical frames. Pack built 2026-11-14 from the v2 checkpoint: `~/madhacks2026/localization/review-VID01-v1/`, 60 frames (32 inside cystic duct intervals). It contains Cholec80 imagery (CC BY-NC-SA 4.0); keep it out of Git. **Not yet reviewed; no VID01 accuracy exists yet.**
+
+## Run on Databricks serverless
+
+`scripts/run_databricks_anatomy.py` (run from `scripts/` with a venv that has `databricks-sdk` and `python-dotenv`; credentials from the repo-root `.env`) submits `ml/localization/anatomy_databricks.py` as a one-off serverless CPU job from the committed revision. Everything after `--` is passed to `train_anatomy.py` or `export_anatomy_video.py` unchanged.
+
+```sh
+python run_databricks_anatomy.py upload-data ~/madhacks2026/localization/anatomy-data   # once; skips files already present
+python run_databricks_anatomy.py probe                                                    # CPUs, versions, ffmpeg, weights
+python run_databricks_anatomy.py train RUN_NAME --timeout-min 180 -- --epochs 10 --architecture mobilenet_v3_hires --hflip --grad-clip 10
+python run_databricks_anatomy.py upload-run ~/madhacks2026/localization/RUN_DIR RUN_NAME   # to export a locally trained run
+python run_databricks_anatomy.py export RUN_NAME OUT-part0.json --timeout-min 240 -- --case-id VID01 \
+  --video-asset-id VID01-cholec80-25fps-v1 --every-sec 0.24 --start 0 --end 433.2 --max-age-sec 0.25 \
+  --display-width 854 --display-height 484 --score-threshold 0.65 --class-threshold "cystic duct=0.7"
+python run_databricks_anatomy.py status RUN_ID
+python run_databricks_anatomy.py fetch exports/OUT-part0.json /path/to/new/OUT-part0.json
+python ml/localization/merge_artifacts.py part0.json part1.json part2.json part3.json --output merged.json
+```
+
+Measured on this workspace: 4 CPUs per job and a matmul benchmark about 18x slower than an Apple M4, so one job is slower than a recent Mac; split exports into time chunks on the 0.24 s grid (chunk *i* starts at *i*·433.44 s, ends 433.2 s later) and run them in parallel. A rerun of `train` with the same `RUN_NAME` resumes from the Volume checkpoint. In zsh, pass `--start`/`--end` as separate words (unquoted variables are not split).
