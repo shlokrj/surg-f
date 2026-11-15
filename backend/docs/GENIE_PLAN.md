@@ -1,6 +1,6 @@
 # Genie plan: from typed text to an action
 
-Status: **backend built and tested; Genie space not created yet (2026-11-14, Rohan).** The backend works without Genie today and starts using it as soon as a space ID is in `.env`.
+Status: **backend built and tested; a Genie space exists but points at the wrong table (2026-11-14, Rohan).** The space `Surgical Workspace Clip Manager` (ID `01f1e08655eb17c1931c9dbb6cd4750b`) is attached to `workspace.surgf.clips`. Asked when the clipper was first used in VID01, it answered that there is no recorded use. Replace its table with `workspace.default.surgf_clips` and apply steps 4 to 6 below before adding the ID to `.env`. Because the table now also holds verb and target labels, add this rule to the instructions: for questions about instruments in general, filter `label IN ('grasper','hook','irrigator','bipolar','clipper','scissors')`, and match labels with exact equality. The backend works without Genie today and starts using it as soon as a space ID is in `.env`.
 
 ## What Genie is, and what it is not
 
