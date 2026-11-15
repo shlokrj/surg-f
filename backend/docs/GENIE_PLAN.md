@@ -145,4 +145,6 @@ The grasper total comes from the verified VID01 timeline (`backend/fixtures/time
 
 ## Not chosen
 
+**Update 2026-11-14:** a language-model router now exists as `POST /chat` (frontend guide, section 7). It uses a Databricks Foundation Model endpoint to pick a feature, and offers Genie to the model as an `ask_data` tool only when `DATABRICKS_GENIE_SPACE_ID` is set. `/interpret` is unchanged. The original note follows.
+
 If the team wants a language model to classify intent for every message, Databricks Foundation Model APIs fit that job better than Genie. The rules cover the four commands today, so that isn't needed for the demo.
