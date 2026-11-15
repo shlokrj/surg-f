@@ -2,6 +2,8 @@
 
 Search surgical videos. Ask when something happens in an operation and jump straight to that moment.
 
+[Open the live demo](https://surg-f-7474644357435752.aws.databricksapps.com/presentation-demo)
+
 Built at MadHacks 2026 by Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal and Rohan Nuthi.
 
 ![The surg+f homepage](docs/images/home.jpg)
