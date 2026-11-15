@@ -182,6 +182,18 @@ def named_case(text: str, default: str) -> str:
     return f"VID{int(match.group(1)):02d}" if match else default
 
 
+SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+
+
+def short_reply(text: str | None) -> str | None:
+    """Genie writes long markdown; keep the first two sentences of its first paragraph."""
+    if not text:
+        return None
+    paragraph = text.strip().split("\n\n")[0].replace("**", "").replace("`", "")
+    sentences = SENTENCE_END.split(" ".join(paragraph.split()))
+    return " ".join(sentences[:2]) or None
+
+
 def clock(seconds: float) -> str:
     return f"{int(seconds) // 60}:{int(seconds) % 60:02d}"
 
@@ -246,7 +258,7 @@ class ChatService:
 
     def _from_genie(self, question: str, case_id: str) -> ChatResponse:
         answer = self.genie.ask(f"For case_id '{case_id}': {question}")  # has its own timeout
-        text = answer.text or answer.description
+        text = short_reply(answer.text or answer.description)
         actions = genie_actions(answer, case_id)
         if actions and actions[0].results:
             clips = actions[0].results
