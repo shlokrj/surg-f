@@ -1,4 +1,4 @@
-import { architectureSection, updateArchitecture, digScrollTop } from './architecture.js';
+import { architectureSection, updateArchitecture, digScrollTop, digScenes } from './architecture.js';
 import { modelSection } from './modelnotes.js';
 import { databricksSection } from './databricks.js';
 import { problemSection } from './problem.js';
@@ -281,7 +281,9 @@ export function mountHome(root) {
     const dig = event.target.closest?.('[data-dig]');
     if (dig) {
       const top = digScrollTop(dig.closest('.dig'), Number(dig.dataset.dig));
-      if (top !== null) { if (media.matches) window.scrollTo(0, top); else glideTo(Math.round(top)); }
+      const section = dig.closest('.dig');
+      const scene = digScenes(root).find(sc => sc.section === section && sc.index === Number(dig.dataset.dig));
+      if (scene) playScene(scene); else if (top !== null) window.scrollTo(0, top);
       return;
     }
     const link = event.target.closest?.('a[href^="#"]');
@@ -304,37 +306,59 @@ export function mountHome(root) {
     if (top !== null) window.scrollTo({top, behavior: 'auto'});
   };
   root.addEventListener('focusin', reveal);
-  /* Presenter shortcut (deliberately not shown on the page): Left and Right arrows step to the previous or
-     next chapter of the pinned stages, with the top of the page as the first stop. The page glides there
-     slowly enough to watch the chapter's animation play. A press during a glide counts from where the
-     glide is headed, so every press moves one chapter. Ignored while typing or with a modifier held; a
-     wheel, touch or click cancels the glide. */
+  /* Presenter shortcut (deliberately not shown on the page). Right moves quickly to the next scene, then
+     plays its animation slowly. Left slowly unplays the current scene, then moves quickly back to the
+     previous scene's finished state. Mid-scene, Right finishes the scene and Left rewinds it. A press
+     during a glide counts from where the glide is headed, so every press is one scene. Ignored while
+     typing or with a modifier held; a wheel, touch or click cancels the glide. Chapter buttons use the
+     same motion. */
+  const PLAY_MS = 3200;
   let glide = 0, aim = null;
   const stopGlide = () => { cancelAnimationFrame(glide); glide = 0; aim = null; };
-  const glideTo = target => {
+  const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const easeSine = t => .5 - Math.cos(Math.PI * t) / 2;
+  const moveMs = dist => Math.min(1500, 450 + Math.abs(dist) / window.innerHeight * 260);
+  /* Runs legs one after another: each leg is {to, ms, ease}. */
+  const run = (legs, target) => {
     cancelAnimationFrame(glide);
-    const from = window.scrollY, dist = target - from, start = performance.now();
-    const ms = Math.min(3400, Math.max(1300, 900 + Math.abs(dist) / window.innerHeight * 700));
+    if (media.matches) { aim = null; window.scrollTo(0, target); return; }
     aim = target;
+    let i = 0, from = window.scrollY, start = performance.now();
     const tick = now => {
-      const t = Math.min(1, (now - start) / ms), e = t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-      window.scrollTo(0, from + dist * e);
-      if (t < 1) glide = requestAnimationFrame(tick); else { glide = 0; aim = null; }
+      const leg = legs[i];
+      const t = leg.ms ? Math.min(1, (now - start) / leg.ms) : 1;
+      window.scrollTo(0, from + (leg.to - from) * leg.ease(t));
+      if (t < 1) { glide = requestAnimationFrame(tick); return; }
+      i += 1; from = leg.to; start = now;
+      if (i < legs.length) glide = requestAnimationFrame(tick); else { glide = 0; aim = null; }
     };
     glide = requestAnimationFrame(tick);
   };
+  const legs = (y, list) => list.filter(([to]) => Math.abs(to - y) > 2).reduce((out, [to, kind]) => {
+    const prev = out.length ? out[out.length - 1].to : y;
+    out.push(kind === 'play' ? {to, ms: Math.max(600, PLAY_MS * Math.min(1, Math.abs(to - prev) / Math.max(1, window.innerHeight * 1.4))), ease: easeSine} : {to, ms: moveMs(to - prev), ease: easeInOut});
+    return out;
+  }, []);
+  const playScene = scene => { const y = window.scrollY; const l = legs(y, [[scene.start, 'move'], [scene.end, 'play']]); if (l.length) run(l, scene.end); };
   const step = event => {
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.defaultPrevented) return;
     if (event.target.closest?.('input, textarea, select, [contenteditable="true"], video')) return;
-    const stops = [0, ...[...root.querySelectorAll('.dig')].flatMap(section => [...section.querySelectorAll('.layer')].map((_, i) => digScrollTop(section, i)))]
-      .filter(top => top !== null).map(top => Math.round(Math.max(0, top))).sort((a, b) => a - b);
-    const y = aim ?? window.scrollY, forward = event.key === 'ArrowRight';
-    const target = forward ? stops.find(top => top > y + 4) : [...stops].reverse().find(top => top < y - 4);
     event.preventDefault();
-    if (target === undefined) return;
-    if (media.matches) { stopGlide(); window.scrollTo(0, target); return; }
-    glideTo(target);
+    const scenes = digScenes(root), y = window.scrollY, from = aim ?? y;
+    if (event.key === 'ArrowRight') {
+      const next = scenes.find(sc => sc.end > from + 4);
+      if (!next) return;
+      const inside = from >= next.start - 4;
+      run(legs(y, inside ? [[next.end, 'play']] : [[next.start, 'move'], [next.end, 'play']]), next.end);
+    } else {
+      const k = scenes.findLastIndex(sc => sc.start < from - 4);
+      if (k < 0) { if (from > 4) run(legs(y, [[0, 'move']]), 0); return; }
+      const cur = scenes[k], prev = scenes[k - 1];
+      if (from > cur.end + 4) { run(legs(y, [[cur.end, 'move']]), cur.end); return; }
+      const back = prev ? prev.end : 0;
+      run(legs(y, [[cur.start, 'play'], [back, 'move']]), back);
+    }
   };
   ['wheel', 'touchstart', 'mousedown'].forEach(type => window.addEventListener(type, stopGlide, {passive: true}));
   window.addEventListener('keydown', step);
