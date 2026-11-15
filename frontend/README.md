@@ -49,10 +49,12 @@ With the backend returning real rows and `VID01.mp4` available, search `clipper`
 
 ## Experimental bounding boxes
 
-Stage 3 is owned by Shlok on `feat/spatial-overlays`; stage 2 continues independently on `ml-dev`. Enable **Bounding boxes**, then choose a **Sampled frame**. Instrument/anatomy filters hide categories. Use **Fullscreen with overlays** to expand the video container; the native video fullscreen button may omit HTML overlays.
+Stage 3 is owned by Shlok on `feat/spatial-overlays`; stage 2 continues independently on `ml-dev`. Enable **Bounding boxes**, then choose a **Sampled frame**. Instrument/anatomy filters hide categories; the minimum-score slider hides lower-scoring detections (scores are not calibrated probabilities). Use **Fullscreen with overlays** to expand the video container; the native video fullscreen button may omit HTML overlays.
 
 The included VID01 artifact contains real Grounding DINO predictions for frames 674, 680 and 689 only. Boxes expire after 120 ms, so ordinary playback mostly has no boxes. Some predictions are visibly incorrect (including scissors/irrigator in the clipper example); scores are not calibrated accuracy. This is a pipeline prototype, not reviewed annotations or continuous tracking. VID02 has no artifact, and local uploads are deliberately unsupported.
 
 The player checks case, versioned asset ID, dimensions, timestamps, labels and coordinates before rendering. Keep the existing 854×480 25 fps VID01 asset; replacement videos need a new asset ID and timebase verification. See [runner setup and provenance](../ml/localization/README.md).
 
 Checks: `node --test frontend/test/overlays.test.js` from the repository root and `npm --prefix frontend run build`. Browser verification is outstanding because the browser access host was unavailable. Manual acceptance: enable boxes, choose all three frames, filter categories, play/seek beyond 120 ms and confirm clearing, resize/fullscreen, then switch to VID02 and a local upload and confirm unavailable states.
+
+Player DOM integration checks: `node --test frontend/test/*.test.js`. These simulate media state and do not replace real-browser playback/fullscreen verification.

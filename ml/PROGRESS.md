@@ -1,5 +1,12 @@
 # ML team progress
 
+## Stage 3 interaction tests and preview (2026-11-14)
+
+Shlok, `feat/spatial-overlays`: added a minimum detection-score slider and DOM integration tests using the real VID01 prediction artifact. `node --test frontend/test/*.test.js` passes 6 tests, including rendering, score/category filtering, seek/expiry, local-upload disablement, dimension rejection and disposal during a pending request. Media state is simulated in jsdom: this verifies DOM behavior, not actual video decoding/fullscreen or visual browser layout. `npm --prefix frontend run build` passes; localization unittest discovery passes 7 tests.
+
+The offline preview plots all ten real predictions across the three source frames and verifies each source SHA-256 before plotting. Visually inspected the generated PNG: the near-full-image irrigator boxes and incorrect labels make detector quality unsuitable for a finished feature. No real evaluation score or reviewed ground truth has been invented. Next: obtain reviewed boxes, benchmark/adapt the detector and complete browser acceptance. Aadhitya's stage-2 jobs remain separate.
+
+
 ## Stage 3 continuation (2026-11-14)
 
 Shlok, `feat/spatial-overlays`: pulled the branch and merged `origin/main` through `5c65035` in `035ff38`, preserving the new quiz, charts and interpret integration alongside overlays. Added `ml/localization/evaluate.py`: confidence-ordered, class-aware one-to-one IoU matching; reviewed-frame-only precision/recall; explicit complete-review gate; asset/timebase validation. No real accuracy claim without reviewed boxes.

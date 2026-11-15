@@ -49,8 +49,9 @@ async function load(caseId, assetId) {
 export function mountOverlays({ video, host, controls, caseId, assetId, enabled = false, onToggle = () => {} }) {
   let disposed = false, data = null, pending = false, callback = null, key = '', error = '';
   const categories = new Set(['instrument','anatomy']);
+  let minimumScore = 0;
   const layer = document.createElement('div'); layer.className = 'spatial-layer'; layer.setAttribute('aria-hidden','true'); host.append(layer);
-  controls.innerHTML = `<div class="overlay-toolbar"><label class="overlay-toggle"><input type="checkbox" data-overlay-toggle> Bounding boxes <span>Experimental</span></label><button type="button" data-overlay-fullscreen>Fullscreen with overlays</button></div><div class="overlay-options" hidden><label><input type="checkbox" data-category="instrument" checked> Instruments</label><label><input type="checkbox" data-category="anatomy" checked> Anatomy</label><label>Sampled frame <select aria-label="Jump to sampled detection frame"><option value="">Choose a frame</option></select></label></div><p class="overlay-status" role="status"></p>`;
+  controls.innerHTML = `<div class="overlay-toolbar"><label class="overlay-toggle"><input type="checkbox" data-overlay-toggle> Bounding boxes <span>Experimental</span></label><button type="button" data-overlay-fullscreen>Fullscreen with overlays</button></div><div class="overlay-options" hidden><label><input type="checkbox" data-category="instrument" checked> Instruments</label><label><input type="checkbox" data-category="anatomy" checked> Anatomy</label><label>Sampled frame <select aria-label="Jump to sampled detection frame"><option value="">Choose a frame</option></select></label><label>Minimum score <input type="range" data-score min="0" max="1" step="0.05" value="0" aria-label="Minimum detection score"><output data-score-value>0.00</output></label></div><p class="overlay-status" role="status"></p>`;
   const toggle = controls.querySelector('[data-overlay-toggle]'), options = controls.querySelector('.overlay-options'), status = controls.querySelector('.overlay-status'), select = controls.querySelector('select');
   toggle.checked = enabled;
   const say = text => { if (status.textContent !== text) status.textContent = text; };
@@ -64,11 +65,11 @@ export function mountOverlays({ video, host, controls, caseId, assetId, enabled 
     if (visible && (video.videoWidth !== data.image_width || video.videoHeight !== data.image_height)) { error = 'Overlay dimensions do not match this video.'; frame = null; say(error); }
     const r = contentRect(host.clientWidth,host.clientHeight,video.videoWidth || 1,video.videoHeight || 1);
     Object.assign(layer.style,{left:`${r.left}px`,top:`${r.top}px`,width:`${r.width}px`,height:`${r.height}px`});
-    const next = `${frame?.frame_id ?? ''}:${[...categories]}:${!!visible}`;
+    const next = `${frame?.frame_id ?? ''}:${[...categories]}:${minimumScore}:${!!visible}`;
     if (key !== next) {
       key = next; layer.replaceChildren();
       for (const d of frame?.detections ?? []) {
-        if (!categories.has(d.category)) continue;
+        if (!categories.has(d.category) || d.score < minimumScore) continue;
         const [x1,y1,x2,y2] = d.bbox_xyxy, box = document.createElement('div'), label = document.createElement('span');
         box.className = `spatial-box ${d.category}`;
         Object.assign(box.style,{left:`${x1*100}%`,top:`${y1*100}%`,width:`${(x2-x1)*100}%`,height:`${(y2-y1)*100}%`});
@@ -78,7 +79,7 @@ export function mountOverlays({ video, host, controls, caseId, assetId, enabled 
     }
     if (data && toggle.checked && !error) {
       const source = data.source === 'fixture' ? 'Synthetic fixture' : data.source === 'annotation' ? 'Dataset boxes' : 'Experimental model predictions';
-      const count = frame?.detections.filter(d => categories.has(d.category)).length ?? 0;
+      const count = frame?.detections.filter(d => categories.has(d.category) && d.score >= minimumScore).length ?? 0;
       say(`${source} · ${frame ? `${count} boxes at sampled frame ${frame.frame_id}` : 'No current detection frame; choose a sampled frame'} · no tracking or action recognition.`);
     }
     if (!assetId) say(error);
@@ -94,6 +95,7 @@ export function mountOverlays({ video, host, controls, caseId, assetId, enabled 
   }
   toggle.addEventListener('change',() => { options.hidden = !toggle.checked; onToggle(toggle.checked); ensureData(); draw(); });
   controls.querySelectorAll('[data-category]').forEach(input => input.addEventListener('change',() => { input.checked ? categories.add(input.dataset.category) : categories.delete(input.dataset.category); draw(); }));
+  controls.querySelector('[data-score]').addEventListener('input', event => { minimumScore = Number(event.target.value); controls.querySelector('[data-score-value]').textContent = minimumScore.toFixed(2); draw(); });
   select.addEventListener('change',() => { if (select.value !== '') { video.pause(); video.currentTime = Number(select.value); } });
   controls.querySelector('[data-overlay-fullscreen]').addEventListener('click',async () => { try { if (document.fullscreenElement) await document.exitFullscreen(); else await host.requestFullscreen(); } catch { say('Fullscreen is unavailable in this browser.'); } });
   const events = ['loadedmetadata','loadeddata','timeupdate','seeking','seeked','play','pause','error','emptied'];
