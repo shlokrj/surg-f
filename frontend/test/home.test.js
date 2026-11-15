@@ -73,3 +73,19 @@ test('logo and back-to-top scroll only the window, never the clipped hero layers
  assert.equal(window.location.hash,'');
  dispose();
 });
+test('dig into the stack and model notes render real, cited project data',()=>{
+ const doc=new JSDOM(markup()).window.document;
+ assert.equal(doc.querySelectorAll('.block .slab').length,6,'the block has six layers');
+ const scenes=[...doc.querySelectorAll('.lv')];
+ assert.deepEqual(scenes.map(s=>s.id),['layer-player','layer-search','layer-index','layer-model','layer-features','layer-video']);
+ const links=[...doc.querySelectorAll('.lv a')].map(a=>a.href);
+ for (const url of ['https://arxiv.org/abs/2109.03223','https://arxiv.org/abs/1602.03012','https://arxiv.org/abs/2307.15220','https://github.com/CAMMA-public/SurgVLP','https://fastapi.tiangolo.com/','https://mlflow.org/','https://delta.io/']) assert.ok(links.includes(url),url);
+ assert.ok([...doc.querySelectorAll('.lv a')].every(a=>a.rel.includes('noopener')));
+ assert.equal(doc.querySelectorAll('.outs i').length,29,'6 instruments, 9 actions and 14 targets');
+ assert.match(doc.querySelector('#layer-index').textContent,/860.*877.*scissors/s);
+ assert.equal(doc.querySelectorAll('#layer-video .fr.is-cut').length,5,'scissors from 14:20 per the VID01 annotations');
+ const model=doc.querySelector('#model-notes');
+ assert.match(model.textContent,/9d18d20a/);
+ assert.deepEqual([...model.querySelectorAll('.m-card')[0].querySelectorAll('.f1-num')].map(n=>n.dataset.count),['0.89','0.83','0.52','0.29','0.26','0.19']);
+ assert.equal(doc.querySelectorAll('.stack-card').length,3);
+});

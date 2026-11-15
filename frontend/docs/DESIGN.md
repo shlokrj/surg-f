@@ -30,6 +30,19 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
 8. Buttons use only `.btn-primary`, `.btn-secondary` and the shared toggles from `style.css`. Pressed toggles darken on hover. Minimum text size is 14px. Headings and short paragraphs use `text-wrap: balance` to avoid one-word last lines.
 9. Preserve real case entry, the filtered VID01 preview, annotation timestamp action and local playback limitation. The preview-edge strip shows the real `clipper` → VID01 11:14 annotation and links to the actual preview; it is not fake product data.
 
+## Feature stack, how it works, model notes (2026-11-14)
+
+- **Feature stack:** the three feature sections are sticky cards (`.stack-card`, `top: 7vh + i·18px`, each 18px shorter than the one before). Cards keep full width; the covered card's content dims. A spacer inside the container (padding does not count for sticky) lets all three rest evenly offset, like Hangar's stack, then leave as one block.
+- **Dig into the stack** (`src/architecture.js`, `src/architecture.css`; hackathon theme "let's dig in"):
+  - A pinned intro shows an isometric block of six real CSS-3D slabs. Scroll pulls them apart (`--e`), labels track each slab, and the slabs darken with depth like strata.
+  - Then one scroll-driven scene per layer (`--p`), from surface to bedrock: player, search and chat, clip index, label model, frame features, surgery video. Each scene lists its tech with links and cites papers.
+  - Scenes use only real data: VID01 timings, clip rows, the 29 labels, and VID01 seconds 855–864 from the annotation CSV. The feature-vector bars are marked as an illustration.
+  - Every link was checked on 2026-11-14. The classifier is scikit-learn `MLPClassifier`, not PyTorch; PyTorch runs SurgVLP extraction only.
+  - Mobile hides the slab labels and scales the scenes down. Reduced motion shows the exploded block and final states statically.
+- **Model notes:** Aadhi's held-out F1 scores (final model, MLflow `9d18d20a`).
+  - Instrument, best action and best target bars grow, and their numbers count up, once in view.
+  - A v1→v2 comparison, three reading notes, and a link to the full `model-evals.md`.
+
 ## Case page
 
 `src/case.css` restyles the case page to match the homepage. It uses the off-white page, the rounded product cards (video, overlay strip, timeline, charts, quiz, model) with the soft teal shadow, and a frosted topbar. A single plus-dithered sky band holds the case title, with the VID01/VID02 toggles in a white pill. The content filter is an eye icon button overlaid on the footage, top right; the top bar action is "Open your own video". Spatial/player markup and logic are unchanged; only presentation was overridden, so coordinate with Mihir before changing it further. Shared type tokens were raised to a 13px minimum (`--text-xs` 13, `--text-sm` 14, `--text-md` 15, `--text-base` 16).
