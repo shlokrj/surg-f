@@ -43,6 +43,7 @@ The earlier integrated `frontend/dev` work reached `main` through `6d468dd`. Fur
 - During Practice the bounding-box panel and the box overlay are removed. The stage checklist and the video reference moved from under the model to under the video, in their place. Exit brings the bounding-box panel back.
 - **Mihir:** this means no overlay runs inside Practice.
 - Checks: 49 unit tests and the build passed; the headless walkthrough passed 51 checks with no page errors. New checks: no box panel in Practice; checklist and reference below the video and not under the model; Go to moment works from there; the box panel returns after Exit; the page scrolls to the Accepted message when it starts off-screen (600 px window).
+- Follow-up: the box under the model no longer repeats the stage instruction (it shows only real feedback), and Continue is green from the start (softened and inactive until a pass). Walkthrough: 53 checks passed.
 
 **Blockers / next:**
 - (1) **Clinical review**: a surgeon or educator must check the stage order, tools, clip positions, feedback and reference intervals, then set `review.status` (delivery stage 4). Until then the UI says "draft, not yet medically reviewed".

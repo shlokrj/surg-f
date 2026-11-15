@@ -374,6 +374,9 @@ function paint() {
 
   const feedback = $('#pr-feedback');
   feedback.className = `pr-feedback is-${state.feedback.tone}`;
+  // The instruction is already shown above the model, so a message that only repeats it
+  // (stage start, reset, tool returned) is not shown again here.
+  feedback.hidden = state.feedback.kind === 'intro';
   const label = { tool: 'Instrument', target: 'Structure', placement: 'Placement', gesture: 'Gesture', success: 'Accepted', guidance: 'Guidance' }[state.feedback.kind];
   feedback.innerHTML = `${label ? `<strong>${label}:</strong> ` : ''}${escapeHtml(state.feedback.message.replace(/^Guidance: /, ''))}${accepted ? ` <span class="pr-why">${escapeHtml(stage.rationale)}</span>` : ''}`;
 
