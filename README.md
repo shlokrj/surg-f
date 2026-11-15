@@ -32,7 +32,7 @@ surg+f labels every second of surgical video and lets you search it in plain wor
 | Jump to the moment | The player seeks straight to the clip's first second |
 | Study | Step timeline, instrument chart, quiz, and Lil Doc, a chat assistant |
 | Practice in 3D | A 3D model of the gallbladder region that follows the video step by step |
-| Bounding boxes | Experimental boxes around the gallbladder and cystic duct |
+| Bounding boxes | Experimental boxes around the gallbladder, cystic duct and instruments |
 
 ![Ask in plain words](docs/images/solution.jpg)
 
@@ -113,7 +113,7 @@ Results on the 4 held-out surgeries (F1, 0 to 1):
 
 Average across all 29 labels: 0.34. Training on 42 surgeries instead of 12 raised scissors from 0.07 to 0.29. Rare labels are not reliable yet.
 
-Bounding boxes come from a second model, a Faster R-CNN fine-tuned on Endoscapes. On held-out frames it finds the gallbladder well (precision and recall 0.93); the small cystic duct is often missed (recall 0.39). Its accuracy on VID01 itself has not been measured, and there are no instrument boxes yet. See the [localization plan](ml/LOCALIZATION_PLAN.md).
+Bounding boxes come from a second model, a Faster R-CNN fine-tuned on Endoscapes. On held-out frames it finds the gallbladder well (precision and recall 0.93); the small cystic duct is often missed (recall 0.39). Instruments are found well too (precision 0.89, recall 0.83 for any instrument); their names come from the surgeons' per-second labels and are shown only when exactly one instrument is listed. Accuracy on VID01 and VID02 themselves has not been measured. See the [localization plan](ml/LOCALIZATION_PLAN.md).
 
 Full evaluation: [frontend/public/model-evals.md](frontend/public/model-evals.md).
 

@@ -205,3 +205,27 @@ python ml/localization/merge_artifacts.py part0.json part1.json part2.json part3
 ```
 
 Measured on this workspace: 4 CPUs per job and a matmul benchmark about 18x slower than an Apple M4, so one job is slower than a recent Mac; split exports into time chunks on the 0.24 s grid (chunk *i* starts at *i*·433.44 s, ends 433.2 s later) and run them in parallel. A rerun of `train` with the same `RUN_NAME` resumes from the Volume checkpoint. In zsh, pass `--start`/`--end` as separate words (unquoted variables are not split).
+
+## Instrument boxes (v4 tool class and strict naming)
+
+Endoscapes boxes every instrument as a generic `tool`; CholecT50 says which instruments are visible each second but not where. Instrument boxes combine the two:
+
+```sh
+# 1. raw official annotations (must match the hashes in anatomy-data/manifest.json)
+#    endoscapes-raw/{train,val}_annotation_coco.json, read with remotezip from the official zip
+python ml/localization/build_tool_dataset.py --source ~/madhacks2026/localization/anatomy-data \
+  --raw-dir ~/madhacks2026/localization/endoscapes-raw --output-dir ~/madhacks2026/localization/anatomy-tool-data
+# 2. train (classes come from the data: cystic duct, gallbladder, tool)
+python ml/localization/train_anatomy.py --data-dir ~/madhacks2026/localization/anatomy-tool-data \
+  --output-dir ~/madhacks2026/localization/anatomy-tool-v4 --epochs 10 --architecture mobilenet_v3_hires --hflip --grad-clip 10
+# 3. export with naming (VID01 offset -0.04 s, VID02 +0.08 s), then keep v3 anatomy and add v4 instruments
+python ml/localization/export_anatomy_video.py --checkpoint .../anatomy-tool-v4/best.pt --video frontend/public/videos/VID01.mp4 \
+  --case-id VID01 --video-asset-id VID01-cholec80-25fps-v1 --every-sec 0.24 --max-age-sec 0.25 --display-width 854 --display-height 484 \
+  --score-threshold 0.65 --class-threshold "cystic duct=0.5" --class-threshold "tool=0.5" \
+  --triplets shared/triplets.annotation.csv --dataset-offset -0.04 --naming strict --output /path/to/new/VID01-tool-v4.json
+python ml/localization/combine_overlays.py frontend/public/overlays/VID01.json /path/to/new/VID01-tool-v4.json --output /path/to/new/VID01-combined.json
+```
+
+`prepare_anatomy.prepare(..., include_tool=True)` adds class 3 `tool` (supercategory instrument); the trainer, `evaluate_anatomy_coco.py` and `analyze_anatomy_errors.py` accept the 2-class or 3-class layout from the data, and checkpoints store their categories, so older 2-class runs are unchanged. `name_instruments.py` names tool boxes. **strict** (default): only when CholecT50 lists exactly one instrument for that second and exactly one tool box is detected. **carry** (opt-in): also carries names by overlap and assigns the one leftover name; a VID01 contact sheet showed it swapping names (grasper/hook, irrigator), so it is not used. `combine_overlays.py` keeps the base artifact's anatomy and adds the other's instrument boxes after checking identical case, asset, dimensions, expiry, video hash and frame IDs/timestamps; provenance records both models (`instrument_source`).
+
+v4 result (`anatomy-tool-v4`, best epoch index 7, 3-class AP 0.454): tool AP 0.605 / AP50 0.836, precision 0.89 / recall 0.83 at 0.5; cystic duct worse than v3 at every threshold, so anatomy stays v3. Strict naming named 2,262 of 10,428 VID01 tool boxes (hook 1,112, grasper 814, irrigator 239, bipolar 87, clipper 10) and 4,369 of 17,073 in VID02 (hook 2,583, grasper 1,082, scissors 330, clipper 168, irrigator 120, bipolar 86). Spot check: 12 strict names across both videos, 11 clearly correct, 1 uncertain. No typed instrument boxes exist to score names properly.

@@ -110,9 +110,9 @@ About 690 spoken words at roughly 140 words a minute. If you run long, cut the l
 
 > Going from 12 to 42 training surgeries lifted scissors from 0.07 to 0.29.
 
-**→ Box detector (v3)**
+**→ Box detectors**
 
-> A second model draws boxes. The gallbladder is found reliably; the small cystic duct is often missed, and we say so in the app.
+> Detectors draw boxes. The gallbladder and instruments are found reliably; the small cystic duct is often missed, and we say so in the app. Instrument names come from the surgeons' labels.
 
 **→ Unity Catalog Volume** (folders open; 50 bundles fill in)
 

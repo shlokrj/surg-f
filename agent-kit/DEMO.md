@@ -18,8 +18,8 @@
 
 ## Stage 3: anatomy overlays (experimental)
 
-1. Open VID01, turn on **Bounding boxes** and play: gallbladder and cystic duct boxes follow the video (sampled every 0.24 s, each box expires after 0.25 s). The Instruments filter is disabled because there are no instrument boxes.
-2. Seek to 11:14 (674 s): gallbladder and cystic duct boxes. Use **Sampled frame** to jump between detection frames while paused, and the score slider to hide low scores.
+1. Open VID01, turn on **Bounding boxes** and play: gallbladder and cystic duct boxes follow the video (sampled every 0.24 s, each box expires after 0.25 s). Instrument boxes are named from surgeon labels only when one instrument is listed, so many instruments stay unboxed.
+2. Seek to 11:04 (664 s): gallbladder, cystic duct and a named grasper box; 15:44 (944 s) shows a named irrigator. Untick **Instruments** to hide tool boxes. Use **Sampled frame** to jump between detection frames while paused, and the score slider to hide low scores.
 3. Click **Fullscreen with overlays**. Switch to VID02: it has its own boxes from the same model (try 19:52, 1192 s, during cystic duct dissection).
 4. Say what it is: a Faster R-CNN trained on Endoscapes (v3, validation AP 0.384; gallbladder about 0.93 precision and recall, cystic duct weaker), experimental and not validated on this video. It misses the duct at 11:38. Do not present boxes as ground truth.
 

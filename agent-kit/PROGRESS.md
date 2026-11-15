@@ -124,6 +124,16 @@ v2 finds about 70% more cystic ducts at the same precision and gives up about 2 
 
 With Shlok's approval, Mihir fast-forwarded `main` to `feat/spatial-overlays`, publishing the anatomy model tooling, the exporter fix, the full-length VID01 anatomy artifact and the player changes described in the section below. Checks at the published commit: 23 localization tests, 15 frontend tests and the frontend build passed. **Demo change:** `main`'s VID01 boxes are now gallbladder/cystic duct anatomy only; the earlier Grounding DINO instrument boxes are gone (kept as a test fixture). Further spatial work continues on `feat/spatial-overlays`; teammates should pull `main`.
 
+## Instrument boxes added to VID01 and VID02 (2026-11-15, Mihir)
+
+**What changed:** both overlay files now include **named instrument boxes** (purple) next to the v3 anatomy boxes; the Instruments filter is active again.
+
+- **Model v4:** same high-res setup as v3 plus Endoscapes' generic `tool` class (`build_tool_dataset.py`, `train_anatomy.py` with data-driven classes). Validation: 3-class AP 0.454; instruments (any type) precision 0.89 / recall 0.83 at 0.5. Its cystic duct is worse than v3 at every threshold, so **anatomy stays v3** and only v4's instrument boxes are added (`combine_overlays.py`, which verifies identical frames, asset and video hash).
+- **Names:** Endoscapes has no instrument types, so `name_instruments.py` names a box from CholecT50's per-second labels **only when exactly one instrument is listed and exactly one tool box is detected** (strict). A looser overlap-carrying rule named ~37% of boxes but swapped names in 2 of 6 sampled VID01 frames, so it is off. Strict named 22% of VID01 and 26% of VID02 tool boxes (VID01 has no scissors: they always appear with the grasper). Spot check of 12 named boxes across both videos: 11 clearly correct, 1 uncertain (a clip applier shaft). There is no typed-box test set, so naming accuracy is not measured.
+- **UI (at Mihir's request to keep UI in step with the eval docs):** model notes chapter 6 is now "Box detectors" with an Instruments panel (0.89 / 0.83); the stack scene says the detectors look for anatomy and instruments; `model-evals.md` has the instrument row and naming rule.
+- **Shlok:** your README "Bounding boxes" row and paragraph, `pitch/README.md` scene list and numbers, and the presenter cue in `pitch/presentation-demo-script.md` were updated with the instrument facts; reword as you like.
+- **Checks:** localization tests 45 passed; frontend tests 49 passed; build passed. Headless Chrome 157: Instruments filter enabled; VID01 11:04 shows gallbladder, cystic duct and grasper, 15:44 shows irrigator; unticking Instruments hides only tool boxes; VID02 27:15 shows irrigator; model notes chapter 6 reaches 0.93/0.93/0.69/0.39/0.89/0.83 and 0.38 with no overflow at 1400 px or 390 px; no page errors.
+
 ## Spatial: anatomy model and VID01 overlay deployed (2026-11-14, Mihir)
 
 On `feat/spatial-overlays`, Mihir finished the anatomy run, analyzed its validation errors and deployed a full-length VID01 anatomy artifact.

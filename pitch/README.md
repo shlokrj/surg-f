@@ -19,7 +19,7 @@ Locally, add the path to the dev server URL, for example `http://localhost:5173/
 2. Solution, 5 scenes: label every second; ask in plain words; jump to the moment; the labels are the record; practice in 3D.
 3. Features, 3 cards: step timeline, instrument chart, quiz.
 4. The stack: the block, then 6 layers.
-5. Model, 4 scenes: held-out test; instruments; label model: v1 to v2; box detector (v3).
+5. Model, 4 scenes: held-out test; instruments; label model: v1 to v2; box detectors.
 6. Databricks, 6 scenes: Volume; serverless jobs; MLflow; Lakeflow and Delta; SQL, Genie and Llama; Databricks Apps.
 7. What's next, 4 scenes: Lil Counsel, Lil Ledger, Lil Watch, Lil Pal.
 
@@ -58,7 +58,7 @@ Every number in the scripts is on the site and traced to the repo. Do not round 
 | Split | 42 trained on, 3 tuned on, 4 tested on | same |
 | Test F1 | average 0.34; grasper 0.89, hook 0.83; scissors 0.07 → 0.29 from v1 to v2 | same |
 | Frame features | SurgVLP, frozen ResNet-50, 768 numbers per second | `ml/README.md` |
-| Boxes | Faster R-CNN on Endoscapes; gallbladder precision and recall 0.93; cystic duct recall 0.39 | `frontend/src/modelnotes.js`, the eval docs |
+| Boxes | Faster R-CNN on Endoscapes; gallbladder precision and recall 0.93; cystic duct recall 0.39; instruments (any type) precision 0.89, recall 0.83, named from surgeon labels when only one is listed | `frontend/src/modelnotes.js`, the eval docs |
 | Databricks run log | Volume `/Volumes/workspace/default/surgf`; Lakeflow job `surgf-import-clips` (stage, then MERGE; a rerun inserts 0); smoothing sweep picked 2 s : 2 s; Llama route 2.0 s; Genie answer 11.7 s | `agent-kit/DATABRICKS.md`, `ml/PROGRESS.md` |
 
 ## Citations
