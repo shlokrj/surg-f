@@ -5,7 +5,6 @@
 // case change) disposes all of it; nothing is saved.
 
 import './practice.css';
-import modelManifest from '../model/manifest.json';
 import { createSession, reduce, currentStage, checklist } from './controller.js';
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({
@@ -140,7 +139,7 @@ function handle(event) {
       if (!dispatch({ type: 'gesture', complete: event.complete })) break;
       const { outcome } = session.state;
       session.progress = 0;
-      if (outcome?.type === 'accepted') practice.accept(session.state.effects).then(paint);
+      if (outcome?.type === 'accepted') practice.accept(session.state.effects).then(() => { paint(); revealResult(); });
       else if (outcome?.kind === 'gesture') practice.reopen();
       else practice.reject().then(paint);
       announce(session.state.feedback.message);
@@ -156,6 +155,14 @@ function handle(event) {
       return;
   }
   paint();
+}
+
+// After a pass, bring the "Accepted" explanation and Continue into view.
+function revealResult() {
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const hint = session?.element.querySelector('#pr-hover');
+  if (hint) hint.textContent = ''; // the "press and hold" hint no longer applies
+  session?.element.querySelector('#pr-feedback')?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
 }
 
 function announce(text) {
@@ -236,11 +243,6 @@ function wireElement(current) {
     if (session !== current) return;
     const button = event.target.closest('button');
     if (!button || button.disabled) return;
-    if (button.dataset.tool) {
-      if (dispatch({ type: 'pickup', toolId: button.dataset.tool })) { current.practice?.hold(button.dataset.tool); session.positionLabel = ''; announce(`Holding the ${current.exercise.tools.find(tool => tool.id === button.dataset.tool).label.toLowerCase()}. Use Next position to move it.`); }
-      paint();
-      return;
-    }
     if (button.dataset.replay) {
       const stage = current.exercise.stages.find(item => item.id === button.dataset.replay);
       current.hooks.playRange(stage.reference_start_sec, stage.reference_end_sec);
@@ -249,18 +251,23 @@ function wireElement(current) {
     if (button.dataset.zoom) { current.viewer?.zoom(Number(button.dataset.zoom)); return; }
     if (button.dataset.pr) act(button.dataset.pr);
   });
-  // Show a tool's name when its tray slot has keyboard focus (never as a visible answer list).
-  element.addEventListener('focusin', event => {
-    const tool = event.target.closest?.('[data-tool]');
-    const chip = element.querySelector('#pr-hover');
-    if (tool && chip) chip.textContent = current.exercise.tools.find(item => item.id === tool.dataset.tool).label;
-  });
+  // Keyboard play on the focused model (there are no on-screen tool buttons):
+  // 1-4 pick up a tray instrument, arrows move it, Enter places, Space uses it, Escape returns it.
   element.addEventListener('keydown', event => {
     if (session !== current) return;
     const phase = current.state.phase;
     if (event.key === 'Escape' && ['holding', 'placed'].includes(phase)) { event.preventDefault(); act('cancel'); return; }
     if (event.target.closest('#pr-stage')) {
-      if (phase === 'holding' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) { event.preventDefault(); act(event.key === 'ArrowRight' ? 'next-pos' : 'prev-pos'); }
+      const tray = currentStage(current.exercise, current.state).tool_tray_ids;
+      const slot = Number(event.key) - 1;
+      if (/^[1-9]$/.test(event.key) && tray[slot] && ['ready', 'holding', 'placed'].includes(phase)) {
+        event.preventDefault();
+        if (dispatch({ type: 'pickup', toolId: tray[slot] })) {
+          current.practice?.hold(tray[slot]);
+          announce(`Holding the ${current.exercise.tools.find(tool => tool.id === tray[slot]).label.toLowerCase()}. Use the arrow keys to move it.`);
+        }
+        paint();
+      } else if (phase === 'holding' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) { event.preventDefault(); act(event.key === 'ArrowRight' ? 'next-pos' : 'prev-pos'); }
       else if (phase === 'holding' && event.key === 'Enter') { event.preventDefault(); act('place'); }
       else if (phase === 'placed' && (event.key === ' ' || event.key === 'Enter')) { event.preventDefault(); act('gesture'); }
     }
@@ -272,13 +279,9 @@ function wireElement(current) {
 function buildElement(exercise) {
   const element = document.createElement('div');
   element.className = 'pr';
-  const legend = exercise.legend.map(name => modelManifest.parts.find(part => part.name === name)).filter(Boolean)
-    .map(part => `<li><i style="background:${part.color}" aria-hidden="true"></i>${escapeHtml(part.label)}</li>`).join('');
-  const reviewed = exercise.review.status === 'approved';
   element.innerHTML = `
     <header class="pr-head">
       <div class="pr-head-text">
-        <p class="pr-kicker">Practice · ${reviewed ? 'reviewed schematic exercise' : 'draft, not yet medically reviewed'}</p>
         <h2 id="pr-title">${escapeHtml(exercise.title)}</h2>
         <p class="pr-objective">${escapeHtml(exercise.objective)}</p>
       </div>
@@ -295,14 +298,14 @@ function buildElement(exercise) {
         <span class="anat-hover" id="pr-hover" aria-hidden="true"></span>
         <span class="pr-near" id="pr-near" aria-hidden="true"></span>
         <span class="pr-ring" id="pr-ring" aria-hidden="true"></span>
+        <span class="pr-pass" id="pr-pass" hidden><span aria-hidden="true">✓</span> Passed</span>
         <div class="anat-tools" role="group" aria-label="View">
           <button type="button" data-zoom="0.8" aria-label="Zoom in">+</button>
           <button type="button" data-zoom="1.25" aria-label="Zoom out">−</button>
           <button type="button" data-pr="camera">Reset camera</button>
         </div>
       </div>
-      <p class="sr-only" id="pr-keys">Drag an instrument from the tray onto the model, or tap it and then tap where it goes. Drag empty space to rotate the view. With the model focused: arrow keys move a held instrument between positions, Enter places it, Space performs its gesture, Escape returns it to the tray.</p>
-      <div class="pr-controls" id="pr-controls"></div>
+      <p class="sr-only" id="pr-keys">Drag an instrument from the tray onto the model, or tap it and then tap where it goes. Press and hold a placed instrument to use it. Drag empty space to rotate the view. With the model focused: number keys 1 to 4 pick up a tray instrument, arrow keys move it between positions, Enter places it, Space performs its gesture, Escape returns it to the tray.</p>
       <p class="pr-feedback" id="pr-feedback"></p>
       <p class="sr-only" id="pr-live" role="status" aria-live="polite"></p>
       <div class="pr-lower">
@@ -311,14 +314,7 @@ function buildElement(exercise) {
       </div>
       <div class="pr-actions" id="pr-actions"></div>
     </div>
-    <section class="pr-recap" id="pr-recap" hidden aria-labelledby="pr-recap-title"></section>
-    <details class="pr-about">
-      <summary>Legend and limits</summary>
-      <ul class="pr-legend">${legend}</ul>
-      <p>The model is a generic adult body from BodyParts3D, not the patient in this video. This is a schematic software exercise: it does not teach real instrument handling, force or tissue response, and it does not measure clinical competence.</p>
-      ${reviewed ? '' : `<ul class="pr-limits">${exercise.review.limitations.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`}
-      <p class="pr-revision">Exercise ${escapeHtml(exercise.exercise_id)} · content ${escapeHtml(exercise.content_revision)} · model ${escapeHtml(exercise.model_revision.slice(0, 19))}… · review: ${escapeHtml(exercise.review.status)}</p>
-    </details>`;
+    <section class="pr-recap" id="pr-recap" hidden aria-labelledby="pr-recap-title"></section>`;
   return element;
 }
 
@@ -328,7 +324,6 @@ function paint() {
   const stage = currentStage(exercise, state);
   const total = exercise.stages.length;
   const complete = state.phase === 'complete';
-  const tool = id => exercise.tools.find(item => item.id === id);
   const $ = selector => element.querySelector(selector);
 
   // Stage rail: completed stages can replay; future stages reveal nothing.
@@ -340,15 +335,16 @@ function paint() {
       return `<li class="is-done"><span class="pr-dot" aria-hidden="true">✓</span><span><strong>${escapeHtml(item.title)}</strong><span class="sr-only">, completed${record.guided ? ' with guidance' : ''}</span></span>
         <button type="button" class="pr-replay" data-replay="${item.id}" aria-label="Replay ${escapeHtml(item.title)} in the video, ${formatTime(item.reference_start_sec)}">▶ ${formatTime(item.reference_start_sec)}</button></li>`;
     }
-    return `<li class="${current ? 'is-current' : 'is-future'}" ${current ? 'aria-current="step"' : ''}><span class="pr-dot" aria-hidden="true">${index + 1}</span><span>${current ? `<strong>${escapeHtml(item.title)}</strong>` : `Stage ${index + 1}`}</span></li>`;
+    // Upcoming stages show only their number.
+    if (!current) return `<li class="is-future"><span class="pr-dot" aria-hidden="true">${index + 1}</span><span class="sr-only">Stage ${index + 1}</span></li>`;
+    return `<li class="is-current" aria-current="step"><span class="pr-dot" aria-hidden="true">${index + 1}</span><span><strong>${escapeHtml(item.title)}</strong></span></li>`;
   }).join('');
 
   $('#pr-work').hidden = complete;
   $('#pr-recap').hidden = !complete;
   if (complete) { paintRecap(); return; }
 
-  $('#pr-stage-text').innerHTML = `<p class="pr-stage-num">Stage ${state.stageIndex + 1} of ${total}${state.guided ? ' · guided' : ''}</p>
-    <p class="pr-instruction">${escapeHtml(stage.instruction)}</p>`;
+  $('#pr-stage-text').innerHTML = `<p class="pr-instruction">${escapeHtml(stage.instruction)}</p>`;
 
   const status = $('#pr-status');
   status.hidden = Boolean(session.viewer) && !session.failure;
@@ -356,25 +352,8 @@ function paint() {
   $('#pr-near').textContent = state.phase === 'holding' ? session.nearLabel : '';
   $('#pr-ring').style.setProperty('--p', String(state.phase === 'placed' ? session.progress : 0));
   $('#pr-ring').hidden = state.phase !== 'placed';
-
-  // Controls outside the canvas: the same physical actions, for keyboard and switch users.
-  const holding = state.phase === 'holding';
-  const placedNow = state.phase === 'placed';
   const accepted = state.phase === 'accepted';
-  const heldTool = state.heldToolId ? tool(state.heldToolId) : null;
-  const slots = stage.tool_tray_ids.map((id, index) => `<button type="button" class="pr-slot" data-tool="${id}" aria-label="${escapeHtml(tool(id).label)}" aria-pressed="${state.heldToolId === id}" ${accepted || !session.practice ? 'disabled' : ''}>${index + 1}</button>`).join('');
-  $('#pr-controls').innerHTML = `
-    <div class="pr-group" role="group" aria-label="Tool tray"><span class="pr-group-label">Tray</span>${slots}</div>
-    <div class="pr-group" role="group" aria-label="Position">
-      <button type="button" class="pr-btn" data-pr="prev-pos" ${holding ? '' : 'disabled'} aria-label="Previous position">‹</button>
-      <span class="pr-pos" aria-hidden="true">${holding && session.positionLabel ? escapeHtml(session.positionLabel) : 'Position'}</span>
-      <button type="button" class="pr-btn" data-pr="next-pos" ${holding ? '' : 'disabled'} aria-label="Next position">›</button>
-      <button type="button" class="pr-btn" data-pr="place" ${holding && session.practice?.nearPoint ? '' : 'disabled'}>Place here</button>
-    </div>
-    <div class="pr-group" role="group" aria-label="Gesture">
-      <button type="button" class="pr-btn pr-gesture" data-pr="gesture" ${placedNow ? '' : 'disabled'}>${escapeHtml(heldTool && placedNow ? heldTool.gesture_label : 'Gesture')}</button>
-      <button type="button" class="pr-btn" data-pr="cancel" ${holding || placedNow ? '' : 'disabled'}>Return to tray <kbd>Esc</kbd></button>
-    </div>`;
+  $('#pr-pass').hidden = !accepted; // the pass marker in the model's top-right corner
 
   const feedback = $('#pr-feedback');
   feedback.className = `pr-feedback is-${state.feedback.tone}`;

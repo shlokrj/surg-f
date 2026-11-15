@@ -604,7 +604,7 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
     },
   };
 
-  canvas.setAttribute('aria-label', 'Practice model: a generic 3D model of the gallbladder region with a tray of instruments along the bottom. Use the controls next to the model to take an instrument, move it between positions and perform its gesture.');
+  canvas.setAttribute('aria-label', 'Practice model: a generic 3D model of the gallbladder region with a tray of instruments along the bottom. Drag an instrument onto the model, release it on a spot and press and hold it to use it. With the model focused, keys 1 to 4 pick up an instrument.');
   canvas.tabIndex = -1;
   return api;
 }

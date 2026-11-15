@@ -39,7 +39,7 @@ export function evaluate(exercise, stage, { toolId, pointId, gestureComplete = t
   return null;
 }
 
-const GESTURE_HINT = 'The gesture stopped before it finished. Press and hold until the ring fills, or use the gesture button.';
+const GESTURE_HINT = 'The gesture stopped before it finished. Press and hold the instrument until the ring fills.';
 
 export function reduce(exercise, state, action) {
   const stage = currentStage(exercise, state);
@@ -53,11 +53,12 @@ export function reduce(exercise, state, action) {
     case 'place': {
       if (state.phase !== 'holding' || !pointById(exercise, action.pointId)) return state;
       const tool = toolById(exercise, state.heldToolId);
-      return next({ phase: 'placed', pointId: action.pointId, feedback: { kind: 'placed', tone: 'info', message: `Placed. Now ${tool.gesture_label.toLowerCase()}: press and hold the instrument, or use the gesture button.` } });
+      return next({ phase: 'placed', pointId: action.pointId, feedback: { kind: 'placed', tone: 'info', message: `Placed. Now ${tool.gesture_label.toLowerCase()}: press and hold the instrument.` } });
     }
     case 'cancel': {
       if (!['holding', 'placed'].includes(state.phase)) return state;
-      return next({ phase: 'ready', heldToolId: null, pointId: null, feedback: { kind: 'returned', tone: 'info', message: 'The instrument is back in the tray. No change was made.' } });
+      // Quietly back to the stage's starting state: no message, no penalty.
+      return next({ phase: 'ready', heldToolId: null, pointId: null, feedback: { kind: 'intro', tone: 'info', message: stage.instruction } });
     }
     case 'gesture': {
       if (state.phase !== 'placed') return state;
