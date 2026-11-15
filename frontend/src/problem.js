@@ -9,9 +9,17 @@ const SAMPLES = Array.from({length: 24}, (_, i) => 36 + i * 72); // one frame ev
 const clock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const pct = v => `${(v * 100).toFixed(3)}%`;
 const frame = (t, w = 160, h = 90) => `<canvas class="vf" data-t="${t}" width="${w}" height="${h}" aria-hidden="true"></canvas>`;
-const strip = () => `<div class="pb-strip">${SAMPLES.map(t => `<span>${frame(t)}</span>`).join('')}</div>`;
+export const frameStrip = () => `<div class="pb-strip">${SAMPLES.map(t => `<span>${frame(t)}</span>`).join('')}</div>`;
 /* Where the scrubber looks while you hunt for the cut, then where it lands (fractions of the video). */
 const HUNT = [.1, .74, .3, .62, .41, .55, CUT[0] / VID01_LEN];
+/* Who needs one moment, each pinned to a real VID01 interval (shared/triplets.annotation.csv). The clipper
+   count is the surgeon-labeled clipper clips across all 50 surgeries (agent-kit/PROGRESS.md). */
+const USES = [
+  {who: 'Residents', what: 'Watch the cystic duct being clipped', when: '11:38 to 12:27', at: [[698, 747]]},
+  {who: 'Surgeons', what: 'Review the gallbladder dissection before a case', when: '9:21 to 10:58', at: [[561, 658]]},
+  {who: 'Educators', what: 'Cut the duct division into a lesson', when: '14:20 to 14:37', at: [[860, 877]]},
+  {who: 'Researchers', what: 'Compare clipping across operations', when: '154 clipper clips in 50 surgeries', at: [[674, 690], [698, 747], [749, 758], [815, 844]]},
+];
 
 const CHAPTERS = [
   {
@@ -33,24 +41,31 @@ const CHAPTERS = [
     note: 'The cut, 860–877 s, from the surgeons’ annotations. Preview frames are real VID01 frames.',
     scene: () => `<div class="sc pb-needle" style="--cx:${pct(CUT[0] / VID01_LEN)};--cw:${pct((CUT[1] - CUT[0]) / VID01_LEN)}">
       <div class="pb-preview"><canvas class="pv" width="854" height="480" aria-hidden="true"></canvas><span class="pv-time" data-hunt>0:00</span><canvas class="vf" data-t="860.16" width="2" height="2" hidden></canvas></div>
-      <div class="pb-bar">${strip()}<span class="pb-cut"></span><span class="pb-knob"></span></div>
+      <div class="pb-bar">${frameStrip()}<span class="pb-cut"></span><span class="pb-knob"></span></div>
       <div class="pb-callout"><b>Cystic duct cut</b><span>14:20 to 14:37, 17 s of 1,728 s</span></div></div>`,
+  },
+  {
+    id: 'uses', name: 'Who needs it',
+    title: 'Everyone who learns from surgery needs one moment.',
+    body: 'A resident wants to watch the duct being clipped before doing it. A surgeon reviews the dissection before a case. An educator cuts the critical seconds into a lesson. A researcher compares one step across many operations.',
+    note: 'Each moment is a real VID01 interval from the surgeons’ annotations. Clipper count: all 50 CholecT50 surgeries.',
+    scene: () => `<div class="sc pb-uses"><div class="pb-bar mid">${frameStrip()}${USES.map((u, k) => u.at.map(([a, b]) => `<span class="pb-mark" style="--k:${k};left:${pct(a / VID01_LEN)};width:${pct(Math.max(6, b - a) / VID01_LEN)}"></span>`).join('')).join('')}</div>
+      ${USES.map((u, k) => `<div class="pb-use" style="--k:${k};--tx:${pct(u.at[0][0] / VID01_LEN)}"><b>${u.who}</b><span>${u.what}</span><em>${u.when}</em></div>`).join('')}</div>`,
   },
   {
     id: 'index', name: 'No index',
     title: 'Video has no index.',
-    body: 'Nothing in a video file says what happens when. Surgeons labeled every second of CholecT50 by hand; Surg+F learns from those labels and makes every second searchable, so the cut is one question away.',
-    note: 'Instrument lanes are the surgeons’ annotations for VID01.',
-    scene: () => `<div class="sc pb-index" style="--cx:${pct(CUT[0] / VID01_LEN)}">
-      <div class="pb-ask"><span class="pb-glyph" aria-hidden="true"></span><span class="pb-q" data-type="When is the cystic duct cut?"></span></div>
-      <div class="pb-bar small">${strip()}<span class="pb-jump"></span></div>
+    body: 'Nothing in a video file says what happens when. For CholecT50, surgeons labeled every second by hand: 11,264 labeled clips across 50 surgeries. A new recording arrives with none of this.',
+    note: 'Instrument lanes are the surgeons’ annotations for VID01. The count is every surgeon-labeled clip in the Surg+F index.',
+    scene: () => `<div class="sc pb-index">
+      <div class="pb-bar small">${frameStrip()}<span class="pb-pen"></span></div>
       <div class="pb-lanes">${Object.entries(TRACKS).map(([name, segs], k) => `<div class="pb-lane${name === 'scissors' ? ' is-cut' : ''}" style="--k:${k}"><span>${name}</span><span class="tr">${segs.map(([s, e]) => `<i style="left:${pct(s / VID01_LEN)};width:${pct(Math.max(2, e - s) / VID01_LEN)}"></i>`).join('')}</span></div>`).join('')}</div>
-      <div class="pb-hit"><b>14:20</b><span>scissors, cystic duct. One question, one jump.</span></div></div>`,
+      <div class="pb-hit"><b data-count="11264">0</b><span>clips labeled by hand, 50 surgeries</span></div></div>`,
   },
 ];
 
 export function problemSection() {
-  return `<section class="dig dig-model dig-problem" id="problem" aria-labelledby="problem-heading" data-intro="0" data-per="1.2" style="--travel:3.6;--nav:1">
+  return `<section class="dig dig-model dig-problem" id="problem" aria-labelledby="problem-heading" data-intro="0" data-per="1.2" style="--travel:4.8;--nav:1">
     <div class="dig-pin">
       <div class="mn-heading"><h2 id="problem-heading">Finding one moment.</h2></div>
       <div class="dig-map"><ol class="dig-labels" aria-label="The problem">${CHAPTERS.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>
@@ -88,7 +103,7 @@ onStage((section, ps) => {
   const src = cachedFrame(nearest);
   const pv = section.querySelector('.pv');
   if (src && shown !== nearest) { pv.getContext('2d')?.drawImage(src, 0, 0, pv.width, pv.height); pv.classList.add('is-painted'); shown = nearest; }
-  /* The answer: the question types itself, then the jump lands on 14:20. */
-  const q = section.querySelector('.pb-q');
-  setText(q, q.dataset.type.slice(0, Math.round(q.dataset.type.length * clamp((ps[2] - .4) / .2))));
+  /* Hand-labeled clips count up as the lanes are drawn. */
+  const count = section.querySelector('[data-count]');
+  setText(count, Math.round(Number(count.dataset.count) * ease(clamp((ps[3] - .3) / .4))).toLocaleString('en-US'));
 });

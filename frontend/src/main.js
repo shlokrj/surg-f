@@ -7,6 +7,7 @@ import './architecture.css';
 import './modelnotes.css';
 import './databricks.css';
 import './problem.css';
+import './solution.css';
 let disposeHome = () => {};
 let renderedPage = null;
 // Page load-in runs only after a real page change (home <-> case), never on re-renders from case
@@ -372,7 +373,7 @@ function wire() {
 
   // Home
   const preview = document.querySelector('.preview-video video');
-  preview?.addEventListener('loadedmetadata', () => { preview.currentTime = 674; });
+  preview?.addEventListener('loadedmetadata', () => { preview.currentTime = DEMO_SEEK; });
   document.querySelector('#sample')?.addEventListener('click', () => openSample());
   document.querySelector('#sample-event')?.addEventListener('click', () => openSample(DEMO_SEEK, DEMO_QUESTION));
   // Hero search: typing opens VID01 and asks Lil Doc. The prefilled question also seeks to its moment.

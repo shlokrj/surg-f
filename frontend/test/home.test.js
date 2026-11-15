@@ -109,10 +109,10 @@ test('databricks section covers the real Databricks work, with the mark and chec
  assert.ok([...db.querySelectorAll('.layer-copy a')].every(a=>a.rel.includes('noopener')&&a.target==='_blank'));
  assert.ok(doc.querySelector('.footer-links a[href="#databricks"]'));
 });
-test('public and demo versions: demo opens with the problem, adds Databricks, and moves the product sections below it',()=>{
+test('public and demo versions: demo runs problem, solution, features, stack, model, Databricks',()=>{
  const order=mode=>[...new JSDOM(markup(mode)).window.document.querySelectorAll('main > section, main > div.feature-stack')].map(el=>el.id||el.className.split(' ')[0]);
  assert.deepEqual(order('public'),['landing-intro','case-preview','feature-stack','architecture','model-notes','local-section']);
- assert.deepEqual(order('demo'),['landing-intro','problem','architecture','model-notes','databricks','case-preview','feature-stack','local-section']);
+ assert.deepEqual(order('demo'),['landing-intro','problem','solution','feature-stack','architecture','model-notes','databricks','local-section']);
  const pub=new JSDOM(markup('public')).window.document,demo=new JSDOM(markup('demo')).window.document;
  assert.equal(pub.querySelector('#databricks'),null,'no Databricks section in the public version');
  assert.equal(pub.querySelector('#problem'),null);
@@ -122,5 +122,8 @@ test('public and demo versions: demo opens with the problem, adds Databricks, an
  const p=demo.querySelector('#problem');
  assert.equal(p.querySelectorAll('.pb-length .pb-tile').length,24,'24 real VID01 frames');
  assert.match(p.textContent,/14:20 to 14:37, 17 s of 1,728 s/);
+ assert.equal(p.querySelectorAll('.pb-use').length,4,'four use cases');
+ assert.equal(demo.querySelector('#case-preview'),null,'the solution replaces Find the clip in the demo');
+ assert.ok(demo.querySelector('#solution #sample-event'));
  assert.equal(p.querySelectorAll('.pb-lane.is-cut .tr i').length,1,'one scissors segment');
 });

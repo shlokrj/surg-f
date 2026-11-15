@@ -1,0 +1,44 @@
+/* "Ask, and jump to it": the solution (demo version). Layout and transitions come from
+   architecture.css and modelnotes.css (.dig-model); the frame strip and search glyph from problem.css. */
+.so-cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.dig-solution .dig-labels::after{background:var(--hit)}
+
+/* 1. Label every second: a read head sweeps the strip and label lanes fill in behind it. */
+.so-label{--rd:clamp(0, calc((var(--p) - .05) / .6), 1)}
+.so-head{position:absolute;top:-10px;bottom:-10px;left:calc(var(--rd) * 100%);width:3px;margin-left:-1.5px;border-radius:2px;background:#9ff3df;box-shadow:0 0 18px #9ff3df;opacity:calc(clamp(0, calc(var(--rd) * 30), 1) * clamp(0, calc((1 - var(--rd)) * 30), 1))}
+.so-head::before{content:"";position:absolute;inset:0 0 0 -60px;background:linear-gradient(90deg,transparent,#9ff3df33)}
+.so-lanes{position:absolute;left:14px;right:14px;top:136px;display:grid;gap:9px;padding:16px 14px;border-radius:14px;background:#0f2d2ae0}
+.so-lane{display:grid;grid-template-columns:78px 1fr;align-items:center;gap:8px;font-size:13.5px;color:#cfe6dc}
+.so-lane .tr{position:relative;height:14px;border-radius:3px;background:#ffffff1a;clip-path:inset(0 calc((1 - var(--rd)) * 100%) 0 0)}
+.so-lane .tr i{position:absolute;top:0;bottom:0;min-width:2px;border-radius:2px;background:#9ff3df}
+.so-meter{position:absolute;left:14px;top:396px;display:flex;align-items:baseline;gap:12px;padding:12px 18px;border-radius:12px;background:#fff;color:var(--ink);box-shadow:0 16px 36px #052a2650}
+.so-meter b{font:600 30px var(--mono);color:var(--brand-strong);font-variant-numeric:tabular-nums}.so-meter span{font-size:15px;color:var(--ink-muted)}
+
+/* 2. Ask: the question types, the word maps to a label, and the result rises with the clip count. */
+.so-ask{--mp:clamp(0, calc((var(--p) - .32) / .12), 1);--rs:clamp(0, calc((var(--p) - .48) / .14), 1)}
+.so-bar{position:absolute;left:14px;right:14px;top:60px;display:flex;align-items:center;gap:12px;height:58px;padding:0 18px;border-radius:14px;background:#fff;color:var(--ink);font-size:19px;box-shadow:0 16px 40px #052a2640}
+.so-map{position:absolute;left:50%;top:150px;display:flex;align-items:center;gap:12px;translate:-50% 0;opacity:var(--mp);transform:scale(calc(.9 + .1 * var(--mp)))}
+.so-map span{padding:8px 14px;border-radius:10px;background:#0f2d2ae8;color:#fff;font:600 17px var(--mono)}
+.so-map span:last-child{background:var(--hit);color:var(--hit-ink)}
+.so-map i{font-style:normal;color:#fff;font-size:22px}
+.so-results{position:absolute;left:14px;right:14px;top:226px;display:grid;gap:10px}
+.so-row{display:grid;grid-template-columns:70px 1fr auto auto;align-items:center;gap:14px;padding:16px 18px;border-radius:14px;background:#fff;color:var(--ink);box-shadow:0 18px 40px #052a2650;opacity:var(--rs);transform:translateY(calc((1 - var(--rs)) * 22px))}
+.so-row b{font:600 16px var(--mono);color:var(--brand-strong)}.so-row span{font-size:16px}
+.so-row em{padding:3px 8px;border-radius:6px;background:var(--hit-tint);color:var(--hit-ink);font-size:13px;font-style:normal;font-weight:600}
+.so-row.is-top{box-shadow:inset 4px 0 0 var(--hit),0 18px 40px #052a2650}
+.so-more{display:flex;align-items:baseline;gap:10px;padding:12px 18px;border-radius:12px;background:#0f2d2ae0;color:#cfe6dc;font-size:15px;opacity:clamp(0, calc((var(--p) - .6) * 6), 1)}
+.so-more b{font:600 24px var(--mono);color:#fff;font-variant-numeric:tabular-nums}
+
+/* 3. Jump: the knob flies to 14:20, the clip band lights, and the frame lands. */
+.so-jump{--jp:clamp(0, calc((var(--p) - .2) / .3), 1);--ld:clamp(0, calc((var(--p) - .5) * 8), 1);display:grid;place-items:center;perspective:1100px}
+.so-win{width:520px;overflow:hidden;border-radius:14px;background:#0f2d2a;box-shadow:0 40px 90px #052a2666;transform:rotateX(calc(18deg * (1 - var(--ld)))) scale(calc(.94 + .06 * var(--ld)))}
+.so-video{position:relative;aspect-ratio:854/480;background:radial-gradient(circle at 42% 40%,#b0574e 0,#6b2327 42%,#160909 75%)}
+.so-video canvas{opacity:calc(.25 + .75 * var(--ld))}
+.so-flash{position:absolute;inset:0;background:#fff;opacity:calc(var(--ld) * (1 - clamp(0, calc((var(--p) - .52) * 10), 1)) * .5);pointer-events:none}
+.so-scrub{position:relative;height:8px;margin:16px 16px 0;border-radius:4px;background:#ffffff26}
+.so-scrub .clip{position:absolute;top:-9px;bottom:-9px;left:var(--cx);width:max(var(--cw),6px);border-radius:3px;background:var(--hit);box-shadow:0 0 14px var(--hit);opacity:var(--ld)}
+.so-scrub .fill{position:absolute;inset:0 auto 0 0;width:calc(var(--cx) * var(--jp));border-radius:4px;background:#8bd5b7}
+.so-scrub .knob{position:absolute;top:50%;left:calc(var(--cx) * var(--jp));width:18px;height:18px;border-radius:50%;translate:-50% -50%;border:3px solid #fff;background:transparent;box-shadow:0 0 0 5px #8bd5b740}
+.so-meta{display:flex;align-items:baseline;gap:12px;padding:14px 16px 16px;color:#cfe6dc;font-size:15px}.so-meta b{color:#fff;font:600 20px var(--mono)}
+.pb-glyph{position:relative;width:15px;height:15px;border:2.5px solid var(--brand);border-radius:50%;flex:none}
+.pb-glyph::after{content:"";position:absolute;right:-6px;bottom:-5px;width:7px;height:2.5px;background:var(--brand);rotate:45deg}

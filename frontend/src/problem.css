@@ -27,17 +27,28 @@
 .pb-callout::before{content:"";position:absolute;left:50%;top:-8px;width:14px;height:14px;background:#fff;rotate:45deg;translate:-50% 0}
 .pb-callout b{font-size:16px;color:var(--brand-strong)}.pb-callout span{font-size:14px;color:var(--ink-muted);white-space:nowrap}
 
-/* 3. No index: lanes of labels grow under the strip, the question types, and the jump lands at 14:20. */
-.pb-index{--ln:clamp(0, calc((var(--p) - .05) / .35), 1);--jp:clamp(0, calc((var(--p) - .62) / .14), 1)}
-.pb-ask{position:absolute;left:14px;right:14px;top:30px;display:flex;align-items:center;gap:12px;height:52px;padding:0 16px;border-radius:14px;background:#fff;color:var(--ink);font-size:17px;box-shadow:0 16px 40px #052a2640;opacity:clamp(0, calc((var(--p) - .36) * 8), 1)}
-.pb-glyph{position:relative;width:15px;height:15px;border:2.5px solid var(--brand);border-radius:50%;flex:none}
-.pb-glyph::after{content:"";position:absolute;right:-6px;bottom:-5px;width:7px;height:2.5px;background:var(--brand);rotate:45deg}
-.pb-bar.small{top:116px;height:44px}
-.pb-jump{position:absolute;top:-12px;bottom:-12px;left:var(--cx);width:4px;margin-left:-2px;border-radius:2px;background:var(--hit);box-shadow:0 0 18px var(--hit);opacity:var(--jp);transform:scaleY(calc(.4 + .6 * var(--jp)))}
-.pb-lanes{position:absolute;left:14px;right:14px;top:184px;display:grid;gap:8px;padding:14px 14px;border-radius:14px;background:#0f2d2ae0}
-.pb-lane{display:grid;grid-template-columns:78px 1fr;align-items:center;gap:8px;font-size:13.5px;color:#cfe6dc;opacity:clamp(0, calc((var(--ln) * 6 - var(--k)) * 1.2), 1)}
-.pb-lane .tr{position:relative;height:14px;border-radius:3px;background:#ffffff1a}
-.pb-lane .tr i{position:absolute;top:0;bottom:0;min-width:2px;border-radius:2px;background:#8bd5b7;transform-origin:left;transform:scaleX(var(--ln))}
+/* 3. Who needs it: four people, each tied to a real moment on the strip, arrive one after another. */
+.pb-bar.mid{top:56px;height:60px}
+.pb-mark{--u:clamp(0, calc((var(--p) - .08 - var(--k) * .17) / .12), 1);position:absolute;top:-6px;bottom:-6px;min-width:5px;border-radius:3px;background:var(--c);box-shadow:0 0 14px var(--c);opacity:var(--u)}
+.pb-mark,.pb-use{--c:#9ff3df}
+.pb-mark[style*="--k:1"],.pb-use[style*="--k:1"]{--c:#ffffff}
+.pb-mark[style*="--k:2"],.pb-use[style*="--k:2"]{--c:var(--hit)}
+.pb-mark[style*="--k:3"],.pb-use[style*="--k:3"]{--c:#b3a6ff}
+.pb-use{--u:clamp(0, calc((var(--p) - .08 - var(--k) * .17) / .12), 1);position:absolute;width:262px;display:grid;gap:4px;padding:14px 16px 14px 20px;border-radius:14px;background:#0f2d2ae8;color:#e6f3ee;box-shadow:0 18px 40px #052a2640;opacity:var(--u);transform:translateY(calc((1 - var(--u)) * 24px)) scale(calc(.96 + .04 * var(--u)))}
+.pb-use::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 3px 3px 0;background:var(--c)}
+.pb-use b{font-size:17px;color:#fff}.pb-use span{font-size:15px;line-height:1.35}.pb-use em{font:600 13px var(--mono);font-style:normal;color:var(--c)}
+.pb-use[style*="--k:0"]{left:14px;top:160px}.pb-use[style*="--k:1"]{left:284px;top:160px}
+.pb-use[style*="--k:2"]{left:14px;top:312px}.pb-use[style*="--k:3"]{left:284px;top:312px}
+
+/* 4. No index: a pen sweeps the strip while the surgeons' lanes are drawn in behind it, and the
+   hand-labeled clip count climbs. */
+.pb-index{--ln:clamp(0, calc((var(--p) - .05) / .5), 1)}
+.pb-bar.small{top:56px;height:52px}
+.pb-pen{position:absolute;top:-10px;bottom:-10px;left:calc(var(--ln) * 100%);width:3px;margin-left:-1.5px;border-radius:2px;background:#fff;box-shadow:0 0 16px #fff;opacity:calc(clamp(0, calc(var(--ln) * 30), 1) * clamp(0, calc((1 - var(--ln)) * 30), 1))}
+.pb-lanes{position:absolute;left:14px;right:14px;top:136px;display:grid;gap:9px;padding:16px 14px;border-radius:14px;background:#0f2d2ae0}
+.pb-lane{display:grid;grid-template-columns:78px 1fr;align-items:center;gap:8px;font-size:13.5px;color:#cfe6dc}
+.pb-lane .tr{position:relative;height:14px;border-radius:3px;background:#ffffff1a;clip-path:inset(0 calc((1 - var(--ln)) * 100%) 0 0)}
+.pb-lane .tr i{position:absolute;top:0;bottom:0;min-width:2px;border-radius:2px;background:#8bd5b7}
 .pb-lane.is-cut{color:#fff;font-weight:600}.pb-lane.is-cut .tr i{background:var(--hit);box-shadow:0 0 10px var(--hit)}
-.pb-hit{position:absolute;left:14px;top:440px;display:flex;align-items:baseline;gap:12px;padding:10px 16px;border-radius:12px;background:#fff;color:var(--ink);box-shadow:0 16px 36px #052a2650;opacity:var(--jp);transform:translateY(calc((1 - var(--jp)) * 12px))}
-.pb-hit b{font:600 26px var(--mono);color:var(--brand-strong)}.pb-hit span{font-size:15px;color:var(--ink-muted)}
+.pb-hit{position:absolute;left:14px;top:396px;display:flex;align-items:baseline;gap:12px;padding:12px 18px;border-radius:12px;background:#fff;color:var(--ink);box-shadow:0 16px 36px #052a2650;opacity:clamp(0, calc((var(--p) - .28) * 6), 1)}
+.pb-hit b{font:600 30px var(--mono);color:var(--brand-strong);font-variant-numeric:tabular-nums}.pb-hit span{font-size:15px;color:var(--ink-muted)}
