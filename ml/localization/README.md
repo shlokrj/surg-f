@@ -29,3 +29,14 @@ python ml/localization/evaluate.py predictions.json reviewed-annotations.json --
 The reference uses the same artifact schema with `source: annotation` and `provenance.reviewed_complete_frames: true`. Set this flag only after a reviewer has annotated **every visible instance of the supported labels** in each included frame. Include reviewed empty frames explicitly; omit unreviewed frames. Missing prediction frames count as missed objects; prediction-only frames are ignored and counted separately. Preserve identical case, asset, dimensions, frame IDs and player timestamps. Record reviewer, annotation origin and split in provenance. Do not promote model predictions to annotations automatically.
 
 Evaluation uses confidence-ordered one-to-one matches of the same category/label at the requested IoU. It reports per-label and micro TP/FP/FN, precision and recall; undefined ratios are null. This is fixed-threshold evaluation, not COCO mAP. Review data and surgery-disjoint validation are still needed before tuning; no accuracy result has been produced yet. Tests use synthetic boxes only.
+
+## Inspect actual predictions visually
+
+Install Matplotlib and Pillow in your preview environment, then run:
+
+```sh
+python ml/localization/preview.py frontend/public/overlays/VID01.json \
+  --frames-dir /path/to/frames/VID01 --output /tmp/VID01-preview.png
+```
+
+This creates an offline plot, not a browser screenshot. Source-image SHA-256 and dimensions must match the artifact; output is never overwritten. Preview at most 12 frames. Keep generated plots outside Git because they contain dataset imagery. The first real preview shows poor labels and oversized boxes; use it to inspect failure cases, not as evidence of detector accuracy.
