@@ -3,7 +3,7 @@
    stage digs down through it one layer at a time, from the surface (the player) to bedrock (the
    surgery video). Each layer plays its own scroll-driven 3D scene.
 
-   Every fact comes from the repo: README.md, agent-kit/SPEC.md, backend/app/repository.py,
+   Every fact comes from the repo: README.md, backend/app/repository.py,
    frontend/public/model-evals.md, frontend/public/overlays/VID01.json and shared/triplets.annotation.csv.
    Every link was checked on 2026-11-14. */
 import { videoForCase } from './cases.js';

@@ -1,7 +1,7 @@
 """Extract frozen SurgVLP image features for one CholecT50 case.
 
 Image branch and preprocessing follow CAMMA-public/SurgVLP at 85e8589.
-The text encoder is not needed for cached image features. See ml/README.md.
+The text encoder is not needed for cached image features.
 """
 import argparse
 import csv

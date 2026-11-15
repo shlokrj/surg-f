@@ -24,7 +24,7 @@ def to_intervals(frames):
 def main(src, dst):
     frames = defaultdict(list)  # (case_id, label) -> frame numbers
     for s in json.load(open(src))["samples"]:
-        for group in ("instruments", "verbs", "targets"):  # all searchable labels (DECISIONS.md 2026-11-14)
+        for group in ("instruments", "verbs", "targets"):  # all searchable labels
             for c in (s.get(group) or {}).get("classifications", []):
                 if c["label"] not in ("null_verb", "null_target"):  # "no action/target", not searchable
                     frames[(s["video_id"], c["label"])].append(s["frame_number"])

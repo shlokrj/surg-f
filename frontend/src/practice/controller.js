@@ -3,7 +3,7 @@
 // 3D tool interaction and draws whatever state it returns. Every transition returns a new object;
 // completed-stage records are frozen so later actions cannot alter them.
 //
-// Two modes (docs/SURGERY_PRACTICE_UPGRADES.md):
+// Two modes:
 // - easy: place a tool and press and hold. A wrong action is explained and can be retried.
 // - hard: strict. Touching the wrong tissue, a slanted jaw, leaving the dissection line or the
 //   wrong port all fail the stage; the stage resets and the failure is counted.

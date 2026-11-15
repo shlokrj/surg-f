@@ -1,4 +1,4 @@
-"""Response shapes. Search matches agent-kit/CONTRACTS.md and shared/search.fixture.json."""
+"""Response shapes. Search matches shared/search.fixture.json."""
 
 from typing import Literal
 

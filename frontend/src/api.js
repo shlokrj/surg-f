@@ -65,14 +65,14 @@ export async function getSteps(caseId) {
   }
 }
 // Ask the backend what the typed text means. Returns null in fixture mode, so the caller
-// falls back to its local rules. See backend/docs/FRONTEND_GUIDE.md (Interpret).
+// falls back to its local rules.
 export async function interpretQuery(query, caseId) {
   if (fixtureMode) return null;
   return getJson(`/interpret?q=${encodeURIComponent(query)}&case_id=${encodeURIComponent(caseId)}`);
 }
 // Send one free-typed chat message. The backend picks the feature and returns
 // { reply, action, data, router } in one call. Returns null in fixture mode, so the caller
-// falls back to /interpret and its local rules. See backend/docs/FRONTEND_GUIDE.md (Chat).
+// falls back to /interpret and its local rules.
 export async function chatMessage(message, caseId, durationSec = 0) {
   if (fixtureMode) return null;
   const body = { message, case_id: caseId };

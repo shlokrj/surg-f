@@ -98,7 +98,7 @@ def mlp_clips(model_dir, bundle, case_id, max_gap, min_len, groups=('instruments
         raise ValueError('invalid model probabilities')
     rows = []
     for j, label in enumerate(labels):
-        group, name = label.split(':', 1)  # plain dataset names are unique across groups (DECISIONS.md)
+        group, name = label.split(':', 1)  # plain dataset names are unique across groups
         if group in groups:
             hits = frames[probabilities[:, j] >= thresholds[j]]
             rows += [(case_id, start, end, name, 'prediction')

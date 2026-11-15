@@ -24,7 +24,7 @@ export const RECORD = [
   ['Gallbladder removal', 1641, 1733, 'grasper'],
 ];
 /* Who needs one moment, each pinned to a real VID01 interval (shared/triplets.annotation.csv). The clipper
-   count is the surgeon-labeled clipper clips across all 50 surgeries (agent-kit/PROGRESS.md). */
+   count is the surgeon-labeled clipper clips across all 50 surgeries (the surgf_clips table). */
 const USES = [
   {who: 'Residents', what: 'Watch the cystic duct being clipped', when: '11:38 to 12:27', at: [[698, 747]]},
   {who: 'Surgeons', what: 'Review the gallbladder dissection before a case', when: '9:21 to 10:58', at: [[561, 658]]},

@@ -111,7 +111,7 @@ Scores on the 4 test surgeries (F1, from 0 to 1, higher is better):
 
 The average over all 29 labels is 0.34. Common labels work well, and rare ones are not reliable yet. Training on 42 surgeries instead of 12 raised scissors from 0.07 to 0.29.
 
-The bounding boxes come from a second model, Faster R-CNN, trained further on Endoscapes. It finds the gallbladder well (0.93) and tools well (0.89 precision, 0.83 recall), but often misses the small cystic duct (0.39 recall). Tool names come from the surgeons' labels. More detail: [localization plan](ml/LOCALIZATION_PLAN.md) and [full results](frontend/public/model-evals.md).
+The bounding boxes come from a second model, Faster R-CNN, trained further on Endoscapes. It finds the gallbladder well (0.93) and tools well (0.89 precision, 0.83 recall), but often misses the small cystic duct (0.39 recall). Tool names come from the surgeons' labels. Full results: [model-evals.md](frontend/public/model-evals.md).
 
 ![How well the model sees](docs/images/model.jpg)
 
@@ -135,13 +135,12 @@ The bounding boxes come from a second model, Faster R-CNN, trained further on En
 
 | Folder | What is in it |
 |---|---|
-| [frontend](frontend) | Web app ([design notes](frontend/docs/DESIGN.md)) |
+| [frontend](frontend) | Web app |
 | [backend](backend) | FastAPI service |
 | [ml](ml) | Features, training, testing and boxes |
 | [databricks](databricks) | SQL for the clip table, import job and Genie |
 | [scripts](scripts) | Databricks job launchers |
 | [shared](shared) | Data shared by the frontend and backend |
-| [pitch](pitch) | Presentation and video scripts |
 
 ## Sources
 

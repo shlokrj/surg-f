@@ -33,7 +33,7 @@ API_DESCRIPTION = """Study-tool API for laparoscopic cholecystectomy videos.
 - **Chat:** `POST /chat` takes one typed message and returns a reply, one action and its data.
 
 Without Databricks credentials the API serves local fixtures; `GET /health` shows the mode.
-Errors use `{"detail": "..."}`. Frontend guide: `backend/docs/FRONTEND_GUIDE.md`.
+Errors use `{"detail": "..."}`.
 """
 
 

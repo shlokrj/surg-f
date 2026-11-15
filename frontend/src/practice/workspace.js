@@ -46,7 +46,7 @@ export function disposePreload() {
 let session = null;
 
 // hooks: { seek(seconds), playRange(start, end), onExit(), announce?(text) }
-// mode: 'easy' (place and hold) or 'hard' (operating-room view, strict; docs/SURGERY_PRACTICE_UPGRADES.md).
+// mode: 'easy' (place and hold) or 'hard' (operating-room view, strict).
 export function startPractice(exercise, hooks, { mode = 'easy' } = {}) {
   disposePractice();
   preloadPractice(exercise); // reuses what was loaded while Start / Cancel was showing

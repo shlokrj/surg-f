@@ -1,6 +1,6 @@
 /* "Built on Databricks": everything the team ran on Databricks, as a pinned stage (same mechanics as
-   architecture.js and modelnotes.js). Facts come from agent-kit/DATABRICKS.md, agent-kit/PROGRESS.md,
-   ml/PROGRESS.md, databricks/README.md and backend/README.md (all logged 2026-11-14). Links checked
+   architecture.js and modelnotes.js). Facts come from the team's Databricks runs, MLflow
+   and databricks/*.sql (all logged 2026-11-14). Links checked
    2026-11-14. The Databricks mark is the simple-icons path (CC0 drawing of the Databricks trademark). */
 import { onStage, pickChapters } from './architecture.js';
 
@@ -15,7 +15,7 @@ const DATABRICKS_LOGO = `<a class="db-logo" href="https://www.databricks.com/" t
 /* data-scrub="from,to,start,span,digits": the number follows the scroll inside its chapter. */
 const num = (from, to, start, span, digits = 0) => `<b data-scrub="${from},${to},${start},${span},${digits}">${Number(from).toFixed(digits)}</b>`;
 
-/* ml/PROGRESS.md, v2 smoothing sweep on the 3 tuning surgeries (model fa3903c8), six-tool event F1. */
+/* MLflow: v2 smoothing sweep on the 3 tuning surgeries (model fa3903c8), six-tool event F1. */
 const SWEEP = [['0:1', .0872], ['1:1', .1246], ['2:2', .1816], ['3:3', .1717], ['5:3', .1680], ['10:5', .1501]];
 
 /* The Apps scene's wires, in the scene's 560×540 box. Each key travels its own wire (CSS offset-path). */

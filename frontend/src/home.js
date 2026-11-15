@@ -195,8 +195,7 @@ const feature = ({id, title, body, action, command, horizon, preview, index}) =>
    - demo (/demo, ?demo): the original presentation version, kept as it was.
    - presentation-demo (/presentation-demo): the 5-minute in-person pitch, four speakers.
    - video-demo (/video-demo): the 3-minute Devpost video for the Databricks track; faster, solution and
-     Databricks first.
-   Scripts: pitch/ at the repo root. */
+     Databricks first. */
 const VERSIONS = {
   public: {sections: [['find'], ['features'], ['architecture'], ['model'], ['local'], ['sources']]},
   demo: {sections: [

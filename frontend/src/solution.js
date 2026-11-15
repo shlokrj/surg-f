@@ -1,14 +1,14 @@
 /* "Ask, and jump to it": the solution, right after the problem in the demo version. A pinned stage in
    three chapters (label, ask, jump) that replaces the old "Find the clip" block there; its buttons open
    the real VID01 case. Data: VID01 surgeon labels (architecture.js TRACKS), the cut at 860–877 s, the
-   scissors clip count across 50 surgeries (agent-kit/PROGRESS.md), and the backend's label search. */
+   scissors clip count across 50 surgeries (the surgf_clips table), and the backend's label search. */
 import { onStage, paintFrames, TRACKS, VID01_LEN, layerP, pickChapters } from './architecture.js';
 import { frameStrip, RECORD } from './problem.js';
 
 const pct = v => `${(v * 100).toFixed(3)}%`;
 const clock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const CUT = [860, 877];
-/* Captures of Surg+F's 3D panel (public/screens/README.md) at three VID01 steps, with each step's span. */
+/* Captures of Surg+F's 3D panel at three VID01 steps, with each step's span. */
 const PRACTICE = [['Calot’s triangle dissection', 21, 673], ['Clipping and cutting', 673, 887], ['Gallbladder dissection', 887, 1470]];
 
 const CHAPTERS = [

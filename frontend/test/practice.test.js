@@ -224,7 +224,7 @@ test('state transitions are deterministic and never mutate the previous state', 
   assert.equal(reduce(exercise, start, { type: 'pickup', toolId: 'unknown' }), start);
 });
 
-// --- Hard mode (docs/SURGERY_PRACTICE_UPGRADES.md) --------------------------------------------
+// --- Hard mode --------------------------------------------
 
 const hard = () => createSession(exercise, { mode: 'hard' });
 const runFrom = (start, actions) => actions.reduce((state, action) => reduce(exercise, state, action), start);

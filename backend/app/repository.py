@@ -55,7 +55,7 @@ class FixtureClipRepository:
 
 
 # The table name is a fixed constant, never user input; values are bound parameters.
-# Fixture rows stay out of real queries (CONTRACTS.md).
+# Fixture rows stay out of real queries.
 SEARCH_SQL = f"""
 SELECT case_id, start_sec, end_sec, label, source
 FROM {CLIPS_TABLE}
