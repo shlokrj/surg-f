@@ -34,6 +34,8 @@ class Settings:
     warmup: bool = True
     genie_space_id: str | None = None
     genie_timeout_sec: float = 40.0
+    chat_endpoint: str | None = None
+    chat_timeout_sec: float = 8.0
 
 
 def _hostname(values: Mapping[str, str | None]) -> str:
@@ -61,12 +63,18 @@ def settings_from(values: Mapping[str, str | None]) -> Settings:
         genie_timeout = float(values.get("SURGF_GENIE_TIMEOUT_SEC") or 40)
     except ValueError:
         genie_timeout = 40.0
+    try:
+        chat_timeout = float(values.get("SURGF_CHAT_TIMEOUT_SEC") or 8)
+    except ValueError:
+        chat_timeout = 8.0
     return Settings(
         databricks=databricks,
         cors_origins=origins or DEFAULT_CORS_ORIGINS,
         warmup=warmup,
         genie_space_id=(values.get("DATABRICKS_GENIE_SPACE_ID") or "").strip() or None,
         genie_timeout_sec=genie_timeout,
+        chat_endpoint=(values.get("DATABRICKS_CHAT_ENDPOINT") or "").strip() or None,
+        chat_timeout_sec=chat_timeout,
     )
 
 

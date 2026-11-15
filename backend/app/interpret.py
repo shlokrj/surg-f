@@ -14,9 +14,10 @@ from urllib.parse import quote
 
 from .genie import GenieAnswer, GenieClient, GenieError
 from .models import Action, Clip, GenieTrace, InterpretResponse, LabelSummary
+from .service import INSTRUMENT_LABELS
 
 ACTION_TYPES = ("timestamp", "chart", "quiz", "model")
-LABELS = ("grasper", "hook", "irrigator", "bipolar", "clipper", "scissors")
+LABELS = INSTRUMENT_LABELS
 
 # Phrases that name each dataset instrument. Bare "clip" is left out on purpose: it also
 # means a video clip ("show me clips of the hook").

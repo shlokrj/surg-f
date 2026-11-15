@@ -3,6 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Path, Query, Request
 
 from .models import (
+    ChatRequest,
+    ChatResponse,
     ErrorResponse,
     InterpretResponse,
     QuizResponse,
@@ -55,7 +57,8 @@ def search(
     response_model=TimelineResponse,
     summary="Instrument timeline and usage summary for one video",
     description="`segments` feeds a timeline chart; `summary` feeds an instrument-usage chart. "
-    "Uses `annotation` rows by default; pass `source=prediction` for model output. A known "
+    "Returns the six instrument labels only; verb and target rows in the clip table are left "
+    "out. Uses `annotation` rows by default; pass `source=prediction` for model output. A known "
     "case with no rows for that source returns empty lists.",
     responses={
         404: {"model": ErrorResponse, "description": "No rows exist for this case_id."},
@@ -176,6 +179,33 @@ def interpret(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     if response.genie and response.genie.error:
         request.state.error = f"genie: {response.genie.error}"
+    return response
+
+
+@router.post(
+    "/chat",
+    response_model=ChatResponse,
+    summary="Chat: one typed message to one action with its data",
+    description="Send what the user typed in the chat box. The backend decides which feature "
+    "to run and returns `reply` (text for the chat), `action` (`search`, `quiz`, `timeline`, "
+    "`answer` or `none`), `data` (the same payload the matching endpoint returns, or null) "
+    "and `router` (`llm`, `rules` or `genie`).\n\n"
+    "A Databricks chat model picks the feature when `DATABRICKS_CHAT_ENDPOINT` is set, with "
+    "a hard 8-second limit. Keyword rules answer when the model is not configured, is slow, "
+    "fails, or returns an invalid choice, so this endpoint never fails because of routing. "
+    "Search results are limited to the open video and to annotation rows. Medical-advice "
+    "and off-topic messages return `action: none` with a fixed study-aid reply.",
+    responses=INVALID,
+    tags=["chat"],
+)
+def chat(request: Request, body: ChatRequest) -> ChatResponse:
+    try:
+        response, note = request.app.state.chat_service.chat(body.message, body.case_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    request.state.chat = {"router": response.router, "action": response.action}
+    if note:
+        request.state.error = note
     return response
 
 
