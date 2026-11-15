@@ -62,9 +62,11 @@ export const localOnlyPractice =
   'I can’t search an uploaded video. If it’s the demo video, you can ask me to practice a step, like “Let me practice clipping and cutting.”';
 
 export const practiceOffer = exercise =>
-  `Let’s practice ${exercise.title.toLowerCase()} on ${exercise.eligible_video.case_id}. You’ll get ${exercise.stages.length} stages: pick an instrument from a 3D tray, place it on the model and use it, then compare with the matching moment in the video. Before you start: the model is a generic body, not this patient, and this is a schematic draft exercise that hasn’t been medically reviewed. It doesn’t teach real instrument handling or measure skill. Starting closes the other panels; your video stays where it is.`;
+  `Let’s practice ${exercise.title.toLowerCase()} on ${exercise.eligible_video.case_id}. You’ll get ${exercise.stages.length} stages: pick an instrument from a 3D tray, place it on the model and use it, then compare with the matching moment in the video. Easy is place-and-hold. Hard starts in the operating room and is strict: aim the jaws, trace the dissection, and any mistake fails the stage. Before you start: the model is a generic body, not this patient, and this is a schematic draft exercise that hasn’t been medically reviewed. It doesn’t teach real instrument handling or measure skill.`;
 
-export const practiceStarted = 'Practice is open. Stage 1 is on the left, and the video is at its reference moment. Exit (×) brings your normal page back.';
+export const practiceStarted = (mode = 'easy') => mode === 'hard'
+  ? 'Hard mode is open. You start in the operating room; then the camera goes in. Any mistake fails the stage, so take your time. Exit (×) brings your normal page back.'
+  : 'Practice is open. Stage 1 is on the left, and the video is at its reference moment. Exit (×) brings your normal page back.';
 
 export const practiceCancelled = 'No problem, nothing changed. Ask me again whenever you want to practice.';
 

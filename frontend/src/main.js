@@ -245,8 +245,10 @@ function chatPanel() {
   const offer = (message, index) => {
     const status = message.offer.status;
     const actions = status === 'open'
-      ? `<div class="offer-actions" role="group" aria-label="Practice"><button type="button" class="btn-primary offer-start" data-offer-start="${index}">Start practice</button><button type="button" class="btn-secondary" data-offer-cancel="${index}">Cancel</button></div>`
-      : `<p class="offer-status">${{ started: 'Started', cancelled: 'Cancelled', expired: 'No longer available' }[status] ?? ''}</p>`;
+      // Easy (place and hold) or Hard (operating room, strict). A prompt that asked for hard
+      // highlights Hard; otherwise Easy is the main button.
+      ? `<div class="offer-actions" role="group" aria-label="Practice">${['easy', 'hard'].map(mode => `<button type="button" class="${(message.offer.mode ?? 'easy') === mode ? 'btn-primary' : 'btn-secondary'} offer-start" data-offer-start="${index}" data-mode="${mode}">Start (${mode === 'hard' ? 'Hard' : 'Easy'})</button>`).join('')}<button type="button" class="btn-quiet" data-offer-cancel="${index}">Cancel</button></div>`
+      : `<p class="offer-status">${{ started: `Started${message.offer.started ? ` (${message.offer.started === 'hard' ? 'Hard' : 'Easy'})` : ''}`, cancelled: 'Cancelled', expired: 'No longer available' }[status] ?? ''}</p>`;
     return `<div class="msg msg-doc msg-offer">${avatar}<div class="offer"><p>${escapeHtml(message.text)}</p>${actions}</div></div>`;
   };
   const bubble = (message, index) => message.role === 'user'
@@ -382,26 +384,27 @@ async function answerPractice(intent) {
   const verdict = checkEligibility(exercise, videoFacts());
   if (!verdict.ok) return { role: 'doc', text: verdict.message };
   preloadPractice(exercise); // load the model and tools while the resident decides
-  return { role: 'doc', text: practiceOffer(exercise), offer: { exerciseId: exercise.exercise_id, status: 'open' } };
+  return { role: 'doc', text: practiceOffer(exercise), offer: { exerciseId: exercise.exercise_id, status: 'open', mode: intent.mode ?? null } };
 }
 
 /* What practice sets aside and restores on exit. */
 const PRACTICE_KEEP = ['outputs', 'results', 'queryLabel', 'quiz', 'quizAnswers', 'quizSubmitted', 'chartRequest', 'studyQuiz', 'actionRows'];
 
-function beginPractice(index) {
+function beginPractice(index, mode = 'easy') {
   const message = state.messages[index];
   const exercise = message?.offer && exerciseById(message.offer.exerciseId);
   if (!exercise || message.offer.status !== 'open') return;
   const verdict = checkEligibility(exercise, videoFacts());
   if (!verdict.ok) { message.offer.status = 'expired'; state.messages.push({ role: 'doc', text: verdict.message }); render(); return; }
   message.offer.status = 'started';
+  message.offer.started = mode;
   // Take over the workspace: set the open panels aside (with their answers and search) and bring them
   // back on exit, so a quiz, chart or 3D model made earlier is still there afterwards.
   state.beforePractice = Object.fromEntries(PRACTICE_KEEP.map(key => [key, state[key]]));
   Object.assign(state, { outputs: [], results: [], queryLabel: '', quiz: null, quizAnswers: {}, quizSubmitted: false, chartRequest: null, studyQuiz: null, actionRows: [] });
   state.practice = { exerciseId: exercise.exercise_id, surface: 'model' };
-  startPractice(exercise, { seek: practiceSeek, playRange: practicePlayRange, onExit: () => endPractice() });
-  state.messages.push({ role: 'doc', text: practiceStarted });
+  startPractice(exercise, { seek: practiceSeek, playRange: practicePlayRange, onExit: () => endPractice() }, { mode });
+  state.messages.push({ role: 'doc', text: practiceStarted(mode) });
   render();
   document.querySelector('#pr-stage')?.focus({ preventScroll: true });
 }
@@ -700,7 +703,7 @@ function wire() {
     queryInput.focus();
     queryInput.setSelectionRange(queryInput.value.length, queryInput.value.length);
   }));
-  document.querySelectorAll('[data-offer-start]').forEach(el => el.addEventListener('click', () => beginPractice(Number(el.dataset.offerStart))));
+  document.querySelectorAll('[data-offer-start]').forEach(el => el.addEventListener('click', () => beginPractice(Number(el.dataset.offerStart), el.dataset.mode)));
   document.querySelectorAll('[data-offer-cancel]').forEach(el => el.addEventListener('click', () => cancelPractice(Number(el.dataset.offerCancel))));
   // Narrow screens show the video or the practice model; both stay mounted.
   document.querySelectorAll('[data-surface]').forEach(el => el.addEventListener('click', () => {

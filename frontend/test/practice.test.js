@@ -48,18 +48,28 @@ test('stage reference moments sit inside annotated VID01 intervals and the step'
     const match = rows.find(row => row.instrument === stage.expected_tool_id && row.start <= stage.reference_start_sec && row.end >= stage.reference_end_sec);
     assert.ok(match, `${stage.id}: no ${stage.expected_tool_id} annotation covers ${stage.reference_start_sec}-${stage.reference_end_sec}`);
   }
-  const step = steps01.steps.find(item => item.key === exercise.step_key);
-  for (const stage of exercise.stages.slice(1)) assert.ok(stage.reference_start_sec >= step.start_sec && stage.reference_end_sec <= step.end_sec, stage.id);
+  // After the opening stage, every reference lies inside one of the steps the exercise covers.
+  const covered = steps01.steps.filter(item => [exercise.step_key, ...(exercise.also_step_keys ?? [])].includes(item.key));
+  for (const stage of exercise.stages.slice(1)) {
+    assert.ok(covered.some(step => stage.reference_start_sec >= step.start_sec && stage.reference_end_sec <= step.end_sec), stage.id);
+  }
   const starts = exercise.stages.map(stage => stage.reference_start_sec);
   assert.deepEqual(starts, [...starts].sort((a, b) => a - b), 'stages follow the video in order');
 });
 
 test('practice prompts are recognised; quiz requests are not', () => {
-  assert.deepEqual(parsePracticeIntent('Let me practice clipping and cutting.'), { step_key: 'ClippingCutting' });
-  assert.deepEqual(parsePracticeIntent('practice the clipping step'), { step_key: 'ClippingCutting' });
-  assert.deepEqual(parsePracticeIntent('/practice'), { step_key: null });
-  assert.deepEqual(parsePracticeIntent('can I practise Calot triangle dissection?'), { step_key: 'CalotTriangleDissection' });
-  assert.deepEqual(parsePracticeIntent('practice gallbladder dissection'), { step_key: 'GallbladderDissection' });
+  assert.deepEqual(parsePracticeIntent('Let me practice clipping and cutting.'), { step_key: 'ClippingCutting', mode: null });
+  assert.deepEqual(parsePracticeIntent('practice the clipping step'), { step_key: 'ClippingCutting', mode: null });
+  assert.deepEqual(parsePracticeIntent('/practice'), { step_key: null, mode: null });
+  assert.deepEqual(parsePracticeIntent('can I practise Calot triangle dissection?'), { step_key: 'CalotTriangleDissection', mode: null });
+  assert.deepEqual(parsePracticeIntent('practice gallbladder dissection'), { step_key: 'GallbladderDissection', mode: null });
+  // Mode words preselect a mode.
+  assert.deepEqual(parsePracticeIntent('/practice hard'), { step_key: null, mode: 'hard' });
+  assert.deepEqual(parsePracticeIntent('practice clipping on hard mode'), { step_key: 'ClippingCutting', mode: 'hard' });
+  assert.deepEqual(parsePracticeIntent('practice the easy version'), { step_key: null, mode: 'easy' });
+  // Removal steps are covered by the same exercise.
+  assert.equal(findExercise('GallbladderDissection'), exercise);
+  assert.equal(findExercise('GallbladderRetraction'), exercise);
   assert.equal(parsePracticeIntent('give me practice questions'), null);
   assert.equal(parsePracticeIntent('quiz me, I want to practice'), null);
   assert.equal(parsePracticeIntent('when is the cystic duct clipped?'), null);
@@ -157,7 +167,7 @@ test('Continue only after an accepted action; the whole exercise runs in order',
   });
   assert.equal(state.phase, 'complete');
   assert.deepEqual(state.records.map(record => record.stageId), exercise.stages.map(stage => stage.id));
-  assert.deepEqual(state.effects.map(effect => effect.type), ['hold', 'clip', 'clip', 'cut']);
+  assert.deepEqual(state.effects.map(effect => effect.type), ['hold', 'clip', 'clip', 'cut', 'detach', 'extract']);
   assert.ok(Object.isFrozen(state.records[0]), 'completed records cannot be altered');
   assert.ok(state.records.every(record => record.attempts === 1 && !record.guided));
 });
@@ -212,4 +222,114 @@ test('state transitions are deterministic and never mutate the previous state', 
   assert.ok(Object.isFrozen(start));
   assert.equal(reduce(exercise, start, { type: 'place', pointId: 'gb_neck' }), start, 'cannot place without holding a tool');
   assert.equal(reduce(exercise, start, { type: 'pickup', toolId: 'unknown' }), start);
+});
+
+// --- Hard mode (docs/SURGERY_PRACTICE_UPGRADES.md) --------------------------------------------
+
+const hard = () => createSession(exercise, { mode: 'hard' });
+const runFrom = (start, actions) => actions.reduce((state, action) => reduce(exercise, state, action), start);
+// A hard-mode action list that passes a stage, with the extra inputs each stage asks for.
+const solveHard = stage => [
+  { type: 'pickup', toolId: stage.expected_tool_id },
+  { type: 'place', pointId: stage.action_point_ids[0] },
+  { type: 'gesture', complete: true, angleDeg: 0, pathDone: true },
+  ...(stage.hard?.deliver_to ? [{ type: 'deliver', port: stage.hard.deliver_to }] : []),
+];
+// Hard session at a given stage index, with the earlier stages passed.
+const hardAt = id => {
+  let state = hard();
+  for (const stage of exercise.stages) {
+    if (stage.id === id) return state;
+    state = runFrom(state, [...solveHard(stage), { type: 'continue' }]);
+  }
+  throw new Error(`no stage ${id}`);
+};
+
+test('the mode is part of the session and survives a restart; easy is the default', () => {
+  assert.equal(createSession(exercise).mode, 'easy');
+  assert.equal(createSession(exercise, { mode: 'nonsense' }).mode, 'easy');
+  const state = hard();
+  assert.equal(state.mode, 'hard');
+  assert.equal(reduce(exercise, state, { type: 'restart' }).mode, 'hard');
+});
+
+test('hard: releasing a tool on the wrong tissue fails the stage and names what was touched', () => {
+  const failed = runFrom(hard(), [{ type: 'pickup', toolId: 'grasper' }, { type: 'contact', organ: 'portal_vein', label: 'Portal vein' }]);
+  assert.equal(failed.phase, 'ready');
+  assert.equal(failed.failures, 1);
+  assert.equal(failed.attempts, 1);
+  assert.equal(failed.feedback.kind, 'contact');
+  assert.match(failed.feedback.message, /^Stage failed\. You grasped the portal vein\./);
+  assert.deepEqual(failed.outcome, { type: 'failed', kind: 'contact', stageId: 'expose' });
+  // The stage's own structure, away from the right spot: a placement failure.
+  const offSpot = runFrom(hard(), [{ type: 'pickup', toolId: 'grasper' }, { type: 'contact', organ: 'gallbladder', label: 'Gallbladder' }]);
+  assert.equal(offSpot.feedback.kind, 'placement');
+  assert.equal(offSpot.outcome.type, 'failed');
+  // Easy mode: the same release just returns the tool, with no penalty.
+  const easy = run([{ type: 'pickup', toolId: 'grasper' }, { type: 'contact', organ: 'portal_vein', label: 'Portal vein' }]);
+  assert.equal(easy.phase, 'ready');
+  assert.equal(easy.attempts, 0);
+  assert.equal(easy.feedback.kind, 'intro');
+});
+
+test('hard: any wrong action fails the stage; only that stage is undone', () => {
+  const start = hardAt('clip-2');
+  const failed = runFrom(start, [{ type: 'pickup', toolId: 'scissors' }, { type: 'place', pointId: 'duct_gb_side' }, { type: 'gesture', complete: true }]);
+  assert.equal(failed.outcome.type, 'failed');
+  assert.equal(failed.feedback.kind, 'tool');
+  assert.match(failed.feedback.message, /^Stage failed\./);
+  assert.deepEqual(failed.effects.map(effect => effect.stageId), ['expose', 'clip-1'], 'earlier stages kept');
+  // A stopped gesture is a hint, not a failure.
+  const stopped = runFrom(start, [{ type: 'pickup', toolId: 'clipper' }, { type: 'place', pointId: 'duct_gb_side' }, { type: 'gesture', complete: false }]);
+  assert.equal(stopped.phase, 'placed');
+  assert.equal(stopped.failures, 0);
+});
+
+test('hard: the jaws must cross the duct within the tolerance', () => {
+  const start = hardAt('clip-1');
+  const placed = runFrom(start, [{ type: 'pickup', toolId: 'clipper' }, { type: 'place', pointId: 'duct_bile_side' }]);
+  const slanted = reduce(exercise, placed, { type: 'gesture', complete: true, angleDeg: 40 });
+  assert.equal(slanted.outcome.type, 'failed');
+  assert.equal(slanted.feedback.kind, 'angle');
+  const straight = reduce(exercise, placed, { type: 'gesture', complete: true, angleDeg: 20 });
+  assert.equal(straight.phase, 'accepted');
+  // Easy mode never checks the angle.
+  const easy = runFrom(run([...solve(exercise.stages[0]), { type: 'continue' }]), [{ type: 'pickup', toolId: 'clipper' }, { type: 'place', pointId: 'duct_bile_side' }, { type: 'gesture', complete: true, angleDeg: 80 }]);
+  assert.equal(easy.phase, 'accepted');
+});
+
+test('hard: leaving the dissection line fails; tracing it passes', () => {
+  const placed = runFrom(hardAt('dissect'), [{ type: 'pickup', toolId: 'hook' }, { type: 'place', pointId: 'bed_start' }]);
+  const strayed = reduce(exercise, placed, { type: 'stray' });
+  assert.equal(strayed.outcome.type, 'failed');
+  assert.equal(strayed.feedback.kind, 'path');
+  assert.equal(reduce(exercise, placed, { type: 'gesture', complete: true, pathDone: false }).feedback.kind, 'path');
+  assert.equal(reduce(exercise, placed, { type: 'gesture', complete: true, pathDone: true }).phase, 'accepted');
+});
+
+test('hard: the gallbladder must leave through the navel port', () => {
+  const grasped = runFrom(hardAt('remove'), [{ type: 'pickup', toolId: 'grasper' }, { type: 'place', pointId: 'gb_body' }, { type: 'gesture', complete: true }]);
+  assert.equal(grasped.phase, 'carrying');
+  const wrong = reduce(exercise, grasped, { type: 'deliver', port: 'Right side port' });
+  assert.equal(wrong.outcome.type, 'failed');
+  assert.equal(wrong.feedback.kind, 'port');
+  const right = reduce(exercise, grasped, { type: 'deliver', port: 'Camera port (navel)' });
+  assert.equal(right.phase, 'accepted');
+  assert.equal(right.effects.at(-1).type, 'extract');
+});
+
+test('hard: the whole exercise can be completed and failures are recorded per stage', () => {
+  let state = hardAt('cut');
+  state = runFrom(state, [{ type: 'pickup', toolId: 'hook' }, { type: 'contact', label: 'Liver' }]); // one failure at "cut"
+  for (const stage of exercise.stages.slice(3)) state = runFrom(state, [...solveHard(stage), { type: 'continue' }]);
+  assert.equal(state.phase, 'complete');
+  assert.deepEqual(state.records.map(record => record.failures), [0, 0, 0, 1, 0, 0]);
+});
+
+test('hard-mode checklist adds the extra checks for each stage', () => {
+  const ids = id => checklist(hardAt(id), exercise.stages.find(stage => stage.id === id)).map(item => item.id);
+  assert.deepEqual(ids('clip-1'), ['tool', 'target', 'placement', 'angle', 'gesture']);
+  assert.deepEqual(ids('dissect'), ['tool', 'target', 'placement', 'path', 'gesture']);
+  assert.deepEqual(ids('remove'), ['tool', 'target', 'placement', 'gesture', 'port']);
+  assert.deepEqual(checklist(createSession(exercise), exercise.stages[1]).map(item => item.id), ['tool', 'target', 'placement', 'gesture'], 'easy unchanged');
 });

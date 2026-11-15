@@ -399,6 +399,13 @@ export async function createViewer({ onChange = () => {}, onHover = () => {} } =
         setCut: (name, amount) => { cutOverride[name] = amount; if (state) apply(state, { camera: false }); },
         resetCamera: () => show(null, { animate: true }),
         viewTarget: () => controls.target.clone(),
+        // Change the practice scene (view, body outline, the gallbladder's lift / bag / port values)
+        // using the same animation as the study steps. `camera: false` keeps the current viewpoint.
+        setScene: (patch, { animate = true, camera: moveCamera = false } = {}) => {
+          customScene = { ...customScene, ...patch };
+          show(null, { animate, camera: moveCamera });
+        },
+        specimen, // the group that carries the freed gallbladder
       }, { exercise, onEvent });
       return practice;
     },

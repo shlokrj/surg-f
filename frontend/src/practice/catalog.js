@@ -36,13 +36,16 @@ export function parsePracticeIntent(text) {
     || (/\b(practi[cs]e|practi[cs]ing|rehearse|simulat\w*|hands[- ]on)\b/.test(lower) && !/\bquestions?\b|\bquiz/.test(lower));
   if (!asked) return null;
   const step = STEP_WORDS.find(([, words]) => words.test(lower));
-  return { step_key: step ? step[0] : null };
+  // "practice clipping on hard", "hard mode", "harder", "challenge me": preselect Hard.
+  const mode = /\bhard(er|est)?\b|\bchallenge\b|\bstrict\b/.test(lower) ? 'hard' : /\beasy\b/.test(lower) ? 'easy' : null;
+  return { step_key: step ? step[0] : null, mode };
 }
 
-// The exercise for a step, or the only/first authored exercise when no step was named.
+// The exercise for a step, or the only/first authored exercise when no step was named. An
+// exercise can cover several steps (the removal stages follow clipping and cutting).
 export function findExercise(stepKey) {
   if (!stepKey) return EXERCISES[0] ?? null;
-  return EXERCISES.find(exercise => exercise.step_key === stepKey) ?? null;
+  return EXERCISES.find(exercise => exercise.step_key === stepKey || exercise.also_step_keys?.includes(stepKey)) ?? null;
 }
 
 export const exerciseById = id => EXERCISES.find(exercise => exercise.exercise_id === id) ?? null;
@@ -83,6 +86,25 @@ export function validateExercise(exercise, modelManifest) {
     if (!ports.has(stage.interaction.entry_port)) problems.push(`${where}: unknown entry port`);
     if (!(stage.interaction.snap_distance_cm > 0 && stage.interaction.preview_distance_cm > stage.interaction.snap_distance_cm)) problems.push(`${where}: snap distances`);
     for (const key of ['tool', 'target', 'placement', 'success']) if (!stage.feedback?.[key]) problems.push(`${where}: missing ${key} feedback`);
+    for (const id of stage.action_point_ids) if (points.get(id)?.path_only) problems.push(`${where}: ${id} is a path point, not a place to start`);
+    if (stage.effect && !['hold', 'clip', 'cut', 'detach', 'extract'].includes(stage.effect.type)) problems.push(`${where}: unknown effect ${stage.effect.type}`);
+    // Hard-mode rules: each needs its feedback, and every reference must resolve.
+    const hard = stage.hard ?? {};
+    if (hard.jaw_tolerance_deg != null) {
+      if (!(hard.jaw_tolerance_deg > 0 && hard.jaw_tolerance_deg < 90)) problems.push(`${where}: jaw tolerance`);
+      if (!stage.feedback.angle) problems.push(`${where}: missing angle feedback`);
+      if (!stage.action_point_ids.every(id => points.get(id)?.axis)) problems.push(`${where}: jaw angle needs an action point with an axis`);
+    }
+    if (hard.path) {
+      if (hard.path.length < 2 || hard.path[0] !== stage.action_point_ids[0]) problems.push(`${where}: the path must start at the stage's action point`);
+      for (const id of hard.path) if (!points.has(id)) problems.push(`${where}: unknown path point ${id}`);
+      if (!(hard.path_tolerance_cm > 0)) problems.push(`${where}: path tolerance`);
+      if (!stage.feedback.path) problems.push(`${where}: missing path feedback`);
+    }
+    if (hard.deliver_to) {
+      if (!ports.has(hard.deliver_to)) problems.push(`${where}: unknown delivery port`);
+      for (const key of ['carry', 'port']) if (!stage.feedback[key]) problems.push(`${where}: missing ${key} feedback`);
+    }
     if (!(stage.reference_end_sec > stage.reference_start_sec)) problems.push(`${where}: reference interval`);
     if (stage.reference_end_sec > exercise.eligible_video.duration_sec) problems.push(`${where}: reference past the end of the video`);
   }

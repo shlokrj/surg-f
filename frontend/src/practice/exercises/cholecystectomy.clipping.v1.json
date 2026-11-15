@@ -3,8 +3,8 @@
   "exercise_id": "cholecystectomy.clipping-cutting.v1",
   "procedure_id": "laparoscopic_cholecystectomy",
   "step_key": "ClippingCutting",
-  "title": "Clipping and cutting the cystic duct",
-  "content_revision": "0.1.0",
+  "title": "Clipping, cutting and removing the gallbladder",
+  "content_revision": "0.2.0",
   "eligible_video": {
     "kind": "demo_asset",
     "asset_id": "VID01-cholec80-25fps-v1",
@@ -28,50 +28,320 @@
     "limitations": [
       "Stage order, tool choice, clip positions and feedback are a draft written by the software team from the VID01 annotations. A qualified surgeon or educator has not reviewed them.",
       "The anatomy is a generic BodyParts3D model, not the patient in the video. The cystic artery is a schematic drawing.",
-      "Placement and gestures are discrete software interactions. They do not model force, tissue response or real instrument handling."
+      "Placement and gestures are discrete software interactions. They do not model force, tissue response or real instrument handling.",
+      "The dissection line, removal stage and Hard-mode rules (jaw angle tolerance, dissection corridor, ports) are also draft content and have not been reviewed."
     ]
   },
-  "objective": "Expose the cystic duct, close it with two clips and divide it between them, in order, on a schematic model.",
-  "reference": { "case_id": "VID01", "start_sec": 670, "end_sec": 877 },
-  "scene": {
-    "view": { "target": [2.0, 0.0, -1.85], "from": [0.18, -0.3, 1], "distance": 14 },
-    "ghost": { "liver": 0.14, "stomach": 0.05, "duodenum": 0.06, "pancreas": 0.06 }
+  "objective": "Expose the cystic duct, close it with two clips, divide it between them, then free the gallbladder from the liver and take it out, in order, on a schematic model.",
+  "reference": {
+    "case_id": "VID01",
+    "start_sec": 670,
+    "end_sec": 1666
   },
-  "legend": ["gallbladder", "cystic_duct", "cystic_artery", "bile_duct", "liver"],
+  "scene": {
+    "view": {
+      "target": [
+        2,
+        0,
+        -1.85
+      ],
+      "from": [
+        0.18,
+        -0.3,
+        1
+      ],
+      "distance": 14
+    },
+    "ghost": {
+      "liver": 0.14,
+      "stomach": 0.05,
+      "duodenum": 0.06,
+      "pancreas": 0.06
+    },
+    "hard_view": {
+      "target": [
+        2,
+        0.6,
+        -1.85
+      ],
+      "from": [
+        0.2,
+        -0.62,
+        0.76
+      ],
+      "distance": 12
+    }
+  },
+  "legend": [
+    "gallbladder",
+    "cystic_duct",
+    "cystic_artery",
+    "bile_duct",
+    "liver"
+  ],
   "tools": [
-    { "id": "grasper", "label": "Grasper", "asset": "procedural:grasper", "gesture": "engage_jaws", "gesture_label": "Close the jaws" },
-    { "id": "hook", "label": "Hook", "asset": "procedural:hook", "gesture": "activate", "gesture_label": "Activate the hook" },
-    { "id": "clipper", "label": "Clip applier", "asset": "procedural:clipper", "gesture": "apply_clip", "gesture_label": "Fire the clip" },
-    { "id": "scissors", "label": "Scissors", "asset": "procedural:scissors", "gesture": "cut", "gesture_label": "Close the blades" }
+    {
+      "id": "grasper",
+      "label": "Grasper",
+      "asset": "procedural:grasper",
+      "gesture": "engage_jaws",
+      "gesture_label": "Close the jaws"
+    },
+    {
+      "id": "hook",
+      "label": "Hook",
+      "asset": "procedural:hook",
+      "gesture": "activate",
+      "gesture_label": "Activate the hook"
+    },
+    {
+      "id": "clipper",
+      "label": "Clip applier",
+      "asset": "procedural:clipper",
+      "gesture": "apply_clip",
+      "gesture_label": "Fire the clip"
+    },
+    {
+      "id": "scissors",
+      "label": "Scissors",
+      "asset": "procedural:scissors",
+      "gesture": "cut",
+      "gesture_label": "Close the blades"
+    }
   ],
   "targets": [
-    { "id": "gallbladder", "label": "Gallbladder", "organ": "gallbladder" },
-    { "id": "cystic_duct", "label": "Cystic duct", "organ": "cystic_duct" },
-    { "id": "cystic_artery", "label": "Cystic artery", "organ": "cystic_artery" },
-    { "id": "bile_duct", "label": "Common bile duct", "organ": "bile_duct" }
+    {
+      "id": "gallbladder",
+      "label": "Gallbladder",
+      "organ": "gallbladder"
+    },
+    {
+      "id": "cystic_duct",
+      "label": "Cystic duct",
+      "organ": "cystic_duct"
+    },
+    {
+      "id": "cystic_artery",
+      "label": "Cystic artery",
+      "organ": "cystic_artery"
+    },
+    {
+      "id": "bile_duct",
+      "label": "Common bile duct",
+      "organ": "bile_duct"
+    }
   ],
   "action_points": [
-    { "id": "gb_neck", "target_id": "gallbladder", "label": "Gallbladder neck", "at": { "between": ["gallbladderNeck", "gallbladderCentre"], "t": 0.3 }, "surface_of": "gallbladder" },
-    { "id": "gb_fundus", "target_id": "gallbladder", "label": "Gallbladder fundus", "at": { "anchor": "gallbladderFundus" }, "surface_of": "gallbladder" },
-    { "id": "duct_bile_side", "target_id": "cystic_duct", "label": "Cystic duct, common bile duct side", "at": { "between": ["cysticDuctAtGallbladder", "cysticDuctAtBileDuct"], "t": 0.78 }, "center_on": "cystic_duct", "axis": ["cysticDuctAtGallbladder", "cysticDuctAtBileDuct"] },
-    { "id": "duct_middle", "target_id": "cystic_duct", "label": "Cystic duct, middle", "at": { "between": ["cysticDuctAtGallbladder", "cysticDuctAtBileDuct"], "t": 0.5 }, "center_on": "cystic_duct", "axis": ["cysticDuctAtGallbladder", "cysticDuctAtBileDuct"] },
-    { "id": "duct_gb_side", "target_id": "cystic_duct", "label": "Cystic duct, gallbladder side", "at": { "between": ["cysticDuctAtGallbladder", "cysticDuctAtBileDuct"], "t": 0.22 }, "center_on": "cystic_duct", "axis": ["cysticDuctAtGallbladder", "cysticDuctAtBileDuct"] },
-    { "id": "artery_middle", "target_id": "cystic_artery", "label": "Cystic artery", "at": { "anchor": "cysticArteryMid" }, "axis": ["cysticArteryStart", "cysticArteryEnd"] },
-    { "id": "bile_duct", "target_id": "bile_duct", "label": "Common bile duct", "at": { "between": ["cysticDuctAtBileDuct", "part:bile_duct"], "t": 0.3 }, "center_on": "bile_duct" }
+    {
+      "id": "gb_neck",
+      "target_id": "gallbladder",
+      "label": "Gallbladder neck",
+      "at": {
+        "between": [
+          "gallbladderNeck",
+          "gallbladderCentre"
+        ],
+        "t": 0.3
+      },
+      "surface_of": "gallbladder"
+    },
+    {
+      "id": "gb_fundus",
+      "target_id": "gallbladder",
+      "label": "Gallbladder fundus",
+      "at": {
+        "anchor": "gallbladderFundus"
+      },
+      "surface_of": "gallbladder"
+    },
+    {
+      "id": "duct_bile_side",
+      "target_id": "cystic_duct",
+      "label": "Cystic duct, common bile duct side",
+      "at": {
+        "between": [
+          "cysticDuctAtGallbladder",
+          "cysticDuctAtBileDuct"
+        ],
+        "t": 0.78
+      },
+      "center_on": "cystic_duct",
+      "axis": [
+        "cysticDuctAtGallbladder",
+        "cysticDuctAtBileDuct"
+      ]
+    },
+    {
+      "id": "duct_middle",
+      "target_id": "cystic_duct",
+      "label": "Cystic duct, middle",
+      "at": {
+        "between": [
+          "cysticDuctAtGallbladder",
+          "cysticDuctAtBileDuct"
+        ],
+        "t": 0.5
+      },
+      "center_on": "cystic_duct",
+      "axis": [
+        "cysticDuctAtGallbladder",
+        "cysticDuctAtBileDuct"
+      ]
+    },
+    {
+      "id": "duct_gb_side",
+      "target_id": "cystic_duct",
+      "label": "Cystic duct, gallbladder side",
+      "at": {
+        "between": [
+          "cysticDuctAtGallbladder",
+          "cysticDuctAtBileDuct"
+        ],
+        "t": 0.22
+      },
+      "center_on": "cystic_duct",
+      "axis": [
+        "cysticDuctAtGallbladder",
+        "cysticDuctAtBileDuct"
+      ]
+    },
+    {
+      "id": "artery_middle",
+      "target_id": "cystic_artery",
+      "label": "Cystic artery",
+      "at": {
+        "anchor": "cysticArteryMid"
+      },
+      "axis": [
+        "cysticArteryStart",
+        "cysticArteryEnd"
+      ]
+    },
+    {
+      "id": "bile_duct",
+      "target_id": "bile_duct",
+      "label": "Common bile duct",
+      "at": {
+        "between": [
+          "cysticDuctAtBileDuct",
+          "part:bile_duct"
+        ],
+        "t": 0.3
+      },
+      "center_on": "bile_duct"
+    },
+    {
+      "id": "bed_start",
+      "target_id": "gallbladder",
+      "label": "Gallbladder at the liver, near the neck",
+      "at": {
+        "between": [
+          "gallbladderNeck",
+          "liverBed"
+        ],
+        "t": 0.12
+      },
+      "surface_of": "gallbladder"
+    },
+    {
+      "id": "bed_1",
+      "target_id": "gallbladder",
+      "label": "Liver bed line",
+      "at": {
+        "between": [
+          "gallbladderNeck",
+          "liverBed"
+        ],
+        "t": 0.38
+      },
+      "surface_of": "gallbladder",
+      "path_only": true
+    },
+    {
+      "id": "bed_2",
+      "target_id": "gallbladder",
+      "label": "Liver bed line",
+      "at": {
+        "between": [
+          "gallbladderNeck",
+          "liverBed"
+        ],
+        "t": 0.64
+      },
+      "surface_of": "gallbladder",
+      "path_only": true
+    },
+    {
+      "id": "bed_3",
+      "target_id": "gallbladder",
+      "label": "Liver bed line",
+      "at": {
+        "between": [
+          "gallbladderNeck",
+          "liverBed"
+        ],
+        "t": 0.9
+      },
+      "surface_of": "gallbladder",
+      "path_only": true
+    },
+    {
+      "id": "bed_end",
+      "target_id": "gallbladder",
+      "label": "Liver bed line, toward the fundus",
+      "at": {
+        "between": [
+          "liverBed",
+          "gallbladderFundus"
+        ],
+        "t": 0.35
+      },
+      "surface_of": "gallbladder",
+      "path_only": true
+    },
+    {
+      "id": "gb_body",
+      "target_id": "gallbladder",
+      "label": "Gallbladder body",
+      "at": {
+        "between": [
+          "gallbladderCentre",
+          "gallbladderFundus"
+        ],
+        "t": 0.35
+      },
+      "surface_of": "gallbladder"
+    }
   ],
   "stages": [
     {
       "id": "expose",
       "title": "Expose the duct",
       "instruction": "Hold the gallbladder by its neck and lift it, so the cystic duct is on view.",
-      "tool_tray_ids": ["grasper", "hook", "clipper", "scissors"],
+      "tool_tray_ids": [
+        "grasper",
+        "hook",
+        "clipper",
+        "scissors"
+      ],
       "expected_tool_id": "grasper",
       "expected_gesture": "engage_jaws",
-      "target_ids": ["gallbladder"],
-      "action_point_ids": ["gb_neck"],
-      "interaction": { "entry_port": "Right upper port", "snap_distance_cm": 0.6, "preview_distance_cm": 1.6, "gesture_control": "hold" },
+      "target_ids": [
+        "gallbladder"
+      ],
+      "action_point_ids": [
+        "gb_neck"
+      ],
+      "interaction": {
+        "entry_port": "Right upper port",
+        "snap_distance_cm": 0.6,
+        "preview_distance_cm": 1.6,
+        "gesture_control": "hold"
+      },
       "success_rule": "placement_then_gesture",
-      "effect": { "type": "hold" },
+      "effect": {
+        "type": "hold"
+      },
       "feedback": {
         "tool": "This instrument does not hold tissue. Look for one with blunt, ridged jaws.",
         "target": "That structure is not the gallbladder. Find the gallbladder itself.",
@@ -87,70 +357,235 @@
       "id": "clip-1",
       "title": "First clip",
       "instruction": "Close the cystic duct with a clip on the side toward the common bile duct, leaving room for a second clip.",
-      "tool_tray_ids": ["grasper", "hook", "clipper", "scissors"],
+      "tool_tray_ids": [
+        "grasper",
+        "hook",
+        "clipper",
+        "scissors"
+      ],
       "expected_tool_id": "clipper",
       "expected_gesture": "apply_clip",
-      "target_ids": ["cystic_duct"],
-      "action_point_ids": ["duct_bile_side"],
-      "interaction": { "entry_port": "Upper middle port", "snap_distance_cm": 0.17, "preview_distance_cm": 0.6, "gesture_control": "hold" },
+      "target_ids": [
+        "cystic_duct"
+      ],
+      "action_point_ids": [
+        "duct_bile_side"
+      ],
+      "interaction": {
+        "entry_port": "Upper middle port",
+        "snap_distance_cm": 0.17,
+        "preview_distance_cm": 0.6,
+        "gesture_control": "hold"
+      },
       "success_rule": "placement_then_gesture",
-      "effect": { "type": "clip" },
+      "effect": {
+        "type": "clip"
+      },
       "feedback": {
         "tool": "This instrument cannot close a duct. Look for the one that carries a small metal clip in its jaws.",
         "target": "That structure is not the cystic duct. This stage closes the cystic duct only.",
         "placement": "That is the cystic duct, but this clip goes on the side toward the common bile duct, with room left for another clip.",
-        "success": "The first clip closes the cystic duct on the common bile duct side."
+        "success": "The first clip closes the cystic duct on the common bile duct side.",
+        "angle": "The clip does not cross the whole duct, so it would not close it. Turn the jaws until they cross the duct at a right angle."
       },
       "rationale": "A clip on the side that stays in the body keeps bile from leaking once the duct is divided.",
       "reference_start_sec": 698,
       "reference_end_sec": 747,
-      "reference_note": "VID01 annotation: clip applier clips the cystic duct, 698 to 747 s."
+      "reference_note": "VID01 annotation: clip applier clips the cystic duct, 698 to 747 s.",
+      "hard": {
+        "jaw_tolerance_deg": 25,
+        "guidance": "Turn the jaws until they cross the duct at a right angle."
+      }
     },
     {
       "id": "clip-2",
       "title": "Second clip",
       "instruction": "Place a second clip on the cystic duct, this time on the gallbladder side.",
-      "tool_tray_ids": ["grasper", "hook", "clipper", "scissors"],
+      "tool_tray_ids": [
+        "grasper",
+        "hook",
+        "clipper",
+        "scissors"
+      ],
       "expected_tool_id": "clipper",
       "expected_gesture": "apply_clip",
-      "target_ids": ["cystic_duct"],
-      "action_point_ids": ["duct_gb_side"],
-      "interaction": { "entry_port": "Upper middle port", "snap_distance_cm": 0.17, "preview_distance_cm": 0.6, "gesture_control": "hold" },
+      "target_ids": [
+        "cystic_duct"
+      ],
+      "action_point_ids": [
+        "duct_gb_side"
+      ],
+      "interaction": {
+        "entry_port": "Upper middle port",
+        "snap_distance_cm": 0.17,
+        "preview_distance_cm": 0.6,
+        "gesture_control": "hold"
+      },
       "success_rule": "placement_then_gesture",
-      "effect": { "type": "clip" },
+      "effect": {
+        "type": "clip"
+      },
       "feedback": {
         "tool": "This instrument cannot close a duct. You need the same kind of instrument as the last stage.",
         "target": "That structure is not the cystic duct. This stage closes the cystic duct only.",
         "placement": "That is the cystic duct, but this clip goes on the gallbladder side, leaving a gap after the first clip.",
-        "success": "The duct is now closed on both sides, with a gap between the clips."
+        "success": "The duct is now closed on both sides, with a gap between the clips.",
+        "angle": "The clip does not cross the whole duct, so it would not close it. Turn the jaws until they cross the duct at a right angle."
       },
       "rationale": "A clip on the gallbladder side stops its contents spilling when the duct is divided, and leaves a gap to cut in.",
       "reference_start_sec": 815,
       "reference_end_sec": 844,
-      "reference_note": "VID01 annotation: clip applier clips the cystic duct, 815 to 844 s."
+      "reference_note": "VID01 annotation: clip applier clips the cystic duct, 815 to 844 s.",
+      "hard": {
+        "jaw_tolerance_deg": 25,
+        "guidance": "Turn the jaws until they cross the duct at a right angle."
+      }
     },
     {
       "id": "cut",
       "title": "Divide the duct",
       "instruction": "Divide the cystic duct in the gap between the two clips.",
-      "tool_tray_ids": ["grasper", "hook", "clipper", "scissors"],
+      "tool_tray_ids": [
+        "grasper",
+        "hook",
+        "clipper",
+        "scissors"
+      ],
       "expected_tool_id": "scissors",
       "expected_gesture": "cut",
-      "target_ids": ["cystic_duct"],
-      "action_point_ids": ["duct_middle"],
-      "interaction": { "entry_port": "Upper middle port", "snap_distance_cm": 0.17, "preview_distance_cm": 0.6, "gesture_control": "hold" },
+      "target_ids": [
+        "cystic_duct"
+      ],
+      "action_point_ids": [
+        "duct_middle"
+      ],
+      "interaction": {
+        "entry_port": "Upper middle port",
+        "snap_distance_cm": 0.17,
+        "preview_distance_cm": 0.6,
+        "gesture_control": "hold"
+      },
       "success_rule": "placement_then_gesture",
-      "effect": { "type": "cut", "organ": "cystic_duct" },
+      "effect": {
+        "type": "cut",
+        "organ": "cystic_duct"
+      },
       "feedback": {
         "tool": "This instrument does not divide a clipped duct. Look for one with two fine blades.",
         "target": "That structure is not the cystic duct. Only the clipped duct is divided in this stage.",
         "placement": "That is the cystic duct, but the cut goes in the gap between the two clips, not through or beside one.",
-        "success": "The duct is divided between the clips, so each end stays closed."
+        "success": "The duct is divided between the clips, so each end stays closed.",
+        "angle": "The blades do not cross the duct, so they would not divide it cleanly between the clips."
       },
       "rationale": "Cutting between the clips leaves a closed end on both the body side and the gallbladder side.",
       "reference_start_sec": 860,
       "reference_end_sec": 877,
-      "reference_note": "VID01 annotation: scissors cut the cystic duct, 860 to 877 s."
+      "reference_note": "VID01 annotation: scissors cut the cystic duct, 860 to 877 s.",
+      "hard": {
+        "jaw_tolerance_deg": 25,
+        "guidance": "Turn the jaws until they cross the duct at a right angle."
+      }
+    },
+    {
+      "id": "dissect",
+      "title": "Free the gallbladder",
+      "instruction": "Free the gallbladder from the liver with the hook, working along the line where they meet.",
+      "tool_tray_ids": [
+        "grasper",
+        "hook",
+        "clipper",
+        "scissors"
+      ],
+      "expected_tool_id": "hook",
+      "expected_gesture": "activate",
+      "target_ids": [
+        "gallbladder"
+      ],
+      "action_point_ids": [
+        "bed_start"
+      ],
+      "interaction": {
+        "entry_port": "Upper middle port",
+        "snap_distance_cm": 0.5,
+        "preview_distance_cm": 1.4,
+        "gesture_control": "hold"
+      },
+      "success_rule": "placement_then_gesture",
+      "effect": {
+        "type": "detach"
+      },
+      "hard": {
+        "path": [
+          "bed_start",
+          "bed_1",
+          "bed_2",
+          "bed_3",
+          "bed_end"
+        ],
+        "path_tolerance_cm": 0.4,
+        "guidance": "Hold to switch the hook on and drag along the faint line without leaving it."
+      },
+      "feedback": {
+        "tool": "This instrument cannot free the gallbladder from the liver. Look for the one with an L-shaped tip that uses heat.",
+        "target": "That structure is not the gallbladder. Work on the gallbladder where it meets the liver.",
+        "placement": "That is the gallbladder, but start where it meets the liver, near the neck.",
+        "path": "The hook left the dissection line, toward the liver or the bile duct. Stay on the line where the gallbladder meets the liver.",
+        "success": "The gallbladder is free of the liver."
+      },
+      "rationale": "Staying in the plane between the gallbladder and the liver frees it without injuring the liver or the bile duct.",
+      "reference_start_sec": 894,
+      "reference_end_sec": 921,
+      "reference_note": "VID01 annotation: hook dissects the gallbladder, 894 to 921 s."
+    },
+    {
+      "id": "remove",
+      "title": "Take it out",
+      "instruction": "Grasp the freed gallbladder, put it in the retrieval bag and take it out through the navel port.",
+      "tool_tray_ids": [
+        "grasper",
+        "hook",
+        "clipper",
+        "scissors"
+      ],
+      "expected_tool_id": "grasper",
+      "expected_gesture": "engage_jaws",
+      "target_ids": [
+        "gallbladder"
+      ],
+      "action_point_ids": [
+        "gb_body"
+      ],
+      "interaction": {
+        "entry_port": "Upper middle port",
+        "snap_distance_cm": 0.7,
+        "preview_distance_cm": 1.8,
+        "gesture_control": "hold"
+      },
+      "success_rule": "placement_then_gesture",
+      "effect": {
+        "type": "extract"
+      },
+      "hard": {
+        "deliver_to": "Camera port (navel)",
+        "guidance": "After grasping, drag it to the port at the navel."
+      },
+      "feedback": {
+        "tool": "This instrument cannot hold the gallbladder. Look for one with blunt, ridged jaws.",
+        "target": "That structure is not the gallbladder. Grasp the gallbladder itself.",
+        "placement": "That is the gallbladder, but grasp its body, where it holds firmly.",
+        "carry": "Grasped. Now drag the gallbladder out through the right port.",
+        "port": "That is not the port the gallbladder comes out through. It is removed through the navel port, the largest opening.",
+        "success": "The gallbladder is bagged and out through the navel port."
+      },
+      "rationale": "Bagging the gallbladder before removal stops bile or stones spilling, and the navel port is the easiest opening to widen.",
+      "reference_start_sec": 1658,
+      "reference_end_sec": 1666,
+      "reference_note": "VID01 annotation: grasper grasps the specimen bag, 1658 to 1666 s (packing at 1512 to 1532 s)."
     }
+  ],
+  "also_step_keys": [
+    "GallbladderDissection",
+    "GallbladderPackaging",
+    "GallbladderRetraction"
   ]
 }

@@ -61,17 +61,114 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
     const axis = authored.axis ? anchorAt(authored.axis[1]).sub(anchorAt(authored.axis[0])).normalize() : null;
     if (authored.center_on) position = centreOn(authored.center_on, position, axis);
     if (authored.surface_of) position = onSurface(authored.surface_of, position);
-    points.set(authored.id, { id: authored.id, label: authored.label, position, axis });
+    points.set(authored.id, { id: authored.id, label: authored.label, position, axis, pathOnly: Boolean(authored.path_only) });
   }
-  const pointOrder = [...points.keys()];
+  // Path points (the dissection line) are not places a tool can be put down on their own.
+  const snapPoints = () => [...points.values()].filter(point => !point.pathOnly);
+  const pointOrder = snapPoints().map(point => point.id);
   const ports = new Map(manifest.ports.map(port => [port.name, vec(port.at)]));
+  // A gallbladder-side prop (the grasper on the neck, the clip on the gallbladder side of the duct)
+  // travels with the gallbladder when it is freed and removed.
+  const gbEnd = anchorAt('cysticDuctAtGallbladder'), bdEnd = anchorAt('cysticDuctAtBileDuct');
+  const onGallbladderSide = point => point.position.distanceTo(gbEnd) < point.position.distanceTo(bdEnd) || point.id.startsWith('gb_');
+
+  // --- mode and the current stage's hard-mode rules ---------------------------------------
+  let mode = 'easy';
+  let rules = {}; // the stage's `hard` block in hard mode, {} otherwise
+  let roll = 0; // hard mode: jaw roll (degrees) of the placed tool, 0 = crossing the structure
+  let trace = null; // hard mode dissection: { progress, pointerId|null }
+  let carrying = false; // hard mode removal: dragging the grasped gallbladder to a port
+  let introSkip = false;
+
+  // A faint gold line along the structure while the jaws are being aimed (hard mode).
+  const guideMaterial = new THREE.LineBasicMaterial({ color: '#f2b705', transparent: true, opacity: 0.85, depthTest: false });
+  const guide = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), guideMaterial);
+  guide.renderOrder = 9;
+  guide.visible = false;
+  root.add(guide);
+  // The dissection line (hard mode): faint, with the traced part drawn darker as it is burned through.
+  const pathLineMaterial = new THREE.LineDashedMaterial({ color: '#fff3c4', dashSize: 0.12, gapSize: 0.08, transparent: true, opacity: 0.8, depthTest: false });
+  const pathLine = new THREE.Line(new THREE.BufferGeometry(), pathLineMaterial);
+  const burnMaterial = new THREE.LineBasicMaterial({ color: '#3a1d12', transparent: true, opacity: 0.95, depthTest: false });
+  const burnLine = new THREE.Line(new THREE.BufferGeometry(), burnMaterial);
+  pathLine.renderOrder = 9; burnLine.renderOrder = 10;
+  pathLine.visible = false; burnLine.visible = false;
+  root.add(pathLine, burnLine);
+  let path = null; // { points: [Vector3], lengths: [cumulative], total }
+  function buildPath(ids) {
+    const list = ids.map(id => points.get(id).position.clone());
+    const lengths = [0];
+    for (let i = 1; i < list.length; i += 1) lengths.push(lengths[i - 1] + list[i].distanceTo(list[i - 1]));
+    return { points: list, lengths, total: lengths.at(-1) };
+  }
+  const pathAt = s => {
+    const target = Math.max(0, Math.min(1, s)) * path.total;
+    let i = 1;
+    while (i < path.lengths.length - 1 && path.lengths[i] < target) i += 1;
+    const span = path.lengths[i] - path.lengths[i - 1] || 1;
+    return path.points[i - 1].clone().lerp(path.points[i], (target - path.lengths[i - 1]) / span);
+  };
+  function drawBurn() {
+    if (!path || !trace) { burnLine.visible = false; return; }
+    const samples = [];
+    for (let k = 0; k <= 40; k += 1) { const s = (k / 40) * trace.progress; samples.push(pathAt(s)); }
+    burnLine.geometry.setFromPoints(samples);
+    burnLine.visible = trace.progress > 0;
+  }
+
+  // Ports glow while the gallbladder is being carried out (hard mode).
+  const portRings = new Map();
+  for (const [name, at] of ports) {
+    const material = new THREE.MeshBasicMaterial({ color: NEUTRAL, transparent: true, opacity: 0, depthTest: false, depthWrite: false });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(1.1, 1.6, 40), material);
+    ring.position.copy(at);
+    ring.renderOrder = 9;
+    ring.visible = false;
+    root.add(ring);
+    portRings.set(name, ring);
+  }
+
+  // --- the operating room (hard mode opening shot) --------------------------------------------
+  // Built in the anatomy's own coordinates: the patient lies face up, so "up" in the room is +z
+  // (the front of the body) and the table is under the back. The anatomy never moves.
+  const room = new THREE.Group();
+  room.visible = false;
+  {
+    const body = organs.get('body_outline').part;
+    const back = body.center[2] - body.size[2] / 2; // z of the patient's back
+    const headY = body.center[1] + body.size[1] / 2, feetY = body.center[1] - body.size[1] / 2;
+    const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.05, ...extra });
+    const table = new THREE.Mesh(new THREE.BoxGeometry(58, headY - feetY + 24, 5), mat('#3b4a4f', { metalness: 0.35, roughness: 0.4 }));
+    table.position.set(body.center[0], (headY + feetY) / 2, back - 2.6);
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(54, headY - feetY + 18, 3), mat('#1f2c33'));
+    pad.position.set(body.center[0], (headY + feetY) / 2, back - 0.6);
+    const base = new THREE.Mesh(new THREE.BoxGeometry(22, 40, 72), mat('#56656a', { metalness: 0.4, roughness: 0.45 }));
+    base.position.set(body.center[0], (headY + feetY) / 2, back - 41);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), mat('#c9d4d2'));
+    floor.position.set(body.center[0], body.center[1], back - 77);
+    // Drapes over the chest and the legs, leaving the abdomen open around the ports. Each lies just
+    // above the highest point of the body in its region (measured from the body model itself).
+    const bodyVertices = worldVertices('body_outline');
+    const drape = (fromY, toY) => {
+      const low = Math.min(fromY, toY), high = Math.max(fromY, toY);
+      const top = bodyVertices.reduce((max, v) => (v.y >= low && v.y <= high && Math.abs(v.x - body.center[0]) < 22 ? Math.max(max, v.z) : max), back + 10);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(66, high - low, 1.2), mat('#2c7f8c', { roughness: 0.9 }));
+      mesh.position.set(body.center[0], (low + high) / 2, top + 0.8);
+      return mesh;
+    };
+    const lamp = new THREE.Mesh(new THREE.CylinderGeometry(22, 26, 6, 40), mat('#eef3f2', { emissive: '#ffffff', emissiveIntensity: 0.6 }));
+    lamp.rotation.x = Math.PI / 2;
+    lamp.position.set(body.center[0] + 10, -2, 150);
+    room.add(table, pad, base, floor, drape(10, headY + 4), drape(feetY - 4, -22), lamp);
+  }
+  root.add(room);
 
   // --- halos: faint rings at every action point while a tool is held ---------------------
 
   const haloGroup = new THREE.Group();
   root.add(haloGroup);
   const halos = new Map();
-  for (const point of points.values()) {
+  for (const point of snapPoints()) {
     const material = new THREE.MeshBasicMaterial({ color: NEUTRAL, transparent: true, opacity: 0, depthTest: false, depthWrite: false });
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.27, 32), material);
     ring.position.copy(point.position);
@@ -204,6 +301,22 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
     group.quaternion.copy(pose.quaternion);
     entry.tool.setLength(pose.length);
   }
+  // The pose turned by the current jaw roll around the tool's own axis.
+  const ROLL_AXIS = new THREE.Vector3(0, 0, 1);
+  function rolled(pose) {
+    if (!roll) return pose;
+    return { ...pose, quaternion: pose.quaternion.clone().multiply(new THREE.Quaternion().setFromAxisAngle(ROLL_AXIS, (roll * Math.PI) / 180)) };
+  }
+  // How far the jaws are from crossing the structure at a right angle, 0 to 90 degrees.
+  // The jaws are symmetric, so 180 degrees of roll looks the same.
+  const angleError = () => { const r = ((roll % 180) + 180) % 180; return Math.min(r, 180 - r); };
+  const aiming = () => Boolean(placed && rules.jaw_tolerance_deg != null && points.get(placed)?.axis);
+  function applyRoll() {
+    if (!held || !placed) return;
+    const point = points.get(placed);
+    setPose(held, rolled(poseAt(point.position, point.axis)));
+    requestDraw();
+  }
 
   // --- animation helper ---------------------------------------------------------------------
 
@@ -260,10 +373,29 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
     if (raycaster.intersectObject(held.tool.group, true).length) return true;
     return raycaster.ray.distanceToPoint(held.tool.group.position) < 0.45;
   }
+  // The solid structure under the pointer, if any. Organs faded to see through (the liver in this
+  // view) do not count: what looks solid is what a tool can touch.
+  function tissueAt(event) {
+    setPointer(event);
+    raycaster.setFromCamera(pointer, camera);
+    const meshes = [...organs.values()]
+      .filter(entry => entry.part.group !== 'outline')
+      .flatMap(entry => entry.meshes.filter(mesh => mesh.material.visible && mesh.material.opacity > 0.3));
+    const name = raycaster.intersectObjects(meshes, false)[0]?.object.userData.organ;
+    return name ? { organ: name, label: organs.get(name).part.label } : null;
+  }
+  // A tool let go away from any target: on the tray or in empty space it simply goes back; on
+  // tissue it is reported as a contact (the workspace decides: easy returns it, hard fails).
+  function releaseAway(event) {
+    const tissue = trayToolAt(event) ? null : tissueAt(event);
+    if (tissue) onEvent({ type: 'contact', ...tissue });
+    else onEvent({ type: 'request-cancel' });
+  }
+
   // Nearest action point to the pointer ray, in centimetres from the ray.
   function nearestPoint() {
     let best = null;
-    for (const point of points.values()) {
+    for (const point of snapPoints()) {
       const distance = raycaster.ray.distanceToPoint(point.position);
       if (!best || distance < best.distance) best = { id: point.id, distance };
     }
@@ -332,6 +464,25 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
   listen(element, 'pointerdown', event => {
     if (busy || event.button > 0) return;
     const fromTray = trayToolAt(event);
+    // Hard mode, removal: drag the grasped gallbladder toward a port.
+    if (carrying && !fromTray) {
+      controls.enabled = false;
+      canvas.setPointerCapture?.(event.pointerId);
+      drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false, carry: true };
+      carryMove(event);
+      event.stopPropagation();
+      return;
+    }
+    // Hard mode, dissection: press on the hook to switch it on, then drag along the line.
+    if (placed && trace && heldToolHit(event)) {
+      controls.enabled = false;
+      canvas.setPointerCapture?.(event.pointerId);
+      trace.pointerId = event.pointerId;
+      held.tool.setClosed(1); // the hook's tip glows while it is on
+      requestDraw();
+      event.stopPropagation();
+      return;
+    }
     if (placed && heldToolHit(event)) {
       // Press and hold the placed instrument to perform its gesture.
       controls.enabled = false;
@@ -362,6 +513,8 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
   }, { capture: true });
 
   listen(element, 'pointermove', event => {
+    if (trace?.pointerId === event.pointerId) { traceMove(event); return; }
+    if (drag?.carry && event.pointerId === drag.pointerId) { carryMove(event); return; }
     if (!held || placed || busy) return;
     if (drag && event.pointerId === drag.pointerId) {
       if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > TAP_PX) drag.moved = true;
@@ -370,6 +523,24 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
   });
 
   function endPointer(event, cancelled = false) {
+    if (trace?.pointerId === event.pointerId) {
+      // Letting go switches the hook off; the traced part stays and the next press continues it.
+      trace.pointerId = null;
+      controls.enabled = true;
+      held?.tool.setClosed(0);
+      requestDraw();
+      return;
+    }
+    if (drag?.carry && event.pointerId === drag.pointerId) {
+      drag = null;
+      controls.enabled = true;
+      const port = carryPort;
+      carryPort = null;
+      if (port && !cancelled) { onEvent({ type: 'deliver', port }); return; }
+      // Let go away from a port: nothing happens; the grasper goes back to the gallbladder.
+      settleCarry();
+      return;
+    }
     if (gestureHold && event.pointerId === gestureHold.pointerId) {
       const { progress } = gestureHold;
       gestureHold = null;
@@ -388,9 +559,9 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
     if (cancelled) { onEvent({ type: 'request-cancel' }); return; }
     if (!moved && !refollow) { follow = true; return; } // a tap: the tool follows the pointer
     if (near?.ready) { follow = false; onEvent({ type: 'request-place', pointId: near.id }); return; }
-    if (!moved && refollow) { follow = false; onEvent({ type: 'request-cancel' }); return; } // tapped off-target
+    // Tapped or released off-target: back to the tray, or a contact if it landed on tissue.
     follow = false;
-    onEvent({ type: 'request-cancel' }); // released outside a snap zone: back to the tray, no penalty
+    releaseAway(event);
   }
   listen(element, 'pointerup', event => endPointer(event));
   listen(element, 'pointercancel', event => endPointer(event, true));
@@ -405,25 +576,116 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
     if (progress < 1) { requestAnimationFrame(holdFrame); return; }
     gestureHold = null;
     controls.enabled = true;
-    onEvent({ type: 'gesture', complete: true });
+    onEvent({ type: 'gesture', complete: true, angleDeg: angleError() });
   }
 
+  // --- hard mode: dissection trace -------------------------------------------------------------
+
+  // Where along the dissection line the pointer is (0 to 1), and how far from it in centimetres.
+  function nearestOnPath() {
+    let best = { distance: Infinity, s: 0 };
+    for (let k = 0; k <= 120; k += 1) {
+      const s = k / 120;
+      const distance = raycaster.ray.distanceToPoint(pathAt(s));
+      if (distance < best.distance) best = { distance, s };
+    }
+    return best;
+  }
+  function traceMove(event) {
+    if (!held || !trace || !path) return;
+    setPointer(event);
+    raycaster.setFromCamera(pointer, camera);
+    const { distance, s } = nearestOnPath();
+    if (distance > rules.path_tolerance_cm) { endTrace(); onEvent({ type: 'stray' }); return; }
+    if (s > trace.progress + 0.2) return; // no jumping ahead: work along the line
+    advanceTrace(s);
+  }
+  function advanceTrace(s) {
+    trace.progress = Math.max(trace.progress, Math.min(1, s));
+    setPose(held, poseAt(pathAt(trace.progress)));
+    drawBurn();
+    onEvent({ type: 'gesture-progress', value: trace.progress });
+    requestDraw();
+    if (trace.progress >= 0.97) { endTrace(); onEvent({ type: 'gesture', complete: true, pathDone: true }); }
+  }
+  function endTrace() {
+    if (trace) trace.pointerId = null;
+    controls.enabled = true;
+    held?.tool.setClosed(0);
+  }
+
+  // --- hard mode: carrying the gallbladder to a port -----------------------------------------------
+
+  let carryPort = null; // the port the pointer is over while carrying
+  function carryMove(event) {
+    if (!held) return;
+    if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > TAP_PX) drag.moved = true;
+    setPointer(event);
+    raycaster.setFromCamera(pointer, camera);
+    // The grasper's tip follows the pointer across the abdomen.
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), ctx.viewTarget());
+    const tip = raycaster.ray.intersectPlane(plane, new THREE.Vector3()) ?? ctx.viewTarget();
+    setPose(held, poseAt(tip));
+    // A port within 60 px of the pointer is ready to take it.
+    const box = canvas.getBoundingClientRect();
+    carryPort = null;
+    let best = 60;
+    for (const [name, at] of ports) {
+      const p = at.clone().project(camera);
+      const d = Math.hypot(box.left + (p.x + 1) / 2 * box.width - event.clientX, box.top + (1 - p.y) / 2 * box.height - event.clientY);
+      if (d < best) { best = d; carryPort = name; }
+    }
+    for (const [name, ring] of portRings) {
+      ring.material.color.set(name === carryPort ? TEAL : NEUTRAL);
+      ring.material.opacity = name === carryPort ? 0.95 : 0.55;
+      ring.scale.setScalar(name === carryPort ? 1.25 : 1);
+    }
+    onEvent({ type: 'near', pointId: null, label: carryPort ?? '', ready: Boolean(carryPort) });
+    requestDraw();
+  }
+  function settleCarry() {
+    if (!held || !placed) return;
+    const point = points.get(placed);
+    setPose(held, poseAt(point.position, point.axis));
+    for (const ring of portRings.values()) { ring.material.color.set(NEUTRAL); ring.material.opacity = 0.55; ring.scale.setScalar(1); }
+    requestDraw();
+  }
+
+  // Hard mode, aiming: the scroll wheel turns the placed jaws (instead of zooming).
+  listen(element, 'wheel', event => {
+    if (!aiming() || busy) return;
+    event.preventDefault();
+    event.stopPropagation();
+    roll += Math.sign(event.deltaY) * 6;
+    applyRoll();
+  }, { capture: true, passive: false });
+
   ctx.setHoverHook(event => {
-    if (gestureHold || drag) return { cursor: 'grabbing', label: '' };
-    if (placed && heldToolHit(event)) return { cursor: 'pointer', label: `Press and hold: ${held.gestureLabel.toLowerCase()}` };
+    if (gestureHold || drag || trace?.pointerId != null) return { cursor: 'grabbing', label: '' };
+    if (carrying) return { cursor: 'grab', label: 'Drag it out through a port' };
+    if (placed && heldToolHit(event)) {
+      const hint = trace ? 'Press and hold to switch the hook on, then drag along the line' : aiming() ? 'Scroll to turn the jaws, then press and hold' : `Press and hold: ${held.gestureLabel.toLowerCase()}`;
+      return { cursor: 'pointer', label: hint };
+    }
     const entry = trayToolAt(event);
     if (entry) {
       onEvent({ type: 'focus-tool', toolId: entry.id });
       return { cursor: 'grab', label: entry.label };
     }
-    if (held && !placed) return { cursor: 'grabbing', label: near ? points.get(near.id).label : '' };
+    // Hard mode names no structures: identifying the anatomy is part of the test.
+    if (held && !placed) return { cursor: 'grabbing', label: mode === 'hard' ? '' : near ? points.get(near.id).label : '' };
+    if (mode === 'hard') return { cursor: 'grab', label: '' };
     return null;
   });
 
   // --- props from accepted actions ------------------------------------------------------------
 
-  const props = new Map(); // stageId -> { object, dispose }
+  const props = new Map(); // stageId -> { object, type, dispose }
   let cutAmount = 0;
+  // Props on the gallbladder's side ride in the viewer's specimen group, which carries the freed
+  // gallbladder away. The group is at rest (no lift) whenever props are made, so its local
+  // coordinates are the model's.
+  const holder = point => (onGallbladderSide(point) && ctx.specimen) || root;
   function makeProp(effect) {
     const point = points.get(effect.pointId);
     const pose = poseAt(point.position, point.axis);
@@ -432,8 +694,8 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
       clip.position.copy(pose.position);
       clip.quaternion.copy(pose.quaternion);
       clip.scale.set(1, 0.45, 1);
-      root.add(clip);
-      return { object: clip, dispose: () => { clip.traverse(o => o.geometry?.dispose()); clip.userData.material.dispose(); clip.removeFromParent(); } };
+      holder(point).add(clip);
+      return { object: clip, type: 'clip', dispose: () => { clip.traverse(o => o.geometry?.dispose()); clip.userData.material.dispose(); clip.removeFromParent(); } };
     }
     if (effect.type === 'hold') {
       const entry = tools.get(effect.toolId);
@@ -442,16 +704,36 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
       copy.group.quaternion.copy(pose.quaternion);
       copy.setLength(pose.length);
       copy.setClosed(1);
-      root.add(copy.group);
-      return { object: copy.group, dispose: () => { copy.dispose(); copy.group.removeFromParent(); } };
+      holder(point).add(copy.group);
+      return { object: copy.group, type: 'hold', dispose: () => { copy.dispose(); copy.group.removeFromParent(); } };
     }
-    return { object: null, dispose: () => {} };
+    return { object: null, type: effect.type, dispose: () => {} };
   }
+  // Scene values for freeing and removing the gallbladder; the viewer already animates these
+  // (they are the study model's dissection, packaging and removal pictures).
+  // (The study's orange "attachment" ring is left off: it is sized for the study's far camera.)
+  function removalScene(effects) {
+    if (effects.some(effect => effect.type === 'extract')) return { bed: 0, bag: 1, lift: 3.4, toPort: 0.92, specimen: 0.8 };
+    if (effects.some(effect => effect.type === 'detach')) return { bed: 0, bag: 0, lift: 2.2, toPort: 0, specimen: 1 };
+    return { bed: 0, bag: 0, lift: 0, toPort: 0, specimen: 1 };
+  }
+  let removal = removalScene([]);
   // Make the scene show exactly these accepted effects (used after accept, reset and restart).
   async function syncEffects(effects, { animate: animated = true } = {}) {
     const wanted = new Map(effects.map(effect => [effect.stageId, effect]));
     for (const [stageId, prop] of props) if (!wanted.has(stageId)) { prop.dispose(); props.delete(stageId); }
-    for (const effect of effects) if (!props.has(effect.stageId) && effect.type !== 'cut') props.set(effect.stageId, makeProp(effect));
+    // Props are made at rest, before the gallbladder moves.
+    const nextRemoval = removalScene(effects);
+    if (JSON.stringify(nextRemoval) !== JSON.stringify(removal) && nextRemoval.lift < removal.lift) { removal = nextRemoval; ctx.setScene(removal, { animate: false }); }
+    for (const effect of effects) if (!props.has(effect.stageId) && !['cut', 'detach', 'extract'].includes(effect.type)) props.set(effect.stageId, makeProp(effect));
+    // Once it is out, the grasper that held the neck has let go.
+    const out = effects.some(effect => effect.type === 'extract');
+    for (const prop of props.values()) if (prop.type === 'hold' && prop.object) prop.object.visible = !out;
+    if (JSON.stringify(nextRemoval) !== JSON.stringify(removal)) {
+      removal = nextRemoval;
+      ctx.setScene(removal, { animate: animated });
+      if (animated && !ctx.reducedMotion()) await new Promise(resolve => setTimeout(resolve, 750));
+    }
     const cut = effects.find(effect => effect.type === 'cut');
     const goal = cut ? 1 : 0;
     if (goal !== cutAmount) {
@@ -465,7 +747,21 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
 
   // --- the interface the workspace uses -----------------------------------------------------------
 
+  // Hard-mode helpers for the current attempt: the aim guide, the dissection line, the port halos.
+  function clearAttempt() {
+    roll = 0;
+    trace = null;
+    carrying = false;
+    carryPort = null;
+    guide.visible = false;
+    pathLine.visible = false;
+    burnLine.visible = false;
+    for (const ring of portRings.values()) ring.visible = false;
+  }
+
   async function returnToTray({ reject = false } = {}) {
+    if (carrying) trayScene.visible = true;
+    clearAttempt();
     const entry = held;
     if (!entry) return;
     held = null; placed = null; follow = false; drag = null; gestureHold = null;
@@ -483,9 +779,27 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
     requestDraw();
   }
 
+  // The inside (camera) view for this mode, and a wide view that shows all four ports.
+  const easyView = exercise.scene.view;
+  const hardView = exercise.scene.hard_view ?? exercise.scene.view;
+  const PORTS_VIEW = { target: [0.5, -2, 0], from: [0.12, -0.1, 1], distance: 46 };
+  let insideView = easyView;
+
   const api = {
+    // Easy keeps the original look; hard uses the laparoscope view and a darker instrument stand.
+    setMode(next) {
+      mode = next === 'hard' ? 'hard' : 'easy';
+      insideView = mode === 'hard' ? hardView : easyView;
+      trayBackMaterial.color.set(mode === 'hard' ? '#26302f' : '#ffffff');
+      trayBackMaterial.opacity = mode === 'hard' ? 0.55 : 0.72;
+      ctx.setScene({ view: insideView, outline: mode === 'hard' ? 0 : 0.1 }, { animate: false, camera: true });
+      requestDraw();
+    },
+    get mode() { return mode; },
     // Configure the tray and constraints for one stage.
     setStage(stage) {
+      rules = mode === 'hard' ? stage.hard ?? {} : {};
+      clearAttempt();
       trayIds = [...stage.tool_tray_ids];
       entryPort = ports.get(stage.interaction.entry_port) ?? entryPort;
       stageInfo = { snap: stage.interaction.snap_distance_cm, preview: stage.interaction.preview_distance_cm };
@@ -521,7 +835,9 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
       if (!held || !point) return;
       placed = pointId;
       follow = false;
-      const goal = poseAt(point.position, point.axis);
+      // Hard mode, aiming: the jaws start turned away, so the resident must line them up.
+      if (aiming()) roll = 55;
+      const goal = rolled(poseAt(point.position, point.axis));
       const from = { position: held.tool.group.position.clone(), quaternion: held.tool.group.quaternion.clone(), length: held.tool.length };
       for (const entry of tools.values()) entry.ghost.group.visible = false;
       const entry = held;
@@ -530,14 +846,64 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
         entry.tool.group.quaternion.slerpQuaternions(from.quaternion, goal.quaternion, k);
         entry.tool.setLength(from.length + (goal.length - from.length) * k);
       });
+      if (aiming()) {
+        // A gold line along the structure shows which way it runs.
+        guide.geometry.setFromPoints([point.position.clone().addScaledVector(point.axis, -0.8), point.position.clone().addScaledVector(point.axis, 0.8)]);
+        guide.visible = true;
+      }
+      if (rules.path && pointId === rules.path[0]) {
+        // Hard mode, dissection: show the line to follow; the hook burns along it as it moves.
+        path = buildPath(rules.path);
+        const samples = [];
+        for (let k = 0; k <= 60; k += 1) samples.push(pathAt(k / 60));
+        pathLine.geometry.setFromPoints(samples);
+        pathLine.computeLineDistances();
+        pathLine.visible = true;
+        trace = { progress: 0, pointerId: null };
+        drawBurn();
+      }
       showPreview({ id: pointId, distance: 0, ready: true });
+      requestDraw();
     },
+    // Hard mode, aiming from the keyboard (Q / E).
+    rotateJaws(degrees) {
+      if (!aiming() || busy) return null;
+      roll += degrees;
+      applyRoll();
+      return angleError();
+    },
+    // Hard mode, dissection from the keyboard: each press burns a little further along the line.
+    traceStep() {
+      if (!placed || !trace || busy) return null;
+      advanceTrace(trace.progress + 0.2);
+      return trace?.progress ?? 1;
+    },
+    get tracing() { return Boolean(trace); },
+    get portNames() { return [...ports.keys()]; },
+    get aiming() { return aiming(); },
     // Button or keyboard: animate the gesture, then report it as complete.
     async runGesture() {
       if (!held || !placed || busy) return;
+      if (trace) { api.traceStep(); return; }
       const entry = held;
       await animate(GESTURE_MS, k => entry.tool.setClosed(k));
-      onEvent({ type: 'gesture', complete: true });
+      onEvent({ type: 'gesture', complete: true, angleDeg: angleError() });
+    },
+    // Hard mode, removal: the gallbladder is grasped; pull back so all four ports are on view.
+    startCarry() {
+      carrying = true;
+      guide.visible = false;
+      trayScene.visible = false; // no instruments are needed; one port sits where the tray would be
+      for (const ring of portRings.values()) { ring.visible = true; ring.material.opacity = 0.55; ring.material.color.set(NEUTRAL); ring.scale.setScalar(1); }
+      ctx.setScene({ view: PORTS_VIEW, outline: 0.22 }, { animate: true, camera: true });
+      requestDraw();
+    },
+    // Back to the inside view (after a removal attempt, or when a stage starts again).
+    endCarry() {
+      carrying = false;
+      trayScene.visible = true;
+      for (const ring of portRings.values()) ring.visible = false;
+      ctx.setScene({ view: insideView, outline: mode === 'hard' ? 0 : 0.1 }, { animate: true, camera: true });
     },
     // After an accepted action: keep the result on the model and put the instrument back.
     async accept(effects) {
@@ -566,6 +932,7 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
     },
     // Reset everything to a stage's start with these effects already applied, without animation.
     async resetTo(effects) {
+      clearAttempt();
       if (held) { const entry = held; held = null; placed = null; entry.tool.setTint(NEUTRAL, 0); if (entry.trayPose) placeInTray(entry); }
       follow = false; drag = null; gestureHold = null; controls.enabled = true;
       guidance = null;
@@ -573,6 +940,60 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
       showPreview(null);
       await syncEffects(effects, { animate: false });
     },
+    // Hard mode opening shot: the patient on the table seen from the surgeon's side, then the camera
+    // goes in through the navel port to the inside view. Skippable; instant with reduced motion.
+    async playIntro() {
+      if (mode !== 'hard') return;
+      introSkip = false;
+      busy += 1;
+      room.visible = true;
+      trayScene.visible = false;
+      haloGroup.visible = false;
+      controls.enabled = false;
+      // The body outline drawn as the patient, with the four ports in place.
+      ctx.setScene({ outline: 0.62, ports: 1 }, { animate: false, camera: false });
+      const navel = ports.get('Camera port (navel)') ?? ctx.viewTarget();
+      const inside = { target: vec(hardView.target), up: new THREE.Vector3(0, 1, 0) };
+      inside.position = inside.target.clone().addScaledVector(vec(hardView.from).normalize(), hardView.distance);
+      const shots = [
+        // Standing at the patient's left (patient's right is -x), at eye height, looking down at the
+        // draped patient on the table: the abdomen and its ports in the middle of the picture.
+        { position: new THREE.Vector3(128, -30, 118), target: new THREE.Vector3(2, -12, -2), up: new THREE.Vector3(0, 0, 1) },
+        // Just outside the navel port.
+        { position: navel.clone().add(new THREE.Vector3(0, -6, 20)), target: navel.clone(), up: new THREE.Vector3(0, 1, 0) },
+        inside,
+      ];
+      const put = shot => { camera.up.copy(shot.up); camera.position.copy(shot.position); camera.lookAt(shot.target); controls.target.copy(shot.target); requestDraw(); };
+      const tween = (from, to, ms) => new Promise(resolve => {
+        const start = performance.now();
+        const step = now => {
+          const t = introSkip || ctx.reducedMotion() ? 1 : Math.min(1, (now - start) / ms);
+          const k = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+          put({ position: from.position.clone().lerp(to.position, k), target: from.target.clone().lerp(to.target, k), up: from.up.clone().lerp(to.up, k).normalize() });
+          if (t < 1 && !disposed) requestAnimationFrame(step); else resolve();
+        };
+        requestAnimationFrame(step);
+      });
+      const pause = ms => new Promise(resolve => { const end = performance.now() + ms; const tick = () => (introSkip || ctx.reducedMotion() || performance.now() >= end || disposed ? resolve() : requestAnimationFrame(tick)); tick(); });
+      put(shots[0]);
+      onEvent({ type: 'intro', phase: 'room' });
+      await pause(1300);
+      await tween(shots[0], shots[1], 1100);
+      // Through the port: the room and the body wall drop away.
+      room.visible = false;
+      ctx.setScene({ outline: 0, ports: 0 }, { animate: false, camera: false });
+      onEvent({ type: 'intro', phase: 'inside' });
+      await tween(shots[1], shots[2], 900);
+      camera.up.set(0, 1, 0);
+      ctx.setScene({ view: hardView, outline: 0 }, { animate: false, camera: true });
+      trayScene.visible = true;
+      haloGroup.visible = true;
+      controls.enabled = true;
+      busy -= 1;
+      onEvent({ type: 'intro', phase: 'done' });
+      requestDraw();
+    },
+    skipIntro() { introSkip = true; },
     resetCamera() { ctx.resetCamera(); },
     get busy() { return busy > 0; },
     // For browser tests: where an action point or tray tool is on screen, in client pixels.
@@ -581,6 +1002,9 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
       const toClient = (v, cam) => { const p = v.clone().project(cam); return { x: box.left + (p.x + 1) / 2 * box.width, y: box.top + (1 - p.y) / 2 * box.height }; };
       camera.updateMatrixWorld(true);
       if (kind === 'point') return points.has(id) ? toClient(points.get(id).position, camera) : null;
+      if (kind === 'port') return ports.has(id) ? toClient(ports.get(id), camera) : null;
+      // A point along the hard-mode dissection line (id = 0 to 1), or along a given path of point ids.
+      if (kind === 'path') return path ? toClient(pathAt(Number(id)), camera) : null;
       const entry = tools.get(id);
       if (!entry?.trayPose) return null;
       trayScene.updateMatrixWorld(true);
@@ -588,9 +1012,16 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
       const along = new THREE.Vector3(0, 0, 0.9).applyQuaternion(entry.trayPose.quaternion).multiplyScalar(entry.trayPose.scale);
       return toClient(entry.trayPose.position.clone().add(along), trayCamera);
     },
+    // For browser tests: the structure under a client point, and its distance (cm) to the nearest target.
+    probe(clientX, clientY) {
+      const tissue = tissueAt({ clientX, clientY });
+      return { organ: tissue?.organ ?? null, nearest: nearestPoint()?.distance ?? null };
+    },
     snapshot: () => ({
       held: held?.id ?? null, placed, near: near?.id ?? null, tray: [...trayIds],
       props: [...props.keys()], cut: cutAmount,
+      mode, roll, angle: angleError(), aiming: aiming(), trace: trace ? trace.progress : null, carrying,
+      room: room.visible, removal: { ...removal }, cameraUp: camera.up.toArray(),
       points: Object.fromEntries([...points].map(([id, point]) => [id, point.position.toArray().map(n => Math.round(n * 100) / 100)])),
     }),
     dispose() {
@@ -600,6 +1031,11 @@ export function installPractice(ctx, { exercise, onEvent = () => {} }) {
       for (const entry of tools.values()) { entry.tool.dispose(); entry.ghost.dispose(); entry.tool.group.removeFromParent(); entry.ghost.group.removeFromParent(); }
       haloGroup.traverse(object => { object.geometry?.dispose(); object.material?.dispose(); });
       haloGroup.removeFromParent();
+      for (const object of [guide, pathLine, burnLine, room, ...portRings.values()]) {
+        object.traverse(child => { child.geometry?.dispose(); [].concat(child.material ?? []).forEach(material => material.dispose()); });
+        object.removeFromParent();
+      }
+      camera.up.set(0, 1, 0);
       trayBack.geometry.dispose(); trayBackMaterial.dispose();
     },
   };

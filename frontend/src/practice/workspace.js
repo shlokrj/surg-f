@@ -46,13 +46,17 @@ export function disposePreload() {
 let session = null;
 
 // hooks: { seek(seconds), playRange(start, end), onExit(), announce?(text) }
-export function startPractice(exercise, hooks) {
+// mode: 'easy' (place and hold) or 'hard' (operating-room view, strict; docs/SURGERY_PRACTICE_UPGRADES.md).
+export function startPractice(exercise, hooks, { mode = 'easy' } = {}) {
   disposePractice();
   preloadPractice(exercise); // reuses what was loaded while Start / Cancel was showing
+  const state = createSession(exercise, { mode });
   session = {
-    exercise, hooks, preload, state: createSession(exercise), element: buildElement(exercise),
+    exercise, hooks, preload, state, mode: state.mode, element: buildElement(exercise, state.mode),
     side: buildSide(), // checklist and video reference, shown under the video
     viewer: null, practice: null, nearLabel: '', progress: 0, failure: '', positionLabel: '',
+    intro: state.mode === 'hard' ? 'room' : null, // hard mode opens in the operating room
+    portIndex: -1,
   };
   const current = session;
   current.preload.route = event => { if (session === current) handle(event); };
@@ -62,7 +66,11 @@ export function startPractice(exercise, hooks) {
       if (session !== current || !loaded) return;
       current.viewer = loaded.viewer;
       current.practice = loaded.practice;
-      current.practice.resetTo([]).then(() => current.practice.setStage(exercise.stages[0]));
+      current.practice.setMode(current.mode);
+      current.practice.resetTo([]).then(() => {
+        current.practice.setStage(exercise.stages[0]);
+        if (current.mode === 'hard') current.practice.playIntro().then(() => { if (session === current) { current.intro = null; paint(); } });
+      });
       attachViewer();
       paint();
     })
@@ -119,6 +127,10 @@ if (typeof window !== 'undefined') {
     viewer: session.practice?.snapshot() ?? null, busy: session.practice?.busy ?? false,
     point: (id) => session.practice?.screenPosition('point', id) ?? null,
     tool: (id) => session.practice?.screenPosition('tool', id) ?? null,
+    port: (name) => session.practice?.screenPosition('port', name) ?? null,
+    path: (s) => session.practice?.screenPosition('path', s) ?? null,
+    probe: (x, y) => session.practice?.probe(x, y) ?? null,
+    mode: session.mode, intro: session.intro,
   } : null;
 }
 
@@ -143,18 +155,47 @@ function handle(event) {
     case 'request-cancel':
       if (dispatch({ type: 'cancel' })) practice.cancel();
       break;
+    case 'contact': {
+      // Released on tissue: easy returns the tool; hard fails the stage.
+      if (!dispatch({ type: 'contact', organ: event.organ, label: event.label })) break;
+      if (session.state.outcome?.type === 'failed') { practice.reject().then(paint); announce(session.state.feedback.message); }
+      else practice.cancel();
+      break;
+    }
+    case 'stray':
+      if (dispatch({ type: 'stray' })) { session.progress = 0; practice.reject().then(paint); announce(session.state.feedback.message); }
+      break;
+    case 'deliver': {
+      if (!dispatch({ type: 'deliver', port: event.port })) break;
+      const { outcome } = session.state;
+      if (outcome?.type === 'accepted') practice.accept(session.state.effects).then(() => { paint(); revealResult(); });
+      else practice.reject().then(() => { practice.endCarry(); paint(); });
+      announce(session.state.feedback.message);
+      break;
+    }
     case 'gesture': {
-      if (!dispatch({ type: 'gesture', complete: event.complete })) break;
+      if (!dispatch({ type: 'gesture', complete: event.complete, angleDeg: event.angleDeg, pathDone: event.pathDone })) break;
       const { outcome } = session.state;
       session.progress = 0;
       if (outcome?.type === 'accepted') practice.accept(session.state.effects).then(() => { paint(); revealResult(); });
+      else if (outcome?.type === 'carrying') {
+        practice.startCarry();
+        session.portIndex = -1;
+        const hint = session.element.querySelector('#pr-hover');
+        if (hint) hint.textContent = ''; // "press and hold" no longer applies
+      }
       else if (outcome?.kind === 'gesture') practice.reopen();
       else practice.reject().then(paint);
       announce(session.state.feedback.message);
       break;
     }
+    case 'intro':
+      session.intro = event.phase === 'done' ? null : event.phase;
+      break;
     case 'near':
-      session.nearLabel = event.pointId ? `${event.ready ? 'Ready: ' : ''}${event.label}` : '';
+      // Hard mode names no structures or ports: only "Ready".
+      if (session.mode === 'hard') session.nearLabel = event.ready ? 'Ready' : '';
+      else session.nearLabel = event.pointId ? `${event.ready ? 'Ready: ' : ''}${event.label}` : '';
       break;
     case 'gesture-progress':
       session.progress = event.value;
@@ -185,20 +226,33 @@ function announce(text) {
 function act(name) {
   const { exercise, practice } = session;
   const stage = currentStage(exercise, session.state);
+  // Leaving a removal attempt (reset, restart, Escape) also leaves the wide view of the ports.
+  const leaveCarry = () => { if (practice?.snapshot().carrying) practice.endCarry(); };
   switch (name) {
     case 'exit':
       session.hooks.onExit();
       return;
+    case 'skip-intro':
+      practice?.skipIntro();
+      return;
     case 'restart':
+      leaveCarry();
       dispatch({ type: 'restart' });
-      practice?.resetTo([]).then(() => practice.setStage(exercise.stages[0]));
+      practice?.resetTo([]).then(() => { practice.setStage(exercise.stages[0]); if (session.mode === 'hard') practice.resetCamera(); });
       session.hooks.seek(exercise.stages[0].reference_start_sec);
       announce('Practice restarted at stage 1.');
       break;
     case 'reset':
+      leaveCarry();
       if (dispatch({ type: 'resetStage' })) practice?.resetTo(session.state.effects).then(() => practice.setStage(stage));
       announce('Stage reset.');
       break;
+    case 'deliver': {
+      // Keyboard: deliver the carried gallbladder to the port chosen with the arrow keys.
+      const port = practice?.portNames[session.portIndex];
+      if (port) handle({ type: 'deliver', port });
+      return;
+    }
     case 'guidance':
       if (dispatch({ type: 'guidance' })) practice?.setGuidance({ toolId: stage.expected_tool_id, pointId: stage.action_point_ids[0] });
       announce(session.state.feedback.message);
@@ -214,6 +268,7 @@ function act(name) {
       break;
     }
     case 'cancel':
+      leaveCarry();
       if (dispatch({ type: 'cancel' })) practice?.cancel();
       break;
     case 'prev-pos':
@@ -266,8 +321,24 @@ function wireElement(current) {
   element.addEventListener('keydown', event => {
     if (session !== current) return;
     const phase = current.state.phase;
-    if (event.key === 'Escape' && ['holding', 'placed'].includes(phase)) { event.preventDefault(); act('cancel'); return; }
+    if (event.key === 'Escape' && current.intro) { event.preventDefault(); act('skip-intro'); return; }
+    if (event.key === 'Escape' && ['holding', 'placed', 'carrying'].includes(phase)) { event.preventDefault(); act('cancel'); return; }
     if (event.target.closest('#pr-stage')) {
+      // Hard mode: Q / E turn the placed jaws; arrows and Enter choose a port when carrying.
+      if (phase === 'placed' && /^[qe]$/i.test(event.key) && current.practice?.aiming) {
+        event.preventDefault();
+        current.practice.rotateJaws(event.key.toLowerCase() === 'q' ? -10 : 10);
+        return;
+      }
+      if (phase === 'carrying') {
+        const names = current.practice?.portNames ?? [];
+        if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && names.length) {
+          event.preventDefault();
+          current.portIndex = (current.portIndex + (event.key === 'ArrowRight' ? 1 : -1) + names.length) % names.length;
+          announce(names[current.portIndex]);
+        } else if (event.key === 'Enter') { event.preventDefault(); act('deliver'); }
+        return;
+      }
       const tray = currentStage(current.exercise, current.state).tool_tray_ids;
       const slot = Number(event.key) - 1;
       if (/^[1-9]$/.test(event.key) && tray[slot] && ['ready', 'holding', 'placed'].includes(phase)) {
@@ -286,13 +357,14 @@ function wireElement(current) {
 
 // --- markup ------------------------------------------------------------------------------------------
 
-function buildElement(exercise) {
+function buildElement(exercise, mode) {
   const element = document.createElement('div');
-  element.className = 'pr';
+  element.className = `pr is-${mode}`;
+  const hard = mode === 'hard';
   element.innerHTML = `
     <header class="pr-head">
       <div class="pr-head-text">
-        <h2 id="pr-title">${escapeHtml(exercise.title)}</h2>
+        <h2 id="pr-title">${escapeHtml(exercise.title)} <span class="pr-mode${hard ? ' is-hard' : ''}" title="${hard ? 'Hard: any mistake fails the stage' : 'Easy: place and hold'}">${hard ? 'Hard' : 'Easy'}</span></h2>
         <p class="pr-objective">${escapeHtml(exercise.objective)}</p>
       </div>
       <div class="pr-head-actions">
@@ -303,19 +375,20 @@ function buildElement(exercise) {
     <ol class="pr-rail" id="pr-rail" aria-label="Stages"></ol>
     <div class="pr-work" id="pr-work">
       <div class="pr-stage-text" id="pr-stage-text"></div>
-      <div class="pr-stage" id="pr-stage" tabindex="0" aria-describedby="pr-keys">
+      <div class="pr-stage${hard ? ' is-scope' : ''}" id="pr-stage" tabindex="0" aria-describedby="pr-keys">
         <p class="anat-status" id="pr-status">Loading the practice model…</p>
         <span class="anat-hover" id="pr-hover" aria-hidden="true"></span>
         <span class="pr-near" id="pr-near" aria-hidden="true"></span>
         <span class="pr-ring" id="pr-ring" aria-hidden="true"></span>
         <span class="pr-pass" id="pr-pass" hidden><span aria-hidden="true">✓</span> Passed</span>
+        ${hard ? `<div class="pr-intro" id="pr-intro" hidden><p id="pr-intro-text"></p><button type="button" class="pr-skip" data-pr="skip-intro">Skip</button></div>` : ''}
         <div class="anat-tools" role="group" aria-label="View">
           <button type="button" data-zoom="0.8" aria-label="Zoom in"><i class="ico ico-plus" aria-hidden="true"></i></button>
           <button type="button" data-zoom="1.25" aria-label="Zoom out"><i class="ico ico-minus" aria-hidden="true"></i></button>
           <button type="button" data-pr="camera">Reset camera</button>
         </div>
       </div>
-      <p class="sr-only" id="pr-keys">Drag an instrument from the tray onto the model, or tap it and then tap where it goes. Press and hold a placed instrument to use it. Drag empty space to rotate the view. With the model focused: number keys 1 to 4 pick up a tray instrument, arrow keys move it between positions, Enter places it, Space performs its gesture, Escape returns it to the tray.</p>
+      <p class="sr-only" id="pr-keys">Drag an instrument from the tray onto the model, or tap it and then tap where it goes. Press and hold a placed instrument to use it. Drag empty space to rotate the view. With the model focused: number keys 1 to 4 pick up a tray instrument, arrow keys move it between positions, Enter places it, Space performs its gesture, Escape returns it to the tray.${hard ? ' Hard mode: Q and E turn placed jaws; Space burns along the dissection line; when carrying the gallbladder, arrow keys choose a port and Enter takes it out.' : ''}</p>
       <p class="pr-feedback" id="pr-feedback"></p>
       <p class="sr-only" id="pr-live" role="status" aria-live="polite"></p>
       <div class="pr-actions" id="pr-actions"></div>
@@ -366,22 +439,34 @@ function paint() {
   const status = $('#pr-status');
   status.hidden = Boolean(session.viewer) && !session.failure;
   if (session.failure) status.textContent = session.failure;
-  $('#pr-near').textContent = state.phase === 'holding' ? session.nearLabel : '';
+  $('#pr-near').textContent = ['holding', 'carrying'].includes(state.phase) ? session.nearLabel : '';
   $('#pr-ring').style.setProperty('--p', String(state.phase === 'placed' ? session.progress : 0));
   $('#pr-ring').hidden = state.phase !== 'placed';
   const accepted = state.phase === 'accepted';
-  $('#pr-pass').hidden = !accepted; // the pass marker in the model's top-right corner
+  // The corner marker: "Passed", or in hard mode "Stage failed" until the next attempt starts.
+  const failedNow = state.outcome?.type === 'failed';
+  const marker = $('#pr-pass');
+  marker.hidden = !accepted && !failedNow;
+  marker.classList.toggle('is-fail', failedNow);
+  marker.innerHTML = failedNow ? '<span aria-hidden="true">✕</span> Stage failed' : '<span aria-hidden="true">✓</span> Passed';
+  // Hard mode opening shot: a caption and Skip over the operating room.
+  const intro = $('#pr-intro');
+  if (intro) {
+    intro.hidden = !session.intro || !session.viewer;
+    $('#pr-intro-text').textContent = session.intro === 'inside' ? 'Inserting the camera through the navel port…' : 'Operating room: the patient is ready, ports in place.';
+    $('#pr-stage').classList.toggle('is-room', session.intro === 'room');
+  }
 
   const feedback = $('#pr-feedback');
   feedback.className = `pr-feedback is-${state.feedback.tone}`;
   // The instruction is already shown above the model, so a message that only repeats it
   // (stage start, reset, tool returned) is not shown again here.
   feedback.hidden = state.feedback.kind === 'intro';
-  const label = { tool: 'Instrument', target: 'Structure', placement: 'Placement', gesture: 'Gesture', success: 'Accepted', guidance: 'Guidance' }[state.feedback.kind];
+  const label = { tool: 'Instrument', target: 'Structure', placement: 'Placement', gesture: 'Gesture', success: 'Accepted', guidance: 'Guidance', contact: 'Wrong tissue', angle: 'Jaw angle', path: 'Dissection', port: 'Port' }[state.feedback.kind];
   feedback.innerHTML = `${label ? `<strong>${label}:</strong> ` : ''}${escapeHtml(state.feedback.message.replace(/^Guidance: /, ''))}${accepted ? ` <span class="pr-why">${escapeHtml(stage.rationale)}</span>` : ''}`;
 
-  $('#pr-check').innerHTML = checklist(state).map(item => `<li class="${item.done ? 'is-done' : ''}"><span aria-hidden="true">${item.done ? '✓' : '○'}</span>${escapeHtml(item.label)}<span class="sr-only">${item.done ? ', done' : ''}</span></li>`).join('')
-    + `<li class="pr-attempts">Attempts this stage: ${state.attempts}</li>`;
+  $('#pr-check').innerHTML = checklist(state, stage).map(item => `<li class="${item.done ? 'is-done' : ''}"><span aria-hidden="true">${item.done ? '✓' : '○'}</span>${escapeHtml(item.label)}<span class="sr-only">${item.done ? ', done' : ''}</span></li>`).join('')
+    + `<li class="pr-attempts">Attempts this stage: ${state.attempts}${state.mode === 'hard' ? ` · Failed: ${state.failures}` : ''}</li>`;
 
   $('#pr-ref').innerHTML = `<span class="pr-ref-label">Video reference</span>
     <span class="pr-ref-time">${formatTime(stage.reference_start_sec)}–${formatTime(stage.reference_end_sec)} · <span id="pr-time">--:--</span></span>
@@ -400,11 +485,12 @@ function paintRecap() {
   const { exercise, state, element } = session;
   const records = new Map(state.records.map(record => [record.stageId, record]));
   element.querySelector('#pr-recap').innerHTML = `
-    <h3 id="pr-recap-title">Exercise complete</h3>
+    <h3 id="pr-recap-title">Exercise complete${state.mode === 'hard' ? ' · Hard' : ''}</h3>
     <p class="pr-recap-note">A stage-by-stage recap of this session. It is a checklist for your own review, not a clinical proficiency score, and it is not saved.</p>
     <ol class="pr-recap-list">${exercise.stages.map(stage => {
       const record = records.get(stage.id);
-      return `<li><div><strong>${escapeHtml(stage.title)}</strong><span>${record.attempts} attempt${record.attempts === 1 ? '' : 's'}${record.guided ? ' · guided' : ''}</span></div>
+      const failed = state.mode === 'hard' ? ` · ${record.failures} failed` : '';
+      return `<li><div><strong>${escapeHtml(stage.title)}</strong><span>${record.attempts} attempt${record.attempts === 1 ? '' : 's'}${failed}${record.guided ? ' · guided' : ''}</span></div>
         <p>${escapeHtml(record.explanation)}</p>
         <button type="button" class="btn-quiet" data-replay="${stage.id}">Replay ${formatTime(stage.reference_start_sec)}–${formatTime(stage.reference_end_sec)}</button></li>`;
     }).join('')}</ol>
