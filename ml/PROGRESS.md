@@ -298,6 +298,41 @@ Commit each feature or major change on `ml-dev` with a lowercase Conventional Co
 
 **Remaining 30 cases: extraction started (2026-11-14, Aadhitya).** Goal: SurgVLP features for every CholecT50 case. 20 are already in the Volume; the other 30 are VID35, 36, 40, 42, 43, 47–52, 56, 57, 60, 62, 65, 66, 68, 70, 73–75, 78–80, 92, 96, 103, 110, 111. Same pipeline as before, unchanged: `scripts/process_ml_cases.py` runs a smoke run, then the full extraction on Databricks serverless CPU, then independent source-label validation. Three controllers run 10 cases each, about 3 Databricks runs at a time, started 90 s apart to avoid Hugging Face 429s. State and logs are outside Git at `~/madhacks2026/data/state/aadhi-rest-{a,b,c}.{json,log}`. **These cases are not in `ml/case_split.json`.** The frozen `expanded-v1` split and all reported results are unchanged. Using the new cases for training needs a new, separately named split, chosen before looking at any results. **Shlok:** please don't launch any of these cases. Run IDs and the verification summary will be recorded here when done.
 
+**Remaining 30 cases: extraction complete (2026-11-14, Aadhitya).** All 30 passed independent Volume verification against source labels (`verify_databricks_features.py` via `process_ml_cases.py`: complete frame coverage, shapes, file hashes). Total: 61,641 frames × 768 features. The Volume now holds **all 50 CholecT50 cases**, and no extraction runs are active. All extraction stayed on Databricks serverless CPU. Mid-batch, all three local controllers stopped on network timeouts between the Mac and the Databricks API (the Mac likely slept). They were resumed from their saved state files with the same arguments. Runs already in flight were awaited, not resubmitted, and VID79 and VID92 had finished remotely and verified on resume. Nothing was duplicated. Evidence: `~/madhacks2026/data/state/aadhi-rest-{a,b,c}.{json,log}` on Aadhitya's machine. These cases are **not** in `expanded-v1`; using them needs a new split declared before any results are viewed.
+
+| Case | Full run | Frames |
+|---|---|---|
+| VID35 | `730916319335799` | 2107 |
+| VID36 | `695692202068519` | 2388 |
+| VID40 | `797115320463531` | 2223 |
+| VID42 | `424040826038865` | 3713 |
+| VID43 | `495746043496926` | 2363 |
+| VID47 | `36236183409347` | 2260 |
+| VID48 | `1019806586832440` | 1835 |
+| VID49 | `452413547197295` | 1672 |
+| VID50 | `1007730846537914` | 1095 |
+| VID51 | `672767344692536` | 2945 |
+| VID52 | `206993172682217` | 1967 |
+| VID56 | `1011968200378001` | 1837 |
+| VID57 | `446971393430838` | 2633 |
+| VID60 | `543722926159768` | 2533 |
+| VID62 | `436450889165744` | 2033 |
+| VID65 | `531837875459678` | 1874 |
+| VID66 | `1055575882964969` | 1825 |
+| VID68 | `1016347207727263` | 1973 |
+| VID70 | `450176941967351` | 1195 |
+| VID73 | `748744805568441` | 1357 |
+| VID74 | `1071537408002832` | 1635 |
+| VID75 | `12300312411843` | 1924 |
+| VID78 | `522519577989575` | 740 |
+| VID79 | `153672902920536` | 3415 |
+| VID80 | `712203482596041` | 1725 |
+| VID92 | `1074608679345544` | 2124 |
+| VID96 | `41089234549293` | 1707 |
+| VID103 | `623119514018829` | 2220 |
+| VID110 | `266473423111528` | 2177 |
+| VID111 | `584638373831614` | 2146 |
+
 ## Planned stage 3: video localization
 
 2026-11-14: Stage 3 recorded at Shlok's request; research/documentation complete, implementation deferred. The central plan records the seven-instrument proposal versus the official dataset inventory, annotation audit, model recommendation and later responsibilities. No detector was run and no accuracy, throughput or UI verification is claimed. Resume existing validation work independently.
