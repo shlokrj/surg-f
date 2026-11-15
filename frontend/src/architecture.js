@@ -150,7 +150,7 @@ WHERE lower(label) = 'scissors'</code></pre>
 }
 
 export function architectureSection() {
-  return `<section class="dig" id="architecture" aria-labelledby="dig-heading" data-intro="1.6" data-per="1.3" style="--e:0;--nav:0;--depth:0;--travel:9.4">
+  return `<section class="dig" id="architecture" aria-labelledby="dig-heading" data-intro="1.6" data-per="2.1" style="--e:0;--nav:0;--depth:0;--travel:14.2">
     <div class="dig-pin">
       <div class="dig-copy dig-intro-copy" data-copy="-1"><h2 id="dig-heading">Dig into the stack.</h2><p>Surg+F is six layers, from the player you use down to the surgery video underneath. Scroll to dig through them, or pick a layer.</p></div>
       <div class="dig-map">
@@ -220,6 +220,7 @@ function updateStage(section, reduced) {
   const rect = section.getBoundingClientRect();
   if (rect.bottom < -vh || rect.top > vh * 2) return;
   const cfg = config(section);
+  section.style.setProperty('--travel', cfg.travel); // keeps the pinned length in step with data-per
   let e, d, ps, nav;
   if (isStacked()) {
     /* Phones: no pin. The block opens as it passes; each scene plays as it crosses the viewport. */
