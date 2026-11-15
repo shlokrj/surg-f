@@ -84,3 +84,17 @@
 .lc-dots i.on { background: color-mix(in srgb, #ffffff1f, #9ff3df calc(clamp(0, calc((var(--a) * 80 - var(--i)) / 4), 1) * 100%)); }
 .lc-cap { color: #9fd9c6; font-size: 13px; }
 .lc-years { margin-top: 6px; }
+
+/* Fit: the cited sources wrap as one compact line under the copy, and the cards sit high enough to
+   leave the caption its own space. */
+.dig-problem .lv-sources { margin-top: 4px; }
+.dig-problem .lv-sources > span { margin-bottom: 6px; }
+.dig-problem .lv-sources ul { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; line-height: 1.4; }
+.pb-learn { align-content: start; padding-top: 18px; gap: 12px; }
+.lc { min-height: 192px; padding: 14px 16px; gap: 7px; }
+.lc > b { font-size: 40px; }
+@media (max-height: 780px) {
+  .pb-learn { padding-top: 8px; gap: 10px; }
+  .lc { min-height: 176px; gap: 5px; }
+  .lc > b { font-size: 34px; }
+}

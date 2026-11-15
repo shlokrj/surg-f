@@ -80,3 +80,8 @@
 .two .mn-panel h4{margin-bottom:10px}
 .two .mn-rows{gap:9px}
 .two .avg b{font-size:40px}
+/* Shorter screens: a smaller pinned heading leaves the chapter copy room to fit. */
+@media (min-width:861px) and (max-height:860px){
+  .mn-heading{margin-top:max(11vh,84px);font-size:clamp(30px,2.6vw,40px)}
+  .dig-model .layer-copy > p{font-size:16px;line-height:1.55}
+}
