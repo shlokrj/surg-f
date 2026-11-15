@@ -1,5 +1,12 @@
 # ML team progress
 
+## Stage 3 annotation audit (2026-11-14)
+
+Shlok, `feat/spatial-overlays`: audited primary-source annotation downloads. CholecT50 converted COCO archive has zero boxes and 40 duplicate image IDs; it cannot provide localization ground truth. Endoscapes training JSON has 1,212 unique image records and 5,566 valid boxes (1,186 frames with boxes), including gallbladder/cystic duct and generic tools. Saved reproducible aggregate audits with SHA-256 in `ml/localization/*_audit.json`; source files remain outside Git. Downloaded only Endoscapes training annotations using remote ZIP access, not full imagery or held-out annotations.
+
+Verification: `python3 -m unittest discover -s ml/localization -p 'test_*.py'` passes 8 tests; both real-source audit commands in localization README ran successfully. This establishes annotation availability, not model accuracy. Next: Shlok audits cross-dataset surgery overlap and creates an explicit anatomy-only mapping/evaluation scope before training. Six instrument subtype supervision and browser acceptance remain open. Aadhitya's stage-2 scope is unchanged.
+
+
 ## Stage 3 interaction tests and preview (2026-11-14)
 
 Shlok, `feat/spatial-overlays`: added a minimum detection-score slider and DOM integration tests using the real VID01 prediction artifact. `node --test frontend/test/*.test.js` passes 6 tests, including rendering, score/category filtering, seek/expiry, local-upload disablement, dimension rejection and disposal during a pending request. Media state is simulated in jsdom: this verifies DOM behavior, not actual video decoding/fullscreen or visual browser layout. `npm --prefix frontend run build` passes; localization unittest discovery passes 7 tests.

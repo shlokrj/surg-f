@@ -40,3 +40,18 @@ python ml/localization/preview.py frontend/public/overlays/VID01.json \
 ```
 
 This creates an offline plot, not a browser screenshot. Source-image SHA-256 and dimensions must match the artifact; output is never overwritten. Preview at most 12 frames. Keep generated plots outside Git because they contain dataset imagery. The first real preview shows poor labels and oversized boxes; use it to inspect failure cases, not as evidence of detector accuracy.
+
+## Verified annotation sources
+
+`audit_coco.py` inventories real COCO JSON or an explicit ZIP member, checks coordinate bounds and references, and records the annotation SHA-256. It never interprets missing annotations as negative labels.
+
+```sh
+python ml/localization/audit_coco.py /path/to/cholecT50-coco.zip --member cholecT50/all/annotation_coco.json
+python ml/localization/audit_coco.py /path/to/endoscapes-train-coco.json
+```
+
+Saved audit reports are adjacent to this README. The [official SurgLatentGraph COCO download](https://github.com/CAMMA-public/SurgLatentGraph#datasetannotation-downloads) contains 100,816 image records, 40 duplicate image IDs and **zero boxes** in its CholecT50 detection JSON. This does not contradict the separate box-bearing official CholecT50 release; this particular converted archive cannot supply detection supervision.
+
+The [official Endoscapes archive](https://github.com/CAMMA-public/Endoscapes) supplies `endoscapes/train/annotation_coco.json`: 1,212 detection-keyframe records, 5,566 valid boxes, 1,186 frames with boxes. Labels include 1,174 gallbladder, 952 cystic duct and 1,946 generic tool instances. Other labels are cystic plate, cystic artery and calot triangle. Source data is CC BY-NC-SA 4.0; cite Murali et al., Endoscapes benchmark and Latent Graph Representations, as requested by the source repository. Only aggregate audit reports are committed, not the dataset.
+
+Downloaded annotation files live outside Git under `/Users/shlokjadhav/madhacks2026/localization/`. Endoscapes JSON was read directly from the remote ZIP using `remotezip==0.12.6`; the full imagery archive was not downloaded. Its source case IDs are not CholecT50 IDs. Before training or evaluating, resolve [CAMMA cross-dataset surgery overlaps](https://github.com/CAMMA-public/camma_dataset_overlaps) against `ml/case_split.json`. Do not tune on final-test surgeries. Generic tool cannot be mapped to grasper or another instrument subtype. Anatomy scope must be mapped explicitly; the existing evaluator requires complete review of its supported categories, so do not silently claim complete liver annotations from Endoscapes. No Endoscapes model has been trained or evaluated yet.
