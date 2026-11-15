@@ -57,7 +57,8 @@ def search(
     response_model=TimelineResponse,
     summary="Instrument timeline and usage summary for one video",
     description="`segments` feeds a timeline chart; `summary` feeds an instrument-usage chart. "
-    "Uses `annotation` rows by default; pass `source=prediction` for model output. A known "
+    "Returns the six instrument labels only; verb and target rows in the clip table are left "
+    "out. Uses `annotation` rows by default; pass `source=prediction` for model output. A known "
     "case with no rows for that source returns empty lists.",
     responses={
         404: {"model": ErrorResponse, "description": "No rows exist for this case_id."},

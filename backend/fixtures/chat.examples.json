@@ -1,5 +1,5 @@
 {
-  "description": "One POST /chat example per action. The search, quiz, timeline and none examples are real responses generated in fixture mode by the rule-based router (the quiz is one random draw). In Databricks mode the timeline data can hold more labels than the six instruments. The answer example is illustrative.",
+  "description": "One POST /chat example per action. The search, quiz, timeline and none examples are real responses generated in fixture mode by the rule-based router (the quiz is one random draw); live Databricks returns the same VID01 search and timeline data. The answer example is illustrative.",
   "examples": [
     {
       "request": {

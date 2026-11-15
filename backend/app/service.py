@@ -3,6 +3,10 @@
 from .models import LabelSummary, SearchResponse, Segment, TimelineResponse, TimelineSource
 from .repository import ClipRepository
 
+# The clip table also holds action verbs and targets in the label column, with no column
+# to tell them apart. The timeline is an instrument timeline, so it keeps these six.
+INSTRUMENT_LABELS = ("grasper", "hook", "irrigator", "bipolar", "clipper", "scissors")
+
 
 class CaseNotFoundError(LookupError):
     """No annotation or prediction rows exist for the case."""
@@ -62,7 +66,7 @@ class TimelineService:
         segments = [
             Segment(label=c.label, start_sec=c.start_sec, end_sec=c.end_sec)
             for c in sorted(clips, key=lambda c: (c.start_sec, c.label))
-            if c.source == source
+            if c.source == source and c.label.lower() in INSTRUMENT_LABELS
         ]
         return TimelineResponse(
             case_id=case_id, source=source, segments=segments, summary=summarize(segments)

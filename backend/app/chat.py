@@ -287,11 +287,9 @@ class ChatService:
                 data = self.quiz.quiz(None)
             elif action == "timeline":
                 data = self.timeline.timeline(case_id)
-                # The table can also hold verb and target labels; count instruments only.
-                used = [s for s in data.summary if s.label in LABELS]
                 reply = (
-                    f"Here is the instrument timeline for {case_id}: "
-                    f"{sum(s.count for s in used)} segments across {len(used)} instruments."
+                    f"Here is the instrument timeline for {case_id}: {len(data.segments)} "
+                    f"segments across {len(data.summary)} instruments."
                 )
             else:
                 data = self.search.search_case(label, case_id)
