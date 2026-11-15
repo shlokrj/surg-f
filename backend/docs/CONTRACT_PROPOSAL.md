@@ -4,7 +4,7 @@ Status: **proposal, 2026-11-14 (Rohan).** The backend serves these endpoints on 
 
 ## Text to append to agent-kit/CONTRACTS.md
 
-> Timeline API: `GET /cases/VID01/timeline` with optional `source=annotation|prediction` (default `annotation`). Return `case_id`, `source`, `segments` ordered by `start_sec` then `label`, and a per-label `summary` ordered by `total_sec` descending. Build segments and summary from the same rows as search; exclude fixture rows. An unknown case returns 404 with `{"detail": "Unknown case_id: <id>"}`. A known case with no rows for the chosen source returns empty lists.
+> Timeline API: `GET /cases/VID01/timeline` with optional `source=annotation|prediction` (default `annotation`). Include only the six instrument labels (grasper, hook, irrigator, bipolar, clipper, scissors); leave out verb and target rows. Return `case_id`, `source`, `segments` ordered by `start_sec` then `label`, and a per-label `summary` ordered by `total_sec` descending. Build segments and summary from the same rows as search; exclude fixture rows. An unknown case returns 404 with `{"detail": "Unknown case_id: <id>"}`. A known case with no rows for the chosen source returns empty lists.
 >
 > ```json
 > {"case_id":"VID01","source":"annotation","segments":[{"label":"clipper","start_sec":674,"end_sec":690}],"summary":[{"label":"clipper","count":5,"total_sec":102,"first_sec":674}]}
@@ -17,6 +17,12 @@ Status: **proposal, 2026-11-14 (Rohan).** The backend serves these endpoints on 
 > ```
 >
 > Errors on every endpoint use `{"detail": "..."}`. FastAPI validation errors (422) may return `detail` as a list. A failed Databricks query returns 503.
+
+> Chat API: `POST /chat` with JSON body `{"message": "<text>", "case_id": "VID01"}` (`case_id` optional, default `VID01`). Return `reply` (one or two sentences for the chat), `action` (`search`, `quiz`, `timeline`, `answer` or `none`), `data` and `router` (`llm`, `rules` or `genie`). For `search`, `quiz` and `timeline`, `data` has the shape of the matching GET endpoint; search results are limited to the requested case and to annotation rows. For `answer`, `data` is `{"columns": [], "rows": [], "sql": null}` or null. For `none`, `data` is null. A valid request always returns 200, including when routing or the data store fails; only invalid input returns 422. The backend writes every reply; the language model only chooses a feature.
+>
+> ```json
+> {"reply":"Found 5 moments with the clipper in VID01. The first starts at 11:14.","action":"search","data":{"results":[{"case_id":"VID01","start_sec":674,"end_sec":690,"label":"clipper","source":"annotation"}]},"router":"rules"}
+> ```
 
 ## Row to append to agent-kit/DECISIONS.md
 
@@ -32,6 +38,15 @@ Status: **proposal, 2026-11-14 (Rohan).** The backend serves these endpoints on 
 6. After a person with medical knowledge has reviewed `backend/data/quiz_bank.json`, set `"reviewed": true` and record who reviewed it and when in DECISIONS.md.
 
 ## Open points for agreement
+
+**Decided by Rohan on 2026-11-14 so the demo can proceed. Each is a backend default the team can overturn:**
+
+- **Timeline labels:** the live table now holds verb and target labels as `annotation` rows (VID01 had 24 labels and 226 segments), with no column that separates them from instruments. `GET /cases/{case_id}/timeline` now returns the six instruments only, which restores the documented response (VID01: 70 segments, 6 labels, identical to the saved fixture). Search is unchanged, so `GET /search?q=grasp` still finds verb rows. A category column in the table would be the cleaner long-term fix; that is Data's call.
+- **Chat versus interpret:** `POST /chat` is for free-typed chat messages. `GET /interpret` stays for slash commands, because it can return several actions at once. Neither is retired.
+- **`answer` data shape:** `{"columns": [], "rows": [], "sql": null}` or null. It has no matching GET endpoint. Tables the backend computes (rankings, one instrument's usage) always have the columns `label`, `count`, `total_sec`, `first_sec`; Genie tables have no fixed columns. Examples: `backend/fixtures/chat.examples.json`.
+- **Chat search scope:** annotation rows for the requested case only. `GET /search` keeps returning every case and both sources.
+
+**Still open:**
 
 - Should `/search` keep mixing `annotation` and `prediction` rows (current behavior), or take the same `source` filter as the timeline? Changing it would be a contract change.
 - Is `case_id` case-sensitive (current behavior, `VID01` only), or should `vid01` also work?

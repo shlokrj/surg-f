@@ -3,6 +3,10 @@
 from .models import LabelSummary, SearchResponse, Segment, TimelineResponse, TimelineSource
 from .repository import ClipRepository
 
+# The clip table also holds action verbs and targets in the label column, with no column
+# to tell them apart. The timeline is an instrument timeline, so it keeps these six.
+INSTRUMENT_LABELS = ("grasper", "hook", "irrigator", "bipolar", "clipper", "scissors")
+
 
 class CaseNotFoundError(LookupError):
     """No annotation or prediction rows exist for the case."""
@@ -22,6 +26,16 @@ class SearchService:
         if not label:
             raise ValueError("q must contain a label")
         return SearchResponse(results=self.repository.find_by_label(label))
+
+    def search_case(
+        self, query: str, case_id: str, source: TimelineSource = "annotation"
+    ) -> SearchResponse:
+        """Clips with this label in one video, from one source. Never returns fixture rows."""
+        label = normalize_label(query)
+        clips = self.repository.find_by_case(case_id)
+        return SearchResponse(
+            results=[c for c in clips if c.label.lower() == label and c.source == source]
+        )
 
 
 def summarize(segments: list[Segment]) -> list[LabelSummary]:
@@ -52,7 +66,7 @@ class TimelineService:
         segments = [
             Segment(label=c.label, start_sec=c.start_sec, end_sec=c.end_sec)
             for c in sorted(clips, key=lambda c: (c.start_sec, c.label))
-            if c.source == source
+            if c.source == source and c.label.lower() in INSTRUMENT_LABELS
         ]
         return TimelineResponse(
             case_id=case_id, source=source, segments=segments, summary=summarize(segments)

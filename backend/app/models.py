@@ -200,6 +200,74 @@ class InterpretResponse(BaseModel):
     )
 
 
+# --- chat (one typed message -> one action with its data) ---------------------
+
+ChatAction = Literal["search", "quiz", "timeline", "answer", "none"]
+ChatRouter = Literal["llm", "rules", "genie"]
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(
+        min_length=1,
+        max_length=300,
+        description="What the user typed in the chat box.",
+        examples=["show me when the clipper is used"],
+    )
+    case_id: str = Field(
+        default="VID01",
+        pattern=r"^[A-Za-z0-9_-]{1,32}$",
+        description="Video currently open. Used unless the message names another video.",
+        examples=["VID01"],
+    )
+
+
+class AnswerData(BaseModel):
+    """A small result table for the `answer` action, computed here or by Genie."""
+
+    columns: list[str] = Field(description="Column names of the result table.")
+    rows: list[list] = Field(description="Result rows (max 500), in column order.")
+    sql: str | None = Field(default=None, description="The SQL Genie wrote and ran.")
+
+
+class ChatResponse(BaseModel):
+    reply: str = Field(description="One or two short sentences to show in the chat.")
+    action: ChatAction = Field(
+        description="search: `data` is a GET /search payload, already limited to the open "
+        "video. quiz: `data` is a GET /quiz payload. timeline: `data` is a "
+        "GET /cases/{case_id}/timeline payload. answer: `data` is a small result table (or "
+        "null), computed by the backend or by Genie. "
+        "none: nothing to render besides `reply`; `data` is null."
+    )
+    data: SearchResponse | QuizResponse | TimelineResponse | AnswerData | None = Field(
+        description="The payload for `action`, or null."
+    )
+    router: ChatRouter = Field(
+        description="Which path decided: llm (Databricks chat model picked a tool), rules "
+        "(keyword rules) or genie (Databricks Genie answered a data question)."
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "reply": "Found 5 moments with the clipper in VID01. The first starts at 11:14.",
+                "action": "search",
+                "data": {
+                    "results": [
+                        {
+                            "case_id": "VID01",
+                            "start_sec": 674.0,
+                            "end_sec": 690.0,
+                            "label": "clipper",
+                            "source": "annotation",
+                        }
+                    ]
+                },
+                "router": "rules",
+            }
+        }
+    )
+
+
 # --- steps (operation phases for one video) -----------------------------------
 
 
