@@ -2,6 +2,10 @@
 
 ## VID01 overlay switched to v3 (2026-11-15, Mihir)
 
+**Shlok (UI, not edited by Mihir):** `frontend/src/architecture.js` line 59 hardcodes the "real VID01 overlay prediction" at 860.16 s as v2's values (`score: '0.997'`, `xyxy: [0.3167, 0.0069, 0.692, 0.4689]`). The deployed v3 artifact at 860.16 s (frame 21504) is gallbladder `score 0.998`, `bbox_xyxy [0.3147, 0.0, 0.6913, 0.4779]`. Update the scene if you want it to match the live file exactly. `frontend/docs/DESIGN.md` mentions the same 0.997.
+
+**Docs sweep (2026-11-15):** every "planned stage 3 / future work" stub now reflects the live experimental overlay: root README and AGENTS.md, agent-kit README/SPEC/DEMO/EVALUATION/SKILLS/DATABRICKS/CONTRACTS/DECISIONS (three new decision rows), backend README/CONTRACT_PROPOSAL/FRONTEND_GUIDE, databricks/README, ml/README, ml/PROGRESS, the plan and the runner README. `frontend/public/model-evals.md` has a new "Bounding boxes on the video" section with the v3 test numbers.
+
 At Mihir's decision, `frontend/public/overlays/VID01.json` is now the **v3** export (native-resolution Faster R-CNN, `anatomy-hires-v3`, validation AP 0.384 vs v2's 0.352; thresholds gallbladder 0.65, cystic duct 0.50). Reason: v3 is the best model on the labelled Endoscapes validation set; the earlier v2-vs-v3 VID01 proxy (32 frames, duct box present or not) favored v2, but it is a weak signal and VID01 accuracy is unmeasured for both. Known trade-off: v3 does **not** box the cystic duct at 11:38 (the clipping demo moment); v2 did. The file is the local export, identical to the Databricks parallel export within rounding. Checks: localization tests 35 and frontend tests 29 passed, build passed; headless Chrome 157 showed boxes at 422.7 and 673.95 s (gallbladder + cystic duct), 2 boxes in every playback sample, aligned after resize, VID02 cleared; a contact sheet at 306/423/674/860 s shows boxes on the gallbladder and duct region. The v2 export remains reproducible from `~/madhacks2026/localization/anatomy-full-v2/best.pt` if anyone wants it back.
 
 ## VID01 review is now one click away (2026-11-15, Mihir)
@@ -11,7 +15,7 @@ At Mihir's decision, `frontend/public/overlays/VID01.json` is now the **v3** exp
 ## For Aadhitya: Databricks usage and a stale line in architecture.md (2026-11-15, Mihir)
 
 - **Your token ran spatial jobs.** The repo-root `.env` token (yours) was used for serverless CPU jobs on 2026-11-14/15, all with hard timeouts and none still running: 1 probe (`1071673074744713`), 4 VID01 export chunks of about 13–14 min each (`957519259085718`, `919130938453288`, `489212282518799`, `899023133189397`), and 7 runs that were cancelled within a few minutes because of a launcher argument bug. Data was uploaded to `/Volumes/workspace/default/surgf/localization/` (anatomy images, the v3 checkpoint, exports). Launcher: `scripts/run_databricks_anatomy.py`. If you would rather spatial jobs use a different token or budget, say so here.
-- **`frontend/public/architecture.md` is out of date on overlays.** Line 142 says "bounding boxes on a few sample frames from Grounding DINO". `main` now shows **anatomy boxes (gallbladder and cystic duct) every 0.24 s across VID01 from a Faster R-CNN trained on Endoscapes (v2, validation AP 0.352)**; no instrument boxes. It is your file, so it is left for you to update.
+- **`frontend/public/architecture.md` is out of date on overlays.** Line 142 says "bounding boxes on a few sample frames from Grounding DINO". `main` now shows **anatomy boxes (gallbladder and cystic duct) every 0.24 s across VID01 from a Faster R-CNN trained on Endoscapes (v2, validation AP 0.352)**; no instrument boxes. **Update 2026-11-15:** Mihir corrected that line in `architecture.md` during a docs sweep (now describes the Endoscapes Faster R-CNN anatomy boxes); change the wording as you like.
 
 ## Fullscreen overlay check done (2026-11-15, Mihir)
 

@@ -5,7 +5,7 @@
 Shlok's homepage revamp lives on `feat/shlok-frontend-v2`. Read [design criteria](docs/DESIGN.md) and [anti-slop criteria](docs/ANTI_SLOP.md) before changing presentation or copy. Homepage markup/scroll lifecycle are isolated in `src/home.js` and `src/home.css`; Inclusive Sans is self-hosted. Native scrolling and reduced-motion support preserve immediate access to the case. This round is committed locally only at Shlok's request.
 
 
-Current ownership: **Shlok — general frontend design; Aadhi — spatial data/models/evaluation/export; Mihir — spatial player/browser verification.** The integrated frontend is on `main` through `6d468dd`; new spatial work stays on `feat/spatial-overlays` until explicitly published. Shlok and Mihir coordinate shared frontend markup/styles. See [tasks and handoffs](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). Earlier owner notes below are historical.
+Current ownership: **Shlok — general frontend design; Mihir — all spatial work (data, models, evaluation, export, player behavior, browser checks).** Spatial work is developed on `feat/spatial-overlays` and published to `main` with Shlok's approval (latest: v3 overlay, 2026-11-15). Shlok and Mihir coordinate shared frontend markup/styles. See [tasks and handoffs](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). Earlier owner notes below are historical.
 
 The dashboard lets users switch between hosted VID01 and VID02. The video, operation steps, and requested outputs are on the left; Lil Doc and the chat input are on the right. Earlier user questions remain clickable in the conversation and rerun their query. Search results are scoped to the open case using the shared `GET /search?q=...` clip contract.
 

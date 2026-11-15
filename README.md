@@ -20,8 +20,8 @@ Dataset annotations and model predictions use the same clip fields. The case ID 
 
 See the [agent kit](agent-kit/README.md) for the spec and [team progress](agent-kit/PROGRESS.md) for handoffs.
 
-## Planned stage 3: video localization
+## Stage 3: video localization (experimental)
 
-Our planned third stage adds optional instrument/anatomy bounding boxes over video, followed by supported action-triplet associations. This is future work; the current pipeline supplies clip search and tool-presence predictions.
+**Status (2026-11-15): live and experimental.** VID01 shows anatomy boxes (gallbladder, cystic duct) every 0.24 s from a Faster R-CNN trained on Endoscapes (v3, native resolution; validation AP 0.384). No instrument or liver boxes, no tracking, no action links. VID01 accuracy itself is unmeasured (review deferred). Instrument boxes and supported action-triplet associations remain future work.
 
 See [Stage 3 localization plan](ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

@@ -18,8 +18,8 @@ Team target: `workspace.default.surgf_clips`. Connect with `DATABRICKS_SERVER_HO
 
 [quiz_facts.sql](quiz_facts.sql) creates `workspace.default.surgf_steps` (Cholec80 steps for VID01 and VID02, from `backend/fixtures/steps.*.json`), the `workspace.default.surgf_clock(seconds)` m:ss function and the `workspace.default.surgf_quiz_facts` view: one row per fact (`case_id, fact_type, subject, position, fact, start_sec, end_sec`) covering each step and each instrument's usage and last appearance, from `annotation` rows only. Safe to rerun. Add the view, the steps table and the function to the Genie space; [quiz_example.sql](quiz_example.sql) is the trusted example quiz query whose columns match the backend `study_quiz` contract.
 
-## Planned stage 3: video localization
+## Stage 3: video localization
 
-Future stage-3 spatial outputs need a separately agreed schema/storage path. The current import job remains for temporal clip rows only; do not encode boxes or instance relations into `label` or overload the clip CSV. Preserve model/video provenance for later overlay artifacts.
+Spatial outputs are not stored in SQL tables. Training data, checkpoints and exports for the anatomy detector live in the `surgf` Volume under `localization/`, written by `scripts/run_databricks_anatomy.py`; `surgf_clips` stays temporal clip rows only.
 
 See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

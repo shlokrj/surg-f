@@ -54,8 +54,8 @@ Status: **proposal, 2026-11-14 (Rohan).** The backend serves these endpoints on 
 - Is `case_id` case-sensitive (current behavior, `VID01` only), or should `vid01` also work?
 - Should the frontend's `VITE_USE_FIXTURE` mode use these fixtures, or call the backend's fixture mode instead?
 
-## Planned stage 3: video localization
+## Stage 3: video localization
 
-The planned localization stage is a separate future proposal from the timeline/quiz contract above. No box route has been agreed. Consult the stage-3 plan for candidate fields and negotiate the spatial contract with ML/frontend before implementation.
+No backend contract is needed today: the player reads the static artifact described in `agent-kit/CONTRACTS.md` ("Stage 3 spatial artifact v1"). Propose a route only if overlays move behind the API.
 
 See [Stage 3 localization plan](../../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

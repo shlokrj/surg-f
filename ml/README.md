@@ -184,8 +184,8 @@ Selection averages event F1 over all six tools (no-event tools score zero), then
 
 Clip export requires model and bundle checkpoint, preprocessing and source-label provenance to match. It also checks the saved model threshold against `metrics.json`, binary class order, recognized tools, and finite normalized probabilities. A mismatch fails before any clip CSV is written. Use the model and complete feature bundles from the same verified pipeline; do not remove provenance fields to make an old artifact pass. Smoothing accepts integer gap/length settings and sorted nonempty intervals.
 
-## Planned stage 3: video localization
+## Stage 3: video localization
 
-Future stage 3 adds a spatial detector beside the SurgVLP tool-presence pipeline. Grounding DINO-T is the recommended first feasibility experiment; optional SAM 2.1 would handle masks/tracking. Do not infer coordinates or verbs from the current classifier. Read the central plan before any model setup or taxonomy change.
+The spatial detector lives in `ml/localization/`, separate from the SurgVLP tool-presence pipeline. Grounding DINO was the first zero-shot prototype; the live model is a supervised Faster R-CNN trained on Endoscapes (v3, validation AP 0.384) for gallbladder and cystic duct. See `ml/localization/README.md` for training, evaluation, export, the VID01 review pack and Databricks jobs.
 
 See [Stage 3 localization plan](LOCALIZATION_PLAN.md) for the complete context and primary sources.

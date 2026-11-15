@@ -643,8 +643,8 @@ type StudyQuiz = { items: {
   The panel itself is frontend-only: see "3D model" in [frontend/README.md](../../frontend/README.md).
 - **CORS** now allows `POST` from the default dev origins.
 
-## Planned stage 3: video localization
+## Stage 3: video localization
 
-Future overlay integration should expose frame timestamps, source dimensions, normalized boxes and provenance. The player must map into the actual video content rectangle and discard stale detections. The stage-3 payload is still proposed; existing endpoint documentation does not promise box or verb predictions.
+Overlays are not served by the backend. The player loads `/overlays/{case_id}.json` (static, versioned, validated in `frontend/src/overlays.js`) and maps normalized boxes into the displayed video rectangle; see `agent-kit/CONTRACTS.md` for the schema.
 
 See [Stage 3 localization plan](../../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

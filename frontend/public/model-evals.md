@@ -48,6 +48,25 @@ The score is **F1**, from 0 to 1, where 1 is perfect. It balances catching every
 
 The final instrument scores also beat our first model, a set of simple per-tool classifiers. For example, hook rose from 0.75 to 0.83 and bipolar from 0.34 to 0.52.
 
+## Bounding boxes on the video (experimental)
+
+A second model draws boxes around the **gallbladder** and **cystic duct** in the VID01 video, every quarter second.
+
+| | |
+|---|---|
+| **Model** | Faster R-CNN (MobileNetV3 backbone, pretrained on COCO), fine-tuned by us on full-resolution frames |
+| **Data** | Endoscapes: 1,212 surgeon-annotated frames from 120 surgeries for training, tested on 409 frames from 41 other surgeries |
+| **What it finds** | Gallbladder and cystic duct only. No instrument boxes: no dataset we have marks which instrument is where |
+
+| On the 409 test frames | Gallbladder | Cystic duct |
+|---|---|---|
+| Boxes that are correct (precision) | **0.93** | 0.69 |
+| Real ones it finds (recall) | **0.93** | 0.39 |
+
+A box counts as correct when it overlaps the surgeon's box by at least half. Overall detection score (COCO AP): **0.38**, up from 0.35 for our previous version. The gallbladder is reliable; the cystic duct is small and often hidden, so many are missed.
+
+**Not yet checked on this video.** These numbers come from Endoscapes surgeries, not from VID01 itself, and the boxes have not been reviewed by a clinician. Treat them as an experimental view, not as ground truth.
+
 ## How to read the search results
 
 - **"Labeled" clips** come from surgeon annotations. Treat them as ground truth.

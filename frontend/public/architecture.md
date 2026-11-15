@@ -139,7 +139,7 @@ A typed message goes through three layers, each a fallback for the one before it
 - **Timeline / chart:** instrument usage and surgical phases.
 - **Quiz:** for studying.
 - **Chat:** the assistant from ⑧.
-- **Experimental overlays:** bounding boxes on a few sample frames from Grounding DINO. This is a preview of the next stage and has not been evaluated.
+- **Experimental overlays:** gallbladder and cystic duct boxes every 0.24 s across VID01 from a Faster R-CNN fine-tuned on Endoscapes (validation AP 0.38; gallbladder about 0.93 precision and recall, cystic duct weaker). No instrument boxes. Not yet validated on VID01 itself.
 
 ---
 

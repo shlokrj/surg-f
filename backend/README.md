@@ -64,8 +64,8 @@ python -m uv run python scripts/export_fixtures.py
 - `fixtures/`: saved responses.
 - `docs/`: the frontend guide and the contract proposal.
 
-## Planned stage 3: video localization
+## Stage 3: video localization
 
-Stage 3 will need a separate versioned spatial-overlay response keyed by video asset and time/frame, after ML/data agree a schema. Search intervals alone cannot provide boxes. No localization endpoint is added by this plan, and existing search/timeline/quiz behavior is unchanged.
+Spatial overlays are live (experimental) as a static frontend artifact, `frontend/public/overlays/VID01.json`; no backend route serves them and search is unchanged. A versioned backend response would only be needed if overlays move to Databricks storage; agree a schema first (see the plan).
 
 See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

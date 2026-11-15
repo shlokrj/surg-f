@@ -10,8 +10,8 @@ Start with [AGENTS.md](AGENTS.md) for Git and collaboration rules. Use [SPEC.md]
 
 - [ML team progress](../ml/PROGRESS.md) separates Shlok's feature extraction from Aadhitya's video work.
 
-## Planned stage 3: video localization
+## Stage 3: video localization (experimental)
 
-The planned third milestone is video localization and optional instrument/anatomy overlays. The central plan records the user reference, model recommendation, taxonomy discrepancy, proposed interfaces and later team handoffs; implementation has not started.
+**Status (2026-11-15): live and experimental.** VID01 shows anatomy boxes (gallbladder, cystic duct) every 0.24 s from a Faster R-CNN trained on Endoscapes (v3, native resolution; validation AP 0.384). No instrument or liver boxes, no tracking, no action links. VID01 accuracy itself is unmeasured (review deferred). The plan records the model history (Grounding DINO prototype → Endoscapes Faster R-CNN), data, evaluation, Databricks jobs and open gaps.
 
 See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

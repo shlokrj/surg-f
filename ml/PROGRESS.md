@@ -1,6 +1,8 @@
 # ML team progress
 
-## Current spatial assignment and run status (2026-11-14)
+## Current spatial assignment and run status (2026-11-14; updated 2026-11-15)
+
+**2026-11-15:** the VID01 overlay on `main` now uses **v3** (`anatomy-hires-v3`, native resolution with flips; validation AP 0.384, cystic duct precision 0.69 / recall 0.39, gallbladder 0.93 / 0.93). v2 was replaced at Mihir's decision; VID01 accuracy is still unmeasured. Details: [handoff](../agent-kit/HANDOFFS.md#vid01-overlay-switched-to-v3-2026-11-15-mihir).
 
 Mihir alone owns the remaining spatial data/model/evaluation/export and player work on `feat/spatial-overlays`; Aadhi moved to other work. Shlok owns general frontend design. The prior spatial assignment sections below are historical. Mihir verified VID01 overlays in visible Chrome, including sampled-frame seeking, resize and fullscreen. Full Endoscapes preparation completed locally via `python3 ml/localization/fetch_anatomy_data.py --output-dir ~/madhacks2026/localization/anatomy-data`: 1,212 train and 409 validation images passed a second hash/decode/label check and `ready_data` accepted the full split (signature `0c003c2f469468b0acf3cb61a2788c7aff77b5b8d72ad9f59800ce1f71b07eff`). The five-epoch run under `~/madhacks2026/localization/anatomy-full-v1/` stopped after epoch 3 on the nonfinite-loss guard; the epoch-3 checkpoint has validation AP 0.345 (gallbladder AP50 0.945, cystic duct 0.321) and now backs a full-length VID01 anatomy artifact. Details, error analysis and limits: [handoff](../agent-kit/HANDOFFS.md#mihir-anatomy-model-and-vid01-overlay-deployed-2026-11-14). **Update:** v2 (`anatomy-full-v2`, epoch 7, AP 0.352, cystic duct recall 0.37 vs 0.22 at precision 0.66) now backs the branch overlay; the NaN stops were all-negative batches. See [v2 handoff](../agent-kit/HANDOFFS.md#spatial-v2-anatomy-model-replaces-v1-on-the-vid01-overlay-2026-11-14-mihir). Bounded training/export checks passed. The current CholecT50 mirror has zero spatial boxes; Endoscapes generic `tool` does not establish six instrument subtype labels. See [localization runner and limits](localization/README.md#full-anatomy-data-training-and-export-mihir) and [current handoff](../agent-kit/HANDOFFS.md#mihir-spatial-implementation-status-2026-11-14).
 
@@ -357,9 +359,9 @@ Commit each feature or major change on `ml-dev` with a lowercase Conventional Co
 | VID110 | `266473423111528` | 2177 |
 | VID111 | `584638373831614` | 2146 |
 
-## Planned stage 3: video localization
+## Stage 3: video localization
 
-2026-11-14: Stage 3 recorded at Shlok's request; research/documentation complete, implementation deferred. The central plan records the seven-instrument proposal versus the official dataset inventory, annotation audit, model recommendation and later responsibilities. No detector was run and no accuracy, throughput or UI verification is claimed. Resume existing validation work independently.
+**2026-11-15 status:** implemented and live (experimental): v3 Endoscapes anatomy detector on the VID01 overlay, validation AP 0.384; see [EVALUATION.md](../agent-kit/EVALUATION.md#stage-3-anatomy-localization). Earlier entry, 2026-11-14: Stage 3 recorded at Shlok's request; research/documentation complete, implementation deferred. The central plan records the seven-instrument proposal versus the official dataset inventory, annotation audit, model recommendation and later responsibilities. No detector was run and no accuracy, throughput or UI verification is claimed. Resume existing validation work independently.
 
 See [Stage 3 localization plan](LOCALIZATION_PLAN.md) for the complete context and primary sources.
 

@@ -9,8 +9,8 @@
 
 Use an explicitly labeled fixture while dependencies are being built. Verify each handoff with a real case before marking it complete. Keep credentials, raw footage, and large feature caches out of Git.
 
-## Planned stage 3: video localization
+## Stage 3: video localization
 
-When stage 3 starts: ML validates localization and action association, data validates source coordinates/timebase, backend validates versioned overlay responses, and frontend validates toggle/rendering behavior. Use the central plan for the proposed responsibility split; no new model or service is running yet.
+Spatial (Mihir, `ml/localization/`): before changing the VID01 overlay, compare models with `analyze_anatomy_errors.py` on the Endoscapes validation split, export with `export_anatomy_video.py` (player seconds, not dataset frame IDs), validate with `artifact.py`, and check boxes in a real browser (seek, playback, resize, fullscreen, case switch). Backend and Databricks tables are not involved; overlays are static files.
 
 See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.

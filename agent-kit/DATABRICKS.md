@@ -22,8 +22,8 @@
 | Code and docs | GitHub | Team |
 | Credentials | Repo-root `.env`, git-ignored | Never shared in Git |
 
-## Planned stage 3: video localization
+## Stage 3: spatial jobs
 
-Future spatial detections should use a separate versioned artifact/table design with model and video provenance, agreed with backend first. Do not insert bounding boxes or action relationships into the existing clip CSV. Detector compute and any mask/tracking workload need their own measured feasibility check; no resources were provisioned for stage 3.
+Anatomy training and export can run as serverless CPU jobs via `scripts/run_databricks_anatomy.py` (committed snapshot, hard timeout, MLflow experiment `surg-f-anatomy`). Inputs and outputs live in the `workspace.default.surgf` Volume under `localization/` (`anatomy-data/`, `runs/`, `exports/`). Measured: 4 CPUs per job, much slower than a recent Mac per job, so long exports are split into parallel time chunks and merged with `ml/localization/merge_artifacts.py`; the Databricks v3 export matched the local one within rounding. Boxes are **not** stored in `surgf_clips` or any SQL table; the player reads a static JSON artifact.
 
 See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.
