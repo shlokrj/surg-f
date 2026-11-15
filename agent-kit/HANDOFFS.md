@@ -1,7 +1,5 @@
 # Team handoffs
 
-> **2026-11-14: history rewrite.** `main`, `ml-dev` and `feat/spatial-overlays` were force-pushed with rewritten commit messages. Read [HISTORY_REWRITE.md](HISTORY_REWRITE.md) and resync before pulling, merging or pushing.
-
 ## Current ownership: Shlok moves to frontend design (2026-11-14)
 
 Shlok now owns **general frontend design and presentation**, and is no longer assigned spatial ML work. **Aadhi owns spatial data, model training, evaluation, inference and artifact export**, including Shlok's unfinished trainer tasks. **Mihir owns spatial player integration and browser verification**. This supersedes earlier assignment tables and historical ownership notes below.
