@@ -2,7 +2,7 @@
    architecture.js and modelnotes.js). Facts come from agent-kit/DATABRICKS.md, agent-kit/PROGRESS.md,
    ml/PROGRESS.md, databricks/README.md and backend/README.md (all logged 2026-11-14). Links checked
    2026-11-14. The Databricks mark is the simple-icons path (CC0 drawing of the Databricks trademark). */
-import { onStage } from './architecture.js';
+import { onStage, pickChapters } from './architecture.js';
 
 const link = (href, text) => `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
 export const DATABRICKS_MARK = '<svg class="db-mark" viewBox="0 0 24 24" aria-hidden="true"><path fill="#FF3621" d="M.95 14.184L12 20.403l9.919-5.55v2.21L12 22.662l-10.484-5.96-.565.308v.77L12 24l11.05-6.218v-4.317l-.515-.309L12 19.118l-9.867-5.653v-2.21L12 16.805l11.05-6.218V6.32l-.515-.308L12 11.974 2.647 6.681 12 1.388l7.76 4.368.668-.411v-.566L12 0 .95 6.27v.72L12 13.207l9.919-5.55v2.26L12 15.52 1.516 9.56l-.565.308Z"/></svg>';
@@ -88,12 +88,13 @@ const CHAPTERS = [
   },
 ];
 
-export function databricksSection() {
-  return `<section class="dig dig-model dig-db" id="databricks" aria-labelledby="db-heading" data-intro="0" data-per="2" style="--travel:10;--nav:1">
+export function databricksSection({only, per = 2} = {}) {
+  const chapters = pickChapters(CHAPTERS, only);
+  return `<section class="dig dig-model dig-db" id="databricks" aria-labelledby="db-heading" data-intro="0" data-per="${per}" style="--travel:${chapters.length * per};--nav:1">
     <div class="dig-pin">
       <div class="mn-heading db-heading"><h2 id="db-heading"><span>Built on</span>${DATABRICKS_LOGO}</h2><p>Everything below the player runs on Databricks.</p></div>
-      <div class="dig-map"><ol class="dig-labels" aria-label="Databricks">${CHAPTERS.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>
-      ${CHAPTERS.map((c, i) => `<div class="layer" id="db-${c.id}" data-layer="${i}" style="--p:0;--s:1">
+      <div class="dig-map"><ol class="dig-labels" aria-label="Databricks">${chapters.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>
+      ${chapters.map((c, i) => `<div class="layer" id="db-${c.id}" data-layer="${i}" style="--p:0;--s:1">
         <div class="dig-copy layer-copy"><h3>${c.title}</h3><p>${c.body}</p><div class="lv-stack"><span>Built with</span><ul>${c.stack.map(([t, h]) => `<li>${link(h, t)}</li>`).join('')}</ul></div></div>
         <div class="pit" style="--k:${i}" role="img" aria-label="${c.name} animation"><canvas class="sky-dither" data-horizon=".72" data-ceiling="4.6" aria-hidden="true"></canvas><div class="fit">${c.scene()}</div><p class="v-cap">${c.note}</p></div>
       </div>`).join('')}

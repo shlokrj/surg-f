@@ -1,7 +1,7 @@
 import '@fontsource-variable/inclusive-sans';
 import './style.css';
 import './home.css';
-import { homePage, mountHome, wordmark, paintDither, DEMO_QUESTION, DEMO_SEEK } from './home.js';
+import { homePage, mountHome, wordmark, paintDither, DEMO_QUESTION, DEMO_SEEK, VERSION_NAMES } from './home.js';
 import './case.css';
 import './architecture.css';
 import './modelnotes.css';
@@ -48,8 +48,14 @@ const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[c]));
 const logo = wordmark('topbar-mark');
-/* The presentation version of the homepage lives at /demo (or any URL with ?demo). */
-const HOME_MODE = /^\/demo\/?$/.test(window.location.pathname) || new URLSearchParams(window.location.search).has('demo') ? 'demo' : 'public';
+/* Homepage version from the URL: /demo, /presentation-demo, /video-demo (or ?mode=<name>, or ?demo).
+   Anything else is the public product page. See VERSIONS in home.js. */
+const HOME_MODE = (() => {
+  const query = new URLSearchParams(window.location.search);
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+  const wanted = query.get('mode') ?? (VERSION_NAMES.includes(path) ? path : query.has('demo') ? 'demo' : 'public');
+  return VERSION_NAMES.includes(wanted) ? wanted : 'public';
+})();
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // The whole page is redrawn from state. The <video> element is carried over to the new

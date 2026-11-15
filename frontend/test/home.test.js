@@ -132,7 +132,7 @@ test('public and demo versions: demo runs problem, solution, features, stack, mo
  assert.equal(fut.querySelectorAll('.fu-doc .doc-avatar').length,4,'Lil Doc in every chapter');
  const p=demo.querySelector('#problem');
  assert.equal(p.querySelectorAll('.pb-length .pb-tile').length,24,'24 real VID01 frames');
- assert.match(p.textContent,/14:20 to 14:37, 17 s of 1,728 s/);
+ assert.match(p.textContent,/14:20 to 14:37, 17 s of 1,733 s/);
  assert.equal(p.querySelectorAll('.pb-use').length,4,'four use cases');
  assert.equal(demo.querySelector('#case-preview'),null,'the solution replaces Find the clip in the demo');
  assert.ok(demo.querySelector('#solution #sample-event'));
@@ -146,4 +146,22 @@ test('one eye in the pinned nav blurs every surgery picture on the homepage',()=
   const off=new JSDOM(homePage({videoUrl:'/v.mp4',filterOn:false,filterButton:'',error:'',showcase,mode})).window.document;
   assert.equal(off.querySelector('main.landing.is-blurred'),null,mode);
  }
+});
+test('presentation and video demos: their own sections and chapters; the original demo is unchanged',()=>{
+ const doc=mode=>new JSDOM(markup(mode)).window.document;
+ const order=d=>[...d.querySelectorAll('main > section, main > div.feature-stack')].map(el=>el.id||el.className.split(' ')[0]);
+ const chapters=d=>[...d.querySelectorAll('.dig .layer')].map(l=>l.id);
+ const demo=doc('demo'),pres=doc('presentation-demo'),video=doc('video-demo');
+ assert.deepEqual(chapters(demo).slice(0,7),['problem-length','problem-needle','problem-uses','problem-index','solution-label','solution-ask','solution-jump']);
+ assert.deepEqual(order(pres),['landing-intro','problem','solution','feature-stack','architecture','model-notes','databricks','future']);
+ assert.deepEqual(chapters(pres).filter(id=>/^(problem|solution|model)-/.test(id)),['problem-needle','problem-docs','problem-uses','solution-label','solution-ask','solution-jump','solution-record','solution-practice','model-test','model-instruments','model-versions','model-boxes']);
+ assert.deepEqual(order(video),['landing-intro','problem','solution','databricks']);
+ assert.deepEqual(chapters(video),['problem-needle','problem-docs','solution-ask','solution-jump','solution-practice','db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai']);
+ assert.equal(video.querySelector('main').dataset.playMs,'2300','the video demo plays faster');
+ assert.equal(video.querySelector('#problem').dataset.per,'1.6');
+ assert.equal(pres.querySelectorAll('#problem-docs .pb-form-row').length,7,'the seven VID01 steps');
+ assert.match(pres.querySelector('#solution-record').textContent,/does not write clinical notes yet/);
+ assert.equal(pres.querySelectorAll('#solution-practice img[src^="/screens/model-step"]').length,3);
+ assert.match(pres.querySelector('#solution-practice').textContent,/not yet medically reviewed/);
+ assert.equal(doc('public').querySelector('#problem'),null,'the product page is unchanged');
 });

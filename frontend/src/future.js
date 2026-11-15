@@ -69,8 +69,8 @@ const scene = () => `<div class="sc fu-scene">
     <b><span class="real">${a.name}</span><span class="mystery">???</span></b><small>${a.role}</small></div>`).join('')}</div>
   ${AGENTS.map((a, j) => `<div class="fu-say" data-j="${j}"><span class="fu-mini">${a.art}</span><p>${a.says}</p></div>`).join('')}</div>`;
 
-export function futureSection() {
-  return `<section class="dig dig-model dig-future" id="future" aria-labelledby="future-heading" data-intro="0" data-per="2" style="--travel:8;--nav:1">
+export function futureSection({per = 2} = {}) {
+  return `<section class="dig dig-model dig-future" id="future" aria-labelledby="future-heading" data-intro="0" data-per="${per}" style="--travel:${4 * per};--nav:1">
     <div class="dig-pin">
       <div class="mn-heading"><h2 id="future-heading">What’s next.</h2><p>Lil Doc teaches. Next, a team of agents that read the same index for everyone else around an operation.</p></div>
       <div class="dig-map"><ol class="dig-labels" aria-label="Future agents">${AGENTS.map((a, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${a.name}</button></li>`).join('')}</ol></div>

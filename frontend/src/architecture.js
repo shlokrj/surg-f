@@ -61,8 +61,9 @@ const BOX = {t: 860.16, label: 'gallbladder', score: '0.998', xyxy: [0.3147, 0.0
 const CANDS = [[4, 46, 30, 40], [58, 50, 34, 44], [18, 20, 44, 52], [46, 4, 46, 30], [8, 6, 28, 34], [62, 14, 30, 36]];
 /* shared/triplets.annotation.csv, VID01, in time order. */
 const ROWS = [['VID01', 561, 658, 'hook'], ['VID01', 674, 690, 'clipper'], ['VID01', 698, 747, 'clipper'], ['VID01', 815, 844, 'clipper'], ['VID01', 860, 877, 'scissors'], ['VID01', 894, 921, 'hook'], ['VID01', 1010, 1026, 'bipolar']];
-/* VID01 instrument time line, merged per instrument from the same CSV (1,728 s long). */
-export const VID01_LEN = 1728;
+/* VID01 instrument time line, merged per instrument from the same CSV. VID01_LEN is the video's real
+   length (1,733.04 s, 28:53); the annotations end at 1,728 s. */
+export const VID01_LEN = 1733;
 export const TRACKS = {
   grasper: [[0, 5], [10, 108], [136, 172], [177, 190], [276, 298], [302, 312], [324, 363], [367, 387], [391, 395], [397, 401], [403, 406], [415, 471], [477, 484], [493, 496], [524, 530], [536, 621], [651, 746], [750, 751], [754, 758], [763, 771], [774, 796], [812, 883], [935, 936], [1037, 1039], [1100, 1111], [1116, 1118], [1158, 1437], [1439, 1440], [1443, 1460], [1478, 1565], [1567, 1655], [1658, 1678], [1689, 1690], [1697, 1709], [1711, 1718], [1721, 1728]],
   hook: [[20, 272], [484, 505], [561, 658], [894, 921], [1039, 1378], [1381, 1434], [1438, 1439]],
@@ -149,8 +150,8 @@ WHERE lower(label) = 'scissors'</code></pre>
   }
 }
 
-export function architectureSection() {
-  return `<section class="dig" id="architecture" aria-labelledby="dig-heading" data-intro="1.6" data-per="2.1" style="--e:0;--nav:0;--depth:0;--travel:14.2">
+export function architectureSection({per = 2.1} = {}) {
+  return `<section class="dig" id="architecture" aria-labelledby="dig-heading" data-intro="1.6" data-per="${per}" style="--e:0;--nav:0;--depth:0;--travel:${1.6 + LAYERS.length * per}">
     <div class="dig-pin">
       <div class="dig-copy dig-intro-copy" data-copy="-1"><h2 id="dig-heading">Dig into the stack.</h2><p>Surg+F is six layers, from the player you use down to the surgery video underneath. Scroll to dig through them, or pick a layer.</p></div>
       <div class="dig-map">
@@ -220,6 +221,11 @@ export function digScenes(root) {
     return scenes;
   }).map(sc => ({...sc, start: Math.round(sc.start), end: Math.round(sc.end)}));
 }
+
+/* A chapter's progress by its layer id (null when this page version leaves the chapter out). */
+export const layerP = (section, ps, id) => { const i = [...section.querySelectorAll('.layer')].findIndex(l => l.id === id); return i < 0 ? null : ps[i]; };
+/* Page versions can show a subset of a stage's chapters (only) and set its pace (per). */
+export const pickChapters = (chapters, only) => only ? chapters.filter(c => only.includes(c.id)) : chapters;
 
 /* Hooks a stage can register to run after the shared variables are set (ps = each layer's progress). */
 const hooks = [];

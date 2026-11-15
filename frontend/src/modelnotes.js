@@ -3,7 +3,7 @@
    from frontend/public/model-evals.md: the label model (Aadhi, final MLflow run 9d18d20a, F1 on 4
    held-out surgeries) and the box detector (Mihir, v3 on 409 Endoscapes test frames, IoU 0.5).
    The smoothing strip is an illustration of the rule, not model output. */
-import { onStage } from './architecture.js';
+import { onStage, pickChapters } from './architecture.js';
 
 const F1 = {
   instruments: [['Grasper', .89], ['Hook', .83], ['Bipolar', .52], ['Scissors', .29], ['Irrigator', .26], ['Clipper', .19]],
@@ -102,12 +102,13 @@ const CHAPTERS = [
   },
 ];
 
-export function modelSection() {
-  return `<section class="dig dig-model" id="model-notes" aria-labelledby="model-heading" data-intro="0" data-per="2" style="--travel:10;--nav:1">
+export function modelSection({only, per = 2} = {}) {
+  const chapters = pickChapters(CHAPTERS, only);
+  return `<section class="dig dig-model" id="model-notes" aria-labelledby="model-heading" data-intro="0" data-per="${per}" style="--travel:${chapters.length * per};--nav:1">
     <div class="dig-pin">
       <h2 class="mn-heading" id="model-heading">How well the model sees.</h2>
-      <div class="dig-map"><ol class="dig-labels" aria-label="Model notes">${CHAPTERS.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>
-      ${CHAPTERS.map((c, i) => `<div class="layer" id="model-${c.id}" data-layer="${i}" style="--p:0;--s:1">
+      <div class="dig-map"><ol class="dig-labels" aria-label="Model notes">${chapters.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>
+      ${chapters.map((c, i) => `<div class="layer" id="model-${c.id}" data-layer="${i}" style="--p:0;--s:1">
         <div class="dig-copy layer-copy"><h3>${c.title}</h3><p>${c.body}</p>${c.link ? `<p class="mn-link"><a href="${c.link}">Read the full evaluation</a></p>` : ''}</div>
         <div class="pit" style="--k:${i}" role="img" aria-label="${c.name} animation"><canvas class="sky-dither" data-horizon=".72" data-ceiling="4.6" aria-hidden="true"></canvas><div class="fit">${c.scene()}</div><p class="v-cap">${c.note}</p></div>
       </div>`).join('')}
