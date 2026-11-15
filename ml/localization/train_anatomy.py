@@ -130,12 +130,13 @@ def main():
     parser.add_argument('--learning-rate', type=float, default=0.001)
     parser.add_argument('--seed', type=int, default=17)
     parser.add_argument('--device', default='cpu')
+    parser.add_argument('--grad-clip', type=float, help='Clip total gradient norm (guards against divergence)')
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--max-train-images', type=int, help='Bounded pipeline check; not an accuracy run')
     parser.add_argument('--max-val-images', type=int, help='Bounded pipeline check; not an accuracy run')
     args = parser.parse_args()
-    if args.epochs < 1 or args.batch_size < 1 or args.learning_rate <= 0:
-        parser.error('epochs, batch size and learning rate must be positive')
+    if args.epochs < 1 or args.batch_size < 1 or args.learning_rate <= 0 or (args.grad_clip is not None and args.grad_clip <= 0):
+        parser.error('epochs, batch size, learning rate and gradient clip must be positive')
     if any(v is not None and v < 1 for v in (args.max_train_images, args.max_val_images)):
         parser.error('image limits must be positive')
     import torch
@@ -165,6 +166,8 @@ def main():
     optimizer = torch.optim.SGD([p for p in model.parameters() if p.requires_grad], lr=args.learning_rate, momentum=.9)
     config = dict(batch_size=args.batch_size, learning_rate=args.learning_rate, device=args.device,
                   weights_sha256=weights_sha256)
+    if args.grad_clip is not None:  # only recorded when used, so earlier checkpoints still resume
+        config['grad_clip'] = args.grad_clip
     start, best_ap, history = 0, -1.0, []
     if args.resume:
         previous = torch.load(out / 'last.pt', map_location=args.device, weights_only=False)
@@ -185,7 +188,10 @@ def main():
             loss = sum(terms.values())
             if not torch.isfinite(loss):
                 raise ValueError('nonfinite training loss')
-            optimizer.zero_grad(); loss.backward(); optimizer.step()
+            optimizer.zero_grad(); loss.backward()
+            if args.grad_clip is not None:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+            optimizer.step()
             losses.append(float(loss.detach()))
         predictions = predictions_for(model, val, args.device)
         metrics = evaluate(subsets['val'], predictions)
@@ -207,6 +213,7 @@ def main():
                       architecture='fasterrcnn_mobilenet_v3_large_320_fpn', initial_weights=weights.name,
                       initial_weights_sha256=weights_sha256,
                       categories=CATEGORIES, seed=args.seed, device=args.device, epochs_requested=args.epochs,
+                      learning_rate=args.learning_rate, batch_size=args.batch_size, grad_clip=args.grad_clip,
                       train_images=len(train), validation_images=len(val), data_signature=signature,
                       torch=torch.__version__, torchvision=torchvision.__version__,
                       baseline_validation=baseline, best_ap=None if best_ap < 0 else best_ap,
