@@ -26,7 +26,7 @@ Then open:
 | `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_TOKEN` | repo-root `.env` (git-ignored) | When all three are set, the backend uses live Databricks data |
 | `SURGF_CORS_ORIGINS` | backend environment | Optional comma-separated origins. Default `http://localhost:5173,http://127.0.0.1:5173` |
 | `SURGF_WARMUP` | backend environment | `0` turns off the startup query that wakes the SQL warehouse |
-| `DATABRICKS_GENIE_SPACE_ID` | repo-root `.env` | Optional. Turns on Genie for free-form questions in `/interpret` and `/chat`. The team space is `01f1e08655eb17c1931c9dbb6cd4750b` |
+| `DATABRICKS_GENIE_SPACE_ID` | repo-root `.env` | Optional. Turns on Genie for free-form questions in `/interpret` and `/chat`. The team space is `01f1e09d399e101dbee5a37e935198bf` (Lil Doc) |
 | `DATABRICKS_CHAT_ENDPOINT` | repo-root `.env` | Optional. Name of the Databricks serving endpoint that routes `/chat` messages, for example `databricks-meta-llama-3-3-70b-instruct`. Without it, keyword rules route |
 | `SURGF_CHAT_TIMEOUT_SEC` | backend environment | Optional. Time limit for the chat model before the rules take over. Default `8` |
 
