@@ -3,6 +3,8 @@ import fixture from '../../shared/search.fixture.json';
 import timeline01 from '../../backend/fixtures/timeline.VID01.json';
 import timeline02 from '../../backend/fixtures/timeline.VID02.json';
 import quizFixture from '../../backend/fixtures/quiz.seed-1.json';
+import steps01 from '../../backend/fixtures/steps.VID01.json';
+import steps02 from '../../backend/fixtures/steps.VID02.json';
 
 const backendUrl = (import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000').replace(/\/$/, '');
 const fixtureMode = import.meta.env.VITE_USE_FIXTURE === 'true';
@@ -32,6 +34,17 @@ export async function getQuiz() {
   try { return await getJson('/quiz'); }
   catch (error) {
     if (error instanceof TypeError || error.status === 404) return { ...quizFixture, demo: true };
+    throw error;
+  }
+}
+// Steps of the operation for one video (the default timeline). The saved copies are used in
+// fixture mode and when the backend cannot be reached, so the timeline always has steps.
+export async function getSteps(caseId) {
+  const saved = { VID01: steps01, VID02: steps02 }[caseId] ?? null;
+  if (fixtureMode) return saved;
+  try { return await getJson(`/cases/${encodeURIComponent(caseId)}/steps`); }
+  catch (error) {
+    if (saved && (error instanceof TypeError || error.status === 404)) return saved;
     throw error;
   }
 }

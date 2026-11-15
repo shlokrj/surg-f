@@ -198,3 +198,42 @@ class InterpretResponse(BaseModel):
             }
         }
     )
+
+
+# --- steps (operation phases for one video) -----------------------------------
+
+
+class Step(BaseModel):
+    order: int = Field(description="Position in the video, starting at 1.", examples=[3])
+    key: str = Field(description="Phase name in the source dataset.", examples=["ClippingCutting"])
+    label: str = Field(
+        description="Plain-language name to display.", examples=["Clipping and cutting"]
+    )
+    start_sec: float = Field(description="Start, in seconds from the video start.", examples=[673])
+    end_sec: float = Field(description="End, in seconds (exclusive).", examples=[887])
+
+
+class StepsResponse(BaseModel):
+    case_id: str = Field(description="The requested case.", examples=["VID01"])
+    source: str = Field(
+        description="Where the steps come from. cholec80_phase: the dataset's phase annotations."
+    )
+    steps: list[Step] = Field(description="Steps of the operation in time order, without gaps.")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "case_id": "VID01",
+                "source": "cholec80_phase",
+                "steps": [
+                    {
+                        "order": 3,
+                        "key": "ClippingCutting",
+                        "label": "Clipping and cutting",
+                        "start_sec": 673.0,
+                        "end_sec": 887.0,
+                    }
+                ],
+            }
+        }
+    )
