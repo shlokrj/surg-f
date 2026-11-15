@@ -31,15 +31,19 @@ This writes `frontend/public/videos/VID01.mp4` (692,593,324 bytes, 28:53) and `V
 
 **Prediction results.** `/search` returns both `source=annotation` and `source=prediction` rows, and has no source filter parameter. Today predictions exist for **VID02 only** (945 rows) from an early baseline model. They are mostly 1-second fragments, so expect many short, noisy `prediction` hits (for example 83 for `clipper`). Keep showing the source on each card and label predictions as model output. Consider grouping or de-emphasizing them. Data/ML will replace these rows after temporal smoothing and the larger model; the fields will not change. Video files are excluded from Git. A local upload plays in the browser but does not ingest or annotate the video.
 
+## Content filter
+
+The home preview and dashboard player start with a modest 9 px blur over the surgical footage for demos. The dashboard overlay covers the full video image. A separate control bar sits above it, keeping play/pause, seek and time, volume, speed, and fullscreen clear and usable. The fullscreen control toggles back to the normal player size and updates its label when fullscreen is exited with Escape. The **Content filter: On/Off** button is beside “Available demo case” on the home page and above the dashboard video. Turning it off reveals the footage; selecting a new video turns it back on. The filter is a visual overlay and does not change video data or analysis.
+
 ## Search features
 
 - `/timestamp clipper` calls `GET /search?q=clipper`, keeps only hits for the open case, and lets users seek to a result. Annotation and prediction sources are labeled separately.
 - The event timeline calls `GET /cases/{case_id}/timeline` and shows annotation intervals in separate instrument rows.
-- `/chart` shows instrument, verb, and target sections. `/chart instruments` shows only instrument counts, and prompts such as `/chart what was grasper doing` select a grasper-verb breakdown. The existing timeline `summary` supplies instrument counts, including a single instrument when named. Verb and target charts explicitly report unavailable data because the API exposes neither field. Natural-language selection uses local keyword rules, not an LLM. To enable those charts, the backend needs video-scoped event rows with `case_id`, `start_sec`, `end_sec`, `instrument`, `verb`, and `target`; the current six-label timeline cannot reconstruct those relationships.
+- `/chart` shows instrument, verb, and target charts. `/chart instruments` shows only instruments; “what was grasper doing?” selects grasper verbs. Instrument counts come from the timeline `summary`. Verb and target interval counts come from Data/ML's verified `shared/triplets.annotation.csv` for VID01/VID02 (269 instrument–verb–target intervals, copied from `ml-dev` commit `c0ae595`). `null_verb` and `null_target` mean the tool is visible without an annotated action and display as idle. Intervals can overlap, so counts are not a partition of video time. Prompt routing is local keyword logic; `/interpret` from the backend can supply the high-level action, but no Surg+F Genie space is verified. Rohan's proposed video-scoped action endpoint is still pending; the CSV keeps these two demo cases working meanwhile.
 - `/quiz` calls `GET /quiz` for five operation-wide study questions. If the backend is unreachable or has no quiz route, it displays the saved seed-1 quiz with a sample-data notice. It is **not specific to the open video**. Answers are graded locally, explanations appear after selection, and “Watch examples” searches the given `search_q` in the open case. Unreviewed content is labeled.
 - `/model` explains that a linked 3D model is unavailable.
 
-The four buttons insert commands into the chat input without sending. Commands can be combined. Simple keyword rules route some phrases locally; there is no LLM interpretation yet. In frontend fixture mode, saved VID01/VID02 timeline and seed-1 quiz responses from `backend/fixtures/` are imported. A locally opened MP4/MOV has no indexed annotations.
+The four buttons are multi-select controls: clicking an unselected button inserts its command into the chat input without sending, while clicking it again leaves the text unchanged. Their highlights follow the commands currently in the input, including manual typing and deletion. Commands can be combined. Simple keyword rules route some phrases locally; there is no LLM interpretation yet. In frontend fixture mode, saved VID01/VID02 timeline and seed-1 quiz responses from `backend/fixtures/` are imported. A locally opened MP4/MOV has no indexed annotations.
 
 ## Check
 
@@ -47,8 +51,14 @@ Run `npm run build`. With the Databricks backend and VID01 video available, ente
 
 With the backend returning real rows and `VID01.mp4` available, search `clipper`. Click the first result and confirm `VID01` seeks to `11:14` (674 s). Repeat with VID02: the first `clipper` annotation is `VID02 1255–1268` (20:55). Also check a result from a case without video (for example any `clipper` hit outside VID01/VID02), a `prediction` result, and a no-match query. Run `npm run build` for a production build.
 
-## Planned stage 3: video localization
+## Experimental bounding boxes
 
-Planned stage 3: a player toggle for instrument/anatomy boxes and readable labels/scores, with later supported action links. Proposed behavior includes clearing stale overlays on seek/case change and correct fullscreen/letterbox scaling. Use explicitly labeled fixtures only after schema agreement. The reference screenshot is not our procedure taxonomy or real prediction output.
+Stage 3 is owned by Shlok on `feat/spatial-overlays`; stage 2 continues independently on `ml-dev`. Enable **Bounding boxes**, then choose a **Sampled frame**. Instrument/anatomy filters hide categories; the minimum-score slider hides lower-scoring detections (scores are not calibrated probabilities). Use **Fullscreen with overlays** to expand the video container; the native video fullscreen button may omit HTML overlays.
 
-See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.
+The included VID01 artifact contains real Grounding DINO predictions for frames 674, 680 and 689 only. Boxes expire after 120 ms, so ordinary playback mostly has no boxes. Some predictions are visibly incorrect (including scissors/irrigator in the clipper example); scores are not calibrated accuracy. This is a pipeline prototype, not reviewed annotations or continuous tracking. VID02 has no artifact, and local uploads are deliberately unsupported.
+
+The player checks case, versioned asset ID, dimensions, timestamps, labels and coordinates before rendering. Keep the existing 854×480 25 fps VID01 asset; replacement videos need a new asset ID and timebase verification. See [runner setup and provenance](../ml/localization/README.md).
+
+Checks: `node --test frontend/test/overlays.test.js` from the repository root and `npm --prefix frontend run build`. Browser verification is outstanding because the browser access host was unavailable. Manual acceptance: enable boxes, choose all three frames, filter categories, play/seek beyond 120 ms and confirm clearing, resize/fullscreen, then switch to VID02 and a local upload and confirm unavailable states.
+
+Player DOM integration checks: `node --test frontend/test/*.test.js`. These simulate media state and do not replace real-browser playback/fullscreen verification.

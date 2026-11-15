@@ -1,7 +1,10 @@
+import tripletCsv from '../../shared/triplets.annotation.csv?raw';
 import fixture from '../../shared/search.fixture.json';
 import timeline01 from '../../backend/fixtures/timeline.VID01.json';
 import timeline02 from '../../backend/fixtures/timeline.VID02.json';
 import quizFixture from '../../backend/fixtures/quiz.seed-1.json';
+import steps01 from '../../backend/fixtures/steps.VID01.json';
+import steps02 from '../../backend/fixtures/steps.VID02.json';
 
 const backendUrl = (import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000').replace(/\/$/, '');
 const fixtureMode = import.meta.env.VITE_USE_FIXTURE === 'true';
@@ -34,6 +37,17 @@ export async function getQuiz() {
     throw error;
   }
 }
+// Steps of the operation for one video (the default timeline). The saved copies are used in
+// fixture mode and when the backend cannot be reached, so the timeline always has steps.
+export async function getSteps(caseId) {
+  const saved = { VID01: steps01, VID02: steps02 }[caseId] ?? null;
+  if (fixtureMode) return saved;
+  try { return await getJson(`/cases/${encodeURIComponent(caseId)}/steps`); }
+  catch (error) {
+    if (saved && (error instanceof TypeError || error.status === 404)) return saved;
+    throw error;
+  }
+}
 // Ask the backend what the typed text means. Returns null in fixture mode, so the caller
 // falls back to its local rules. See backend/docs/FRONTEND_GUIDE.md (Interpret).
 export async function interpretQuery(query, caseId) {
@@ -42,3 +56,11 @@ export async function interpretQuery(query, caseId) {
 }
 export { fixtureMode, backendUrl };
 export const instrumentLabels = ['clipper', 'hook', 'grasper', 'irrigator', 'bipolar', 'scissors'];
+
+// Verified CholecT50 annotation intervals supplied by Data/ML for VID01 and VID02.
+export function getActionRows(caseId) {
+  return tripletCsv.trim().split(/\r?\n/).slice(1).map(line => {
+    const [id, start, end, instrument, verb, target, source] = line.split(',');
+    return { case_id: id, start_sec: Number(start), end_sec: Number(end), instrument, verb, target, source };
+  }).filter(row => row.case_id === caseId);
+}

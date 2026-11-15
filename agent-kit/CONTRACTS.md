@@ -10,8 +10,10 @@ Use the same keys in Delta, API responses, and frontend fixtures. Resolve case I
 
 For ML, keep one feature bundle per case, with a matrix of shape [frames, features] and a manifest in matching row order. Record the checkpoint and preprocessing. Join each row to its annotation by case ID and frame ID. Upload each bundle to `/Volumes/workspace/default/surgf/features/<case_id>/`, as `features.npy` plus `manifest.csv` with columns `case_id,frame_id`. Use the CholecT50 `video_id` (for example `VID01`) as `case_id` and `frame_number` (1 fps, seconds) as `frame_id`. Log each training run in MLflow with the SurgVLP checkpoint, preprocessing, train and test case IDs, threshold, and per-tool metrics. Export predictions with the same clip fields and source set to prediction.
 
-## Planned stage 3: video localization
+## Stage 3 spatial artifact v1 (experimental branch)
 
-No spatial API is agreed or implemented yet. The stage-3 plan proposes frame/time identity, video asset version, normalized source-image boxes, category/instance IDs, model scores and provenance, with optional later action relations. Treat that schema as a proposal; keep existing search fields and source semantics intact.
+Shlok's `feat/spatial-overlays` implements a static `/overlays/{case_id}.json` artifact; no backend route or search schema changes. Root fields: `schema_version: 1`, `case_id`, `video_asset_id`, `source` (`prediction`, `annotation`, `fixture`), positive integer `image_width`/`image_height`, `max_age_sec` (0 < age ≤ 0.25), nonempty `provenance`, and `frames`. Frames have unique nonnegative integer `frame_id`, strictly increasing nonnegative `timestamp_sec` in player seconds, and `detections`. Each detection has a frame-local unique `instance_id`, `category` (`instrument` or `anatomy`), `label`, finite `score` in [0,1], and normalized source-image `bbox_xyxy: [x1,y1,x2,y2]` with positive area. Instance IDs do not imply tracking.
 
-See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.
+Current labels: six existing instrument labels; experimental anatomy subset gallbladder, liver, cystic duct. No verbs or inferred relationships. Producer validation lives in `ml/localization/artifact.py`; consumer validation in `frontend/src/overlays.js`. Limits: 10,000 frames, 100 detections per frame, and frontend text payload of 2 million characters. Case/asset/dimension mismatch rejects rendering. Asset ID is a deployment binding, not a video checksum verification. Sparse frames expire; no interpolation across gaps.
+
+See [runner instructions](../ml/localization/README.md) and [localization plan](../ml/LOCALIZATION_PLAN.md). This is an experimental implementation contract, not a production spatial API agreement.
