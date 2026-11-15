@@ -526,7 +526,7 @@ function wirePanels() {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'panel-min';
-    button.innerHTML = '<i aria-hidden="true"></i>'; // a plus whose upright bar turns flat for minus (CSS)
+    button.innerHTML = '<i aria-hidden="true"></i>'; // a chevron that turns over when minimized (CSS)
     const sync = () => {
       const min = state.minimized.has(panel.id);
       panel.classList.toggle('is-min', min);
@@ -572,6 +572,29 @@ function foldPanel(panel, collapse, sync) {
     Promise.all(runs).then(() => panel.classList.remove('is-folding')).catch(() => {});
   }
 }
+/* Bounding-box options unfold when the box is ticked and fold away when it is cleared. overlays.js only
+   toggles [hidden]; this listens first (capture) and animates on the next frame, once that switch is
+   made and before it is painted. */
+function foldOverlayOptions(controls) {
+  const options = controls?.querySelector('.overlay-options');
+  const toggle = controls?.querySelector('[data-overlay-toggle]');
+  if (!options || !toggle || !options.animate) return;
+  const FRAMES = h => [{ height: `${h}px`, marginTop: '14px', opacity: 1 }, { height: '0px', marginTop: '0px', opacity: 0 }];
+  controls.addEventListener('change', event => {
+    if (event.target !== toggle || reducedMotion()) return;
+    options.getAnimations().forEach(a => a.cancel());
+    if (toggle.checked) {
+      requestAnimationFrame(() => { if (options.hidden) return; options.style.overflow = 'hidden'; options.animate(FRAMES(options.offsetHeight).reverse(), FOLD).finished.then(() => { options.style.overflow = ''; }).catch(() => {}); });
+    } else {
+      const h = options.offsetHeight;
+      requestAnimationFrame(() => {
+        options.hidden = false; options.style.overflow = 'hidden';
+        options.animate(FRAMES(h), FOLD).finished.then(() => { if (!toggle.checked) options.hidden = true; options.style.overflow = ''; }).catch(() => {});
+      });
+    }
+  }, true);
+}
+
 const CLOSABLE = { 'sec-chart': 'chart', 'sec-quiz': 'quiz', 'sec-studyquiz': 'studyquiz', 'sec-model': 'model' };
 // Closing discards the panel's temporary state and restores the ordinary layout.
 function closePanel(mode) {
@@ -696,6 +719,7 @@ function wire() {
   const video = document.querySelector('#player');
   wireVideo(video);
   if (video) disposeOverlays = mountOverlays({ video, host: video.parentElement, controls: document.querySelector('#overlay-controls'), caseId: state.caseId, assetId: state.localVideo ? null : videoAssetForCase(state.caseId), enabled: boxesEnabled, onToggle: value => { boxesEnabled = value; } });
+  if (video) foldOverlayOptions(document.querySelector('#overlay-controls'));
   document.querySelector('#video-play')?.addEventListener('click', () => { if (video.paused) video.play().catch(() => {}); else video.pause(); });
   document.querySelector('#video-seek')?.addEventListener('input', event => { if (video?.readyState >= 1) video.currentTime = Number(event.target.value); });
   document.querySelector('#video-mute')?.addEventListener('click', () => { video.muted = !video.muted; });
