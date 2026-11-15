@@ -79,8 +79,8 @@
 .lc-bar.b i { background: var(--hit); }
 .lc-bar b { color: #fff; font: 600 14px var(--mono); }
 .lc-plus { justify-self: start; padding: 4px 10px; border-radius: 8px; background: var(--hit); color: var(--hit-ink); font: 600 15px var(--mono); opacity: clamp(0, calc((var(--a) - .7) * 6), 1); }
-.lc-dots { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; margin-top: auto; }
+.lc-dots { display: grid; grid-template-columns: repeat(18, 1fr); gap: 3px; margin-top: auto; }
 .lc-dots i { aspect-ratio: 1; border-radius: 50%; background: #ffffff1f; }
-.lc-dots i.on { background: color-mix(in srgb, #ffffff1f, #9ff3df calc(clamp(0, calc((var(--a) * 22 - var(--i)) / 2), 1) * 100%)); }
+.lc-dots i.on { background: color-mix(in srgb, #ffffff1f, #9ff3df calc(clamp(0, calc((var(--a) * 80 - var(--i)) / 4), 1) * 100%)); }
 .lc-cap { color: #9fd9c6; font-size: 13px; }
 .lc-years { margin-top: 6px; }

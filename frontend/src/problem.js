@@ -70,24 +70,24 @@ const CHAPTERS = [
   {
     id: 'learning', name: 'Learning is costly',
     title: 'Learning surgery is slow and expensive.',
-    body: 'A general surgery resident must operate on 850 cases over five years. Teaching in the operating room adds time: a laparoscopic gallbladder removal took 86 minutes with a resident instead of 63. To prepare, nearly every learner watches surgical video, and none of it is searchable.',
+    body: 'A general surgery resident must operate on 850 cases over five years. A resident makes a laparoscopic gallbladder removal about 37% longer, at about $58 per operating-room minute. Nearly every resident prepares with video, mostly YouTube, and none of it is searchable.',
     sources: [
-      ['ACGME, General Surgery case minimums, 2024', 'https://www.acgme.org/globalassets/definedcategoryminimumnumbersforgeneralsurgeryresidentsandcreditrole.pdf'],
-      ['Babineau et al., Archives of Surgery, 2004', 'https://doi.org/10.1001/archsurg.139.4.366'],
-      ['Bridges and Diamond, American Journal of Surgery, 1999', 'https://doi.org/10.1016/S0002-9610(98)00289-X'],
-      ['Rapp et al., Journal of Surgical Education, 2016', 'https://doi.org/10.1016/j.jsurg.2016.04.024'],
+      ['ACGME case minimums, 2024', 'https://www.acgme.org/globalassets/definedcategoryminimumnumbersforgeneralsurgeryresidentsandcreditrole.pdf'],
+      ['Shin et al., Surg Endosc, 2021', 'https://doi.org/10.1007/s00464-020-07780-5'],
+      ['Ashrafi et al., JAMA Surg, 2026', 'https://doi.org/10.1001/jamasurg.2026.2355'],
+      ['van der Leun et al., Eur Urol Open Sci, 2024', 'https://doi.org/10.1016/j.euros.2024.07.108'],
     ],
-    note: 'Published figures; each card names its source. The cost is one center’s 1999 estimate of extra operating time per resident.',
+    note: 'Published figures; each card names its source. Operating time: 344 cases at one academic center, 2018 to 2019. Cost: California hospitals, fiscal year 2022.',
     scene: () => `<div class="sc pb-learn">
-      <div class="lc lc-cases" style="--k:0"><span class="lc-src">ACGME</span><b data-num="850">0</b><span>major operations a general surgery resident must perform</span>
+      <div class="lc lc-cases" style="--k:0"><span class="lc-src">ACGME, 2024</span><b data-num="850">0</b><span>major operations a general surgery resident must perform</span>
         <div class="lc-years">${[1, 2, 3, 4, 5].map(y => `<i style="--y:${y}"><em>${y}</em></i>`).join('')}</div><small class="lc-cap">over five years of residency</small></div>
-      <div class="lc lc-time" style="--k:1"><span class="lc-src">Babineau et al., 2004</span><span>Laparoscopic gallbladder removal</span>
-        <div class="lc-bar a"><em>Surgeon alone</em><i style="--w:${63 / 90}"></i><b>63 min</b></div>
-        <div class="lc-bar b"><em>With a resident</em><i style="--w:${86 / 90}"></i><b>86 min</b></div>
-        <span class="lc-plus">+23 min</span></div>
-      <div class="lc lc-cost" style="--k:2"><span class="lc-src">Bridges and Diamond, 1999</span><b>$<span data-num="47970" data-sep>0</span></b><span>of extra operating-room time per resident trained</span></div>
-      <div class="lc lc-video" style="--k:3"><span class="lc-src">Rapp et al., 2016</span><b><span data-num="95">0</span>%</b><span>of surgical learners prepare by watching video, mostly YouTube</span>
-        <div class="lc-dots">${Array.from({length: 20}, (_, i) => `<i class="${i < 19 ? 'on' : ''}" style="--i:${i}"></i>`).join('')}</div></div>
+      <div class="lc lc-time" style="--k:1"><span class="lc-src">Shin et al., 2021</span><span>Laparoscopic gallbladder removal, operating time</span>
+        <div class="lc-bar a"><em>Faculty alone</em><i style="--w:${100 / 140}"></i><b>1.00×</b></div>
+        <div class="lc-bar b"><em>With a resident</em><i style="--w:${137 / 140}"></i><b>1.37×</b></div>
+        <span class="lc-plus">+37%</span></div>
+      <div class="lc lc-cost" style="--k:2"><span class="lc-src">Ashrafi et al., 2026</span><b>$<span data-num="57.71" data-dec="2">0.00</span></b><span>for every minute of operating-room time</span></div>
+      <div class="lc lc-video" style="--k:3"><span class="lc-src">van der Leun et al., 2024</span><b><span data-num="98.6" data-dec="1">0.0</span>%</b><span>of residents prepare by watching video, mostly YouTube</span>
+        <div class="lc-dots">${Array.from({length: 72}, (_, i) => `<i class="${i < 71 ? 'on' : ''}" style="--i:${i}"></i>`).join('')}</div><small class="lc-cap">71 of 72 residents surveyed</small></div>
     </div>`,
   },
   {
@@ -161,7 +161,8 @@ onStage((section, ps) => {
   if (pLearn !== null) section.querySelectorAll('#problem-learning [data-num]').forEach(el => {
     const k = Number(el.closest('.lc').style.getPropertyValue('--k'));
     const v = Number(el.dataset.num) * ease(clamp((pLearn - .08 - k * .16) / .3));
-    setText(el, el.hasAttribute('data-sep') ? Math.round(v).toLocaleString('en-US') : String(Math.round(v)));
+    const dec = Number(el.dataset.dec) || 0;
+    setText(el, dec ? v.toFixed(dec) : Math.round(v).toLocaleString('en-US'));
   });
   /* Hand-labeled clips count up as the lanes are drawn. */
   const pIndex = layerP(section, ps, 'problem-index');
