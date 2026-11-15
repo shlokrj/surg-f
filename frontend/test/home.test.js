@@ -51,3 +51,19 @@ test('feature sections show fixture data and open the demo with a real command',
  assert.deepEqual([...doc.querySelectorAll('[data-open-sample]')].map(b=>b.dataset.command??''),['','/chart instruments','/quiz']);
  assert.ok(doc.querySelector('.hero-search'),'hero search sits inside the frame');
 });
+test('logo and back-to-top scroll only the window, never the clipped hero layers',()=>{
+ const dom=new JSDOM(markup());globalThis.window=dom.window;globalThis.document=dom.window.document;
+ window.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});
+ globalThis.requestAnimationFrame=()=>1;globalThis.cancelAnimationFrame=()=>{};
+ const root=document.querySelector('.landing');
+ assert.equal(root.querySelector('.small-brand').getAttribute('href'),'#top');
+ assert.match(root.querySelector('.hero-search').textContent,/When is the clipper used\?/);
+ const calls=[];window.scrollTo=o=>calls.push(o);
+ let intoView=0;window.HTMLElement.prototype.scrollIntoView=()=>intoView++;
+ const dispose=mountHome(root);
+ root.querySelector('.small-brand').dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));
+ assert.deepEqual(calls.at(-1),{top:0,behavior:'smooth'});
+ assert.equal(intoView,0);
+ assert.equal(window.location.hash,'');
+ dispose();
+});

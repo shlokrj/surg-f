@@ -1,9 +1,12 @@
 import '@fontsource-variable/inclusive-sans';
 import './style.css';
 import './home.css';
-import { homePage, mountHome, wordmark } from './home.js';
+import { homePage, mountHome, wordmark, paintDither } from './home.js';
+import './case.css';
 let disposeHome = () => {};
 let renderedPage = null;
+// What the last case-page render showed, so only new things animate in.
+let seen = { messages: 0, typing: false, outputs: [] };
 import { searchClips, getTimeline, getQuiz, getSteps, interpretQuery, getActionRows, instrumentLabels } from './api.js';
 import { quizCard, wireQuiz } from './quiz.js';
 import { timelinePanel, timelineTick } from './timeline.js';
@@ -58,6 +61,7 @@ function render() {
   }
   wire();
   disposeHome = mountHome(document.querySelector('.landing'));
+  if (state.page === 'dash') markNew(renderedPage !== 'dash');
   if (renderedPage !== state.page) window.scrollTo({top:0, behavior:'instant'});
   renderedPage = state.page;
   if (hadFocus) {
@@ -67,6 +71,31 @@ function render() {
   }
   const thread = document.querySelector('#chat-thread');
   if (thread) thread.scrollTop = thread.scrollHeight;
+}
+
+// One entrance when the case page opens; afterwards only newly added messages and panels animate.
+function markNew(entering) {
+  const dash = document.querySelector('.dash');
+  dash.querySelectorAll('.sky-dither').forEach(paintDither);
+  if (entering) {
+    dash.classList.add('is-entering');
+  } else {
+    const thread = [...document.querySelectorAll('#chat-thread > .msg')];
+    thread.slice(seen.messages, state.messages.length).forEach(node => node.classList.add('is-new'));
+    if (state.loading && !seen.typing) thread.at(-1)?.classList.add('is-new');
+    state.outputs.filter(mode => !seen.outputs.includes(mode)).forEach(mode => document.querySelector(`#sec-${mode}`)?.classList.add('is-new'));
+  }
+  seen = { messages: state.messages.length, typing: state.loading, outputs: [...state.outputs] };
+}
+let resizeFrame = 0;
+window.addEventListener('resize', () => {
+  if (resizeFrame) return;
+  resizeFrame = requestAnimationFrame(() => { resizeFrame = 0; document.querySelectorAll('.dash .sky-dither').forEach(paintDither); });
+});
+
+function caseTitle() {
+  const [id, name] = state.title.includes(' · ') ? state.title.split(' · ') : [null, state.title];
+  return `${id ? `<span class="case-id">${escapeHtml(id)}</span> ` : ''}<span class="case-name">${escapeHtml(name)}</span>`;
 }
 
 function filterButton() {
@@ -161,7 +190,7 @@ function chatPanel() {
 function dashboard() {
   return `<main class="dash"><div class="dash-main">
     <section class="video-section" aria-labelledby="video-title">
-      <div class="video-head"><h1 id="video-title">${escapeHtml(state.title)}</h1>
+      <div class="video-head case-head"><canvas class="sky-dither" data-horizon=".5" data-ceiling="3.2" data-ramp=".45" aria-hidden="true"></canvas><h1 id="video-title">${caseTitle()}</h1>
         <div class="video-actions">${filterButton()}<div class="case-switch" role="group" aria-label="Demo video">${['VID01', 'VID02'].map(id => `<button type="button" data-case="${id}" aria-pressed="${state.caseId === id}">${id}</button>`).join('')}</div></div></div>
       <div class="video-frame surgical-media ${state.filterOn ? 'filtered' : ''}">
         <video id="player" data-src="${escapeHtml(state.videoUrl ?? '')}" preload="metadata" playsinline ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video>

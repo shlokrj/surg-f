@@ -29,7 +29,7 @@ const sky = g => {
    its cell, so it is drawn LIFT levels brighter and the average color stays continuous (no banding).
    The bottom gets an uneven pale ombre shaped by value noise. */
 const STEP = .42, LIFT = STEP * 4;
-export function ditherCells(cols, rows, {horizon: base = .6, ceiling = 9} = {}) {
+export function ditherCells(cols, rows, {horizon: base = .6, ceiling = 9, ramp = 1} = {}) {
   const bg = new Uint8ClampedArray(cols * rows * 3), mark = new Uint8ClampedArray(cols * rows * 4);
   const aspect = cols / Math.max(1, rows);
   for (let x = 0; x < cols; x++) {
@@ -37,8 +37,8 @@ export function ditherCells(cols, rows, {horizon: base = .6, ceiling = 9} = {}) 
     const horizon = base + .16 * ridge(u * aspect * .55) - .07 * Math.exp(-((u - .5) ** 2) / .08);
     for (let y = 0; y < rows; y++) {
       const v = y / Math.max(1, rows - 1), t = (v - horizon) / (1 - horizon);
-      let g = Math.pow(v, 1.35) * 5.2;
-      if (t > 0) g += smooth(Math.min(1, t)) * 5 + (noise(u * aspect * 9, v * 9) - .5) * 1.6 * Math.min(1, t * 2.5);
+      let g = Math.pow(v, 1.35) * 5.2 * ramp;
+      if (t > 0) g += (smooth(Math.min(1, t)) * 5 + (noise(u * aspect * 9, v * 9) - .5) * 1.6 * Math.min(1, t * 2.5)) * ramp;
       g = Math.max(0, Math.min(ceiling, g));
       const level = Math.floor(g / STEP) * STEP, frac = (g - level) / STEP, i = y * cols + x;
       const [r, gr, b] = sky(level);
@@ -63,7 +63,7 @@ export function paintDither(canvas) {
   canvas.width = width; canvas.height = height;
   const cell = 6 * dpr, arm = 2 * dpr, bar = dpr;
   const cols = Math.ceil(width / cell), rows = Math.ceil(height / cell);
-  const {bg, mark} = ditherCells(cols, rows, {horizon: Number(canvas.dataset.horizon) || undefined, ceiling: Number(canvas.dataset.ceiling) || undefined});
+  const {bg, mark} = ditherCells(cols, rows, {horizon: Number(canvas.dataset.horizon) || undefined, ceiling: Number(canvas.dataset.ceiling) || undefined, ramp: Number(canvas.dataset.ramp) || undefined});
   for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
     const i = y * cols + x, px = x * cell, py = y * cell;
     ctx.fillStyle = `rgb(${bg[i * 3]},${bg[i * 3 + 1]},${bg[i * 3 + 2]})`;
@@ -100,8 +100,8 @@ function quizPreview(quiz) {
   const q = quiz?.questions?.[0];
   if (!q) return '';
   return `<div class="fx-card"><div class="fx-head"><strong>Question 1 of ${quiz.questions.length}</strong><span>${quiz.reviewed ? 'Reviewed' : 'Not yet clinically reviewed'}</span></div>
-    <p class="quiz-prompt">${esc(q.prompt)}</p>
-    <ul class="quiz-options">${q.options.map(o => `<li class="${o.id === q.correct_option_id ? 'is-correct' : ''}"><span class="opt-key">${o.id.toUpperCase()}</span>${esc(o.text)}</li>`).join('')}</ul></div>`;
+    <p class="fx-prompt">${esc(q.prompt)}</p>
+    <ul class="fx-options">${q.options.map(o => `<li class="${o.id === q.correct_option_id ? 'is-correct' : ''}"><span class="opt-key">${o.id.toUpperCase()}</span>${esc(o.text)}</li>`).join('')}</ul></div>`;
 }
 
 const feature = ({id, title, body, action, command, horizon, preview, flip}) => `<section class="feature ${flip ? 'is-flipped' : ''}" aria-labelledby="${id}">
@@ -115,26 +115,26 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
       <div class="intro-sticky">
         <div class="hero-frame">
           <canvas class="sky-dither hero-dither" aria-hidden="true"></canvas>
-          <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#landing-title" aria-label="surg+f home">${wordmark()}</a><button type="button" id="open-sample" class="nav-case">Open a case</button></nav>
+          <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><button type="button" id="open-sample" class="nav-case">Open a case</button></nav>
           <div class="intro-copy"><h1 id="landing-title">${wordmark()}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="#case-preview">See the demo <span aria-hidden="true">↓</span></a></div>
-          <a href="#case-preview" class="hero-search" aria-label="Jump to the clipper example in VID01">
-            <span class="hs-query">${searchGlyph}clipper</span>
+          <a href="#case-preview" class="hero-search" aria-label="Example search: when is the clipper used? Jump to the VID01 result">
+            <span class="hs-query">${searchGlyph}When is the clipper used?</span>
             <span class="hs-hit"><span>VID01</span><span class="hs-time">11:14</span></span>
           </a>
         </div>
       </div>
     </section>
     <section class="case-section" id="case-preview" aria-labelledby="case-heading">
-      <div class="case-copy"><h2 id="case-heading">Find the clip.</h2><p>Search an instrument and jump straight to its annotated timestamp.</p><button type="button" class="btn-primary" id="sample">Explore the demo</button></div>
+      <div class="case-copy"><h2 id="case-heading">Find the clip.</h2><p>Ask when an instrument is used and jump straight to its annotated timestamp.</p><button type="button" class="btn-primary" id="sample">Explore the demo</button></div>
       <div class="case-console"><div class="console-bar"><span class="console-case"><strong>VID01</strong><span>Cholecystectomy</span></span>${filterButton}</div>
       <div class="preview-video surgical-media ${filterOn ? 'filtered' : ''}"><video src="${videoUrl}" muted playsinline preload="metadata" aria-label="Surgical footage from the VID01 demo case"></video><span class="preview-unavailable" hidden>Video preview unavailable. You can still open the case.</span></div>
-      <button type="button" id="sample-event" class="find-result"><span class="find-query">${searchGlyph}clipper</span><span class="find-time">11:14 <span aria-hidden="true">↗</span></span></button><div class="console-caption"><span>Dataset annotation</span><span>Jump to this moment</span></div></div>
+      <button type="button" id="sample-event" class="find-result"><span class="find-query">${searchGlyph}When is the clipper used?</span><span class="find-time">11:14 <span aria-hidden="true">↗</span></span></button><div class="console-caption"><span>Dataset annotation</span><span>Jump to this moment</span></div></div>
     </section>
     ${feature({id: 'feature-steps', title: 'Follow the operation, step by step.', body: 'Each case is split into its surgical phases. Select a step to jump straight to it.', action: 'Open the case timeline', horizon: .62, preview: stepsPreview(showcase.steps)})}
     ${feature({id: 'feature-chart', title: 'See which instruments appear, and for how long.', body: 'Time on screen for each instrument, totalled from the dataset annotations.', action: 'Show the instrument chart', command: '/chart instruments', horizon: .62, flip: true, preview: instrumentsPreview(showcase.timeline)})}
     ${feature({id: 'feature-quiz', title: 'Test yourself on the procedure.', body: 'Five questions on step order and instruments, each with an explanation and example clips.', action: 'Start the quiz', command: '/quiz', horizon: .62, preview: quizPreview(showcase.quiz)})}
     <section class="local-section" aria-labelledby="local-heading"><div><h2 id="local-heading">Open your own video.</h2><p>MP4 and MOV files open for local playback. Indexed search covers the demo cases.</p></div><button type="button" id="drop-zone" class="btn-secondary local-open" aria-label="Open a local MP4 or MOV for playback only">Open a video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>${error ? `<p class="home-error" role="alert">${error}</p>` : ''}</section>
-    <footer class="landing-footer">${wordmark()}<a href="#landing-title">Back to top ↑</a></footer>
+    <footer class="landing-footer">${wordmark()}<a href="#top">Back to top ↑</a></footer>
   </main>`;
 }
 
@@ -151,13 +151,17 @@ export function mountHome(root) {
     canvases.forEach(paintDither);
   };
   const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
-  /* In-page links scroll smoothly unless the visitor prefers reduced motion. */
+  /* In-page links scroll the window only. scrollIntoView would also scroll the clipped hero layers
+     (the old logo-click glitch). "#top" returns to the start, where the frame is fully inset. */
   const jump = event => {
-    const link = event.target.closest('a[href^="#"]');
-    const target = link && root.querySelector(link.getAttribute('href'));
-    if (!target) return;
+    const link = event.target.closest?.('a[href^="#"]');
+    if (!link) return;
+    const id = link.getAttribute('href').slice(1);
+    const target = id === 'top' ? null : document.getElementById(id);
+    if (id !== 'top' && !target) return;
     event.preventDefault();
-    target.scrollIntoView({behavior: media.matches ? 'auto' : 'smooth', block: 'start'});
+    const top = target ? target.getBoundingClientRect().top + window.scrollY : 0;
+    window.scrollTo({top, behavior: media.matches ? 'auto' : 'smooth'});
   };
   window.addEventListener('scroll', schedule, {passive:true});
   window.addEventListener('resize', schedule);
