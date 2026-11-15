@@ -133,16 +133,19 @@ def export(model, video, seconds, ffmpeg, case_id, asset_id, fps, display_width=
         tool_frames.append((timestamp, tools))
     naming_report = None
     if naming is not None and 'tool' in names.values():
-        named, naming_stats = name_tools(tool_frames, naming['seconds'], naming['offset'])
+        named, naming_stats = name_tools(tool_frames, naming['seconds'], naming['offset'], mode=naming.get('mode', 'strict'))
         for frame, boxes in zip(frames, named):
             for k, (bbox, score, name, _) in enumerate(boxes):
                 frame['detections'].append(dict(instance_id=f"{frame['frame_id']:06}-t{k}", category='instrument',
                                                 label=name, score=score, bbox_xyxy=bbox))
         naming_report = dict(naming['source'], offset_sec=naming['offset'], stats=naming_stats,
-                             method='generic tool boxes named from CholecT50 per-second instrument labels: '
-                                    'no listed instrument -> dropped; overlap (IoU >= 0.5) with a box named in the '
-                                    'previous sample -> carried name; exactly one listed name left -> top remaining box; '
-                                    'otherwise dropped. Names are inferred, not detected.')
+                             method=('strict: a generic tool box is named only when CholecT50 lists exactly one '
+                                     'instrument for that second and the detector found exactly one tool box; '
+                                     'otherwise dropped. Names are inferred from labels, not detected.')
+                             if naming.get('mode', 'strict') == 'strict' else
+                             ('carry: no listed instrument -> dropped; overlap (IoU >= 0.5) with a box named in the '
+                              'previous sample -> carried name; exactly one listed name left -> top remaining box; '
+                              'otherwise dropped. Names are inferred, not detected.'))
     artifact = dict(schema_version=1, case_id=case_id, video_asset_id=asset_id,
         source='prediction', image_width=stream['width'], image_height=stream['height'],
         max_age_sec=max_age_sec, frames=frames,
@@ -186,6 +189,8 @@ def main():
                         help='Per-class override, e.g. "cystic duct=0.7"')
     parser.add_argument('--max-age-sec', type=float, default=.12)
     parser.add_argument('--triplets', help='CholecT50 per-second labels CSV, required for tool-class models')
+    parser.add_argument('--naming', choices=('strict', 'carry'), default='strict',
+                        help='instrument naming rule (strict: one listed + one detected; carry also propagates by overlap)')
     parser.add_argument('--dataset-offset', type=float, help='video seconds minus CholecT50 seconds (VID01 -0.04, VID02 0.08)')
     parser.add_argument('--ffmpeg', default='ffmpeg')
     parser.add_argument('--output', required=True)
@@ -223,7 +228,7 @@ def main():
     if 'tool' in names.values():
         if not args.triplets or args.dataset_offset is None:
             parser.error('tool-class checkpoints need --triplets and --dataset-offset to name instrument boxes')
-        naming = dict(seconds=instrument_seconds(args.triplets, args.case_id), offset=args.dataset_offset,
+        naming = dict(seconds=instrument_seconds(args.triplets, args.case_id), offset=args.dataset_offset, mode=args.naming,
                       source=dict(triplets_sha256=sha(args.triplets)))
     artifact = export(model, args.video, seconds, args.ffmpeg, args.case_id, args.video_asset_id, args.fps,
         args.display_width, args.display_height, args.score_threshold, dict(args.class_threshold),

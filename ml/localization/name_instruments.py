@@ -2,7 +2,13 @@
 
 The detector finds instruments but not their type (Endoscapes only has a generic `tool`
 class). CholecT50 says which instruments are visible each second but not where. This module
-combines them with three explicit rules, applied to sampled frames in time order:
+combines them. Default mode "strict": a box is named only when the labels list exactly one
+instrument for that second AND the detector found exactly one tool box, so both sources agree
+there is a single instrument; everything else is dropped. A visual check on VID01 showed the
+looser "carry" mode below swapping names (grasper/hook, irrigator) when an unlisted instrument
+was visible and the wrong name was carried forward, so carry is off by default.
+
+"carry" mode applies three rules to sampled frames in time order:
 
 1. no instrument is listed for that second  -> drop every tool box (likely a false alarm)
 2. a box overlapping (IoU >= link_iou) a box named in the previous sampled frame keeps that
@@ -44,14 +50,16 @@ def iou(a, b):
     return inter / ((a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter)
 
 
-def name_tools(frames, seconds, offset, link_iou=0.5):
+def name_tools(frames, seconds, offset, link_iou=0.5, mode='strict'):
     """frames: [(timestamp_sec, [(bbox_xyxy, score), ...]), ...] in time order.
 
     `offset` maps dataset seconds to video time (video = dataset + offset).
     Returns ([[(bbox, score, name, rule), ...] per frame], stats).
     """
-    stats = dict(candidates=0, named_only_remaining=0, named_carried=0, dropped_no_instrument_listed=0,
-                 dropped_ambiguous=0)
+    if mode not in ('strict', 'carry'):
+        raise ValueError('mode must be strict or carry')
+    stats = dict(mode=mode, candidates=0, named_only_remaining=0, named_carried=0, named_strict=0,
+                 dropped_no_instrument_listed=0, dropped_ambiguous=0)
     previous, output, last_time = [], [], -math.inf
     for timestamp, boxes in frames:
         if timestamp <= last_time:
@@ -63,6 +71,13 @@ def name_tools(frames, seconds, offset, link_iou=0.5):
         if not present:
             stats['dropped_no_instrument_listed'] += len(boxes)
             output.append([]); previous = []
+            continue
+        if mode == 'strict':
+            if len(present) == 1 and len(boxes) == 1:
+                output.append([(boxes[0][0], boxes[0][1], next(iter(present)), 'one listed, one detected')])
+                stats['named_strict'] += 1
+            else:
+                output.append([]); stats['dropped_ambiguous'] += len(boxes)
             continue
         named, used, taken = [], set(), set()
         for prev_box, _, prev_name, _ in sorted(previous, key=lambda item: -item[1]):
