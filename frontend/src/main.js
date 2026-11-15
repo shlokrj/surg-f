@@ -526,17 +526,18 @@ function wirePanels() {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'panel-min';
+    button.innerHTML = '<i aria-hidden="true"></i>'; // a chevron that turns over when minimized (CSS)
     const sync = () => {
       const min = state.minimized.has(panel.id);
       panel.classList.toggle('is-min', min);
-      button.textContent = min ? '+' : '−';
       button.setAttribute('aria-expanded', String(!min));
       button.setAttribute('aria-label', `${min ? 'Expand' : 'Minimize'} ${title}`);
       button.title = min ? 'Expand' : 'Minimize';
     };
     button.addEventListener('click', () => {
-      if (!state.minimized.delete(panel.id)) state.minimized.add(panel.id);
-      sync();
+      const collapse = !state.minimized.has(panel.id);
+      if (collapse) state.minimized.add(panel.id); else state.minimized.delete(panel.id);
+      foldPanel(panel, collapse, sync);
     });
     head.append(button);
     sync();
@@ -553,6 +554,47 @@ function wirePanels() {
     head.append(close);
   });
 }
+/* Minimizing folds the panel body up (and expanding unfolds it) instead of snapping. The state class is
+   set before an unfold and after a fold, so the 3D viewer and video underneath keep running. */
+const FOLD = { duration: 340, easing: 'cubic-bezier(.4, 0, .2, 1)' };
+function foldPanel(panel, collapse, sync) {
+  const parts = () => [...panel.children].filter(el => !el.classList.contains('panel-head'));
+  if (reducedMotion() || !panel.animate) { sync(); return; }
+  panel.getAnimations({ subtree: true }).filter(a => a.id === 'fold').forEach(a => a.cancel());
+  if (collapse) {
+    panel.classList.add('is-folding');
+    const runs = parts().map(el => { const a = el.animate([{ height: `${el.offsetHeight}px`, opacity: 1 }, { height: '0px', opacity: 0 }], FOLD); a.id = 'fold'; return a.finished; });
+    Promise.all(runs).then(() => { panel.classList.remove('is-folding'); sync(); }).catch(() => {});
+  } else {
+    sync();
+    panel.classList.add('is-folding');
+    const runs = parts().map(el => { const a = el.animate([{ height: '0px', opacity: 0 }, { height: `${el.offsetHeight}px`, opacity: 1 }], FOLD); a.id = 'fold'; return a.finished; });
+    Promise.all(runs).then(() => panel.classList.remove('is-folding')).catch(() => {});
+  }
+}
+/* Bounding-box options unfold when the box is ticked and fold away when it is cleared. overlays.js only
+   toggles [hidden]; this listens first (capture) and animates on the next frame, once that switch is
+   made and before it is painted. */
+function foldOverlayOptions(controls) {
+  const options = controls?.querySelector('.overlay-options');
+  const toggle = controls?.querySelector('[data-overlay-toggle]');
+  if (!options || !toggle || !options.animate) return;
+  const FRAMES = h => [{ height: `${h}px`, marginTop: '14px', opacity: 1 }, { height: '0px', marginTop: '0px', opacity: 0 }];
+  controls.addEventListener('change', event => {
+    if (event.target !== toggle || reducedMotion()) return;
+    options.getAnimations().forEach(a => a.cancel());
+    if (toggle.checked) {
+      requestAnimationFrame(() => { if (options.hidden) return; options.style.overflow = 'hidden'; options.animate(FRAMES(options.offsetHeight).reverse(), FOLD).finished.then(() => { options.style.overflow = ''; }).catch(() => {}); });
+    } else {
+      const h = options.offsetHeight;
+      requestAnimationFrame(() => {
+        options.hidden = false; options.style.overflow = 'hidden';
+        options.animate(FRAMES(h), FOLD).finished.then(() => { if (!toggle.checked) options.hidden = true; options.style.overflow = ''; }).catch(() => {});
+      });
+    }
+  }, true);
+}
+
 const CLOSABLE = { 'sec-chart': 'chart', 'sec-quiz': 'quiz', 'sec-studyquiz': 'studyquiz', 'sec-model': 'model' };
 // Closing discards the panel's temporary state and restores the ordinary layout.
 function closePanel(mode) {
@@ -677,7 +719,10 @@ function wire() {
   const video = document.querySelector('#player');
   wireVideo(video);
   // Practice has no bounding boxes: the space under the video holds the stage checklist instead.
-  if (video && !state.practice) disposeOverlays = mountOverlays({ video, host: video.parentElement, controls: document.querySelector('#overlay-controls'), caseId: state.caseId, assetId: state.localVideo ? null : videoAssetForCase(state.caseId), enabled: boxesEnabled, onToggle: value => { boxesEnabled = value; } });
+  if (video && !state.practice) {
+    disposeOverlays = mountOverlays({ video, host: video.parentElement, controls: document.querySelector('#overlay-controls'), caseId: state.caseId, assetId: state.localVideo ? null : videoAssetForCase(state.caseId), enabled: boxesEnabled, onToggle: value => { boxesEnabled = value; } });
+    foldOverlayOptions(document.querySelector('#overlay-controls'));
+  }
   document.querySelector('#video-play')?.addEventListener('click', () => { if (video.paused) video.play().catch(() => {}); else video.pause(); });
   document.querySelector('#video-seek')?.addEventListener('input', event => { if (video?.readyState >= 1) video.currentTime = Number(event.target.value); });
   document.querySelector('#video-mute')?.addEventListener('click', () => { video.muted = !video.muted; });

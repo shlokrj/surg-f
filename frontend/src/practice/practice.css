@@ -23,8 +23,6 @@
   background: #fff; color: var(--ink-muted); font-size: 22px; line-height: 1;
 }
 .pr-close:hover, .panel-close:hover { border-color: #9db5aa; color: var(--ink); }
-.dash .panel-head:has(.panel-close) { padding-right: 116px; }
-.panel-close { position: absolute; top: 18px; right: 64px; }
 
 /* Stage rail: done ✓ / current / future (no content revealed). */
 .pr-rail { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 14px 24px; border-bottom: 1px solid var(--line); }
