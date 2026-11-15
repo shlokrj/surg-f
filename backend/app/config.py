@@ -33,7 +33,7 @@ class Settings:
     quiz_bank_file: Path = QUIZ_BANK_FILE
     warmup: bool = True
     genie_space_id: str | None = None
-    genie_timeout_sec: float = 40.0
+    genie_timeout_sec: float = 60.0
     chat_endpoint: str | None = None
     chat_timeout_sec: float = 8.0
 
@@ -60,9 +60,9 @@ def settings_from(values: Mapping[str, str | None]) -> Settings:
     origins = tuple(o.strip() for o in origins_raw.split(",") if o.strip())
     warmup = (values.get("SURGF_WARMUP") or "1").strip().lower() not in ("0", "false", "no")
     try:
-        genie_timeout = float(values.get("SURGF_GENIE_TIMEOUT_SEC") or 40)
+        genie_timeout = float(values.get("SURGF_GENIE_TIMEOUT_SEC") or 60)
     except ValueError:
-        genie_timeout = 40.0
+        genie_timeout = 60.0
     try:
         chat_timeout = float(values.get("SURGF_CHAT_TIMEOUT_SEC") or 8)
     except ValueError:

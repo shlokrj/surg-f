@@ -218,7 +218,7 @@ def test_llm_error_or_invalid_tool_call_falls_back_to_rules(llm):
 
 
 def test_llm_declining_returns_none_with_a_fixed_reply():
-    body = ask(make_client(llm=FakeLLM(None)), "what dose of antibiotics should I give")
+    body = ask(make_client(llm=FakeLLM(None)), "tell me a joke")
     assert body == {"reply": STUDY_AID_REPLY, "action": "none", "data": None, "router": "llm"}
 
 
@@ -477,7 +477,7 @@ def test_ask_data_tool_is_offered_only_when_genie_is_configured():
     assert "ask_data" not in [t["function"]["name"] for t in tool_specs(False)]
     assert "ask_data" in [t["function"]["name"] for t in tool_specs(True)]
     llm = FakeLLM(ToolChoice("make_quiz"))
-    ask(make_client(llm=llm, genie=FakeGenie()), "quiz")
+    ask(make_client(llm=llm, genie=FakeGenie()), "show me the hook")
     assert llm.calls[0][2] is True
 
 
@@ -630,3 +630,111 @@ def test_examples_fixture_has_one_valid_example_per_action():
     for example in examples["examples"]:
         ChatResponse.model_validate(example["response"])
         assert example["request"]["message"]
+
+
+# --- quizzes, video length and general questions through Genie ----------------------
+
+QUIZ_COLUMNS = [
+    "question_number", "question", "answer", "explanation", "source", "case_id", "start_sec",
+    "end_sec",
+]  # fmt: skip
+
+
+def test_quiz_request_goes_to_genie_and_becomes_a_study_quiz():
+    rows = [
+        [1, "When is the clipper first used?", "11:14", "First clip.", "data", "VID01", 674.0,
+         690.0],
+        [2, "What does the clipper do?", "Places clips.", None, "general", None, None, None],
+        [3, None, "skipped: no question", None, "general", None, None, None],
+    ]  # fmt: skip
+    genie = FakeGenie(GenieAnswer(conversation_id="c", columns=QUIZ_COLUMNS, rows=rows))
+    llm = FakeLLM(ToolChoice("make_quiz"))
+    body = ask(make_client(llm=llm, genie=genie), "quiz me on the instruments")
+    assert (body["action"], body["router"]) == ("study_quiz", "genie")
+    items = body["data"]["items"]
+    assert [i["question_number"] for i in items] == [1, 2]
+    assert items[0]["start_sec"] == 674.0 and items[1]["case_id"] is None
+    assert genie.questions == ["For case_id 'VID01': quiz me on the instruments"]
+    assert llm.calls == []  # Genie answered first
+
+
+@pytest.mark.parametrize(
+    "genie",
+    [
+        FakeGenie(error=GenieError("timeout")),
+        FakeGenie(GenieAnswer(conversation_id="c", text="I can only answer timing questions.")),
+    ],
+)
+def test_quiz_falls_back_to_the_bank_when_genie_gives_no_quiz(genie):
+    body = ask(make_client(genie=genie), "flashcards on the tools")
+    assert (body["action"], body["router"]) == ("quiz", "rules")
+
+
+def test_video_length_is_answered_from_the_player_duration():
+    client = make_client(genie=FakeGenie(error=GenieError("unused")))
+    response = client.post(
+        "/chat", json={"message": "how long is this video?", "video_duration_sec": 1743.2}
+    )
+    body = response.json()
+    assert body["action"] == "none" and "29:03" in body["reply"]
+
+
+def test_genie_question_carries_the_video_length():
+    genie = FakeGenie(GenieAnswer(conversation_id="c", text="It ends at 29:03."))
+    client = make_client(genie=genie)
+    client.post(
+        "/chat", json={"message": "what tools are typically used?", "video_duration_sec": 1743}
+    )
+    assert genie.questions == [
+        "For case_id 'VID01' (video length 29:03): what tools are typically used?"
+    ]
+
+
+def test_educational_answer_keeps_four_sentences():
+    text = "Generally, one. Two.\n\n- three is listed.\n- four is listed.\n\nFive."
+    genie = FakeGenie(GenieAnswer(conversation_id="c", text=text))
+    body = ask(make_client(genie=genie), "what tools are typically used in a cholecystectomy")
+    assert (body["action"], body["router"], body["data"]) == ("answer", "genie", None)
+    assert body["reply"] == "Generally, one. Two. \u2022 three is listed. \u2022 four is listed."
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "was the critical view of safety achieved?",
+        "what dose of antibiotics should I give",
+        "should I get my gallbladder removed?",
+        "how well was this surgery performed?",
+    ],
+)
+def test_advice_and_judging_are_deflected_without_genie(message):
+    genie = FakeGenie(error=GenieError("must not be called"))
+    body = ask(make_client(genie=genie), message)
+    assert body == {"reply": STUDY_AID_REPLY, "action": "none", "data": None, "router": "rules"}
+    assert genie.questions == []
+
+
+@pytest.mark.parametrize(
+    ("message", "to_genie"),
+    [
+        ("what is the Calot triangle", True),
+        ("why is the critical view of safety important", True),
+        ("when does the video end", True),
+        ("what is the total time the hook was used", False),
+        ("show me the clipper", False),
+        ("show me the anatomy", False),
+        ("open the 3d model at the clipping step", False),
+        ("quiz me on anatomy", True),
+    ],
+)
+def test_genie_routing_words(message, to_genie):
+    genie = FakeGenie(GenieAnswer(conversation_id="c", text="Generally, an answer."))
+    ask(make_client(genie=genie), message)
+    assert bool(genie.questions) is to_genie
+
+
+def test_markdown_headings_are_flattened():
+    text = "## Typical tools\n\n**Generally**, a grasper and a hook. Then clips."
+    genie = FakeGenie(GenieAnswer(conversation_id="c", text=text))
+    body = ask(make_client(genie=genie), "what tools are typically used in a cholecystectomy")
+    assert body["reply"] == "Typical tools: Generally, a grasper and a hook. Then clips."

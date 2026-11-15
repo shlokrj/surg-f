@@ -202,7 +202,7 @@ class InterpretResponse(BaseModel):
 
 # --- chat (one typed message -> one action with its data) ---------------------
 
-ChatAction = Literal["search", "quiz", "timeline", "answer", "model", "none"]
+ChatAction = Literal["search", "quiz", "study_quiz", "timeline", "answer", "model", "none"]
 ChatRouter = Literal["llm", "rules", "genie"]
 
 
@@ -218,6 +218,13 @@ class ChatRequest(BaseModel):
         pattern=r"^[A-Za-z0-9_-]{1,32}$",
         description="Video currently open. Used unless the message names another video.",
         examples=["VID01"],
+    )
+    video_duration_sec: float | None = Field(
+        default=None,
+        gt=0,
+        le=86400,
+        description="Length of the open video from the player, in seconds. Optional: lets "
+        "'how long is this video' be answered exactly.",
     )
 
 
@@ -244,19 +251,38 @@ class AnswerData(BaseModel):
     sql: str | None = Field(default=None, description="The SQL Genie wrote and ran.")
 
 
+class StudyQuizItem(BaseModel):
+    question_number: int
+    question: str
+    answer: str = Field(description="Hide until the user reveals it.")
+    explanation: str | None = None
+    source: str = Field(default="general", description="'data' (from this video) or 'general'.")
+    case_id: str | None = Field(default=None, description="Video the answer is about, if any.")
+    start_sec: float | None = Field(default=None, description="Moment to seek to, if any.")
+    end_sec: float | None = None
+
+
+class StudyQuiz(BaseModel):
+    """A Genie-written quiz on the topic the user asked for: question/answer pairs."""
+
+    items: list[StudyQuizItem]
+
+
 class ChatResponse(BaseModel):
     reply: str = Field(description="One or two short sentences to show in the chat.")
     action: ChatAction = Field(
         description="search: `data` is a GET /search payload, already limited to the open "
         "video. quiz: `data` is a GET /quiz payload. timeline: `data` is a "
-        "GET /cases/{case_id}/timeline payload. answer: `data` is a small result table (or "
+        "GET /cases/{case_id}/timeline payload. study_quiz: `data` is a Genie-written quiz "
+        "(question/answer pairs, answers to be hidden until revealed). answer: `data` is a "
+        "small result table (or "
         "null), computed by the backend or by Genie. "
         "model: open the 3D model; `data` says which step to show. "
         "none: nothing to render besides `reply`; `data` is null."
     )
-    data: SearchResponse | QuizResponse | TimelineResponse | AnswerData | ModelData | None = Field(
-        description="The payload for `action`, or null."
-    )
+    data: (
+        SearchResponse | QuizResponse | StudyQuiz | TimelineResponse | AnswerData | ModelData | None
+    ) = Field(description="The payload for `action`, or null.")
     router: ChatRouter = Field(
         description="Which path decided: llm (Databricks chat model picked a tool), rules "
         "(keyword rules) or genie (Databricks Genie answered a data question)."

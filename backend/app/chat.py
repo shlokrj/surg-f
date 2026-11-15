@@ -21,8 +21,25 @@ import httpx
 
 from .config import DatabricksCredentials
 from .genie import GenieClient, GenieError
-from .interpret import CASE, CHART, LABEL_PATTERNS, LABELS, QUIZ, SYNONYMS, genie_actions
-from .models import AnswerData, ChatResponse, Clip, ModelData, SearchResponse
+from .interpret import (
+    CASE,
+    CHART,
+    COMPLEX,
+    LABEL_PATTERNS,
+    LABELS,
+    QUIZ,
+    SYNONYMS,
+    genie_actions,
+)
+from .models import (
+    AnswerData,
+    ChatResponse,
+    Clip,
+    ModelData,
+    SearchResponse,
+    StudyQuiz,
+    StudyQuizItem,
+)
 from .quiz import QuizService
 from .repository import RepositoryError
 from .service import CaseNotFoundError, SearchService, TimelineService
@@ -55,10 +72,36 @@ STEP_WORDS: dict[str, re.Pattern] = {
 STEP_NUMBER = re.compile(r"\bstep\s+(\d)\b")
 
 STUDY_AID_REPLY = (
-    "I'm a study aid for this operation, so I can't give medical advice or answer that. "
-    'Try an instrument name such as "clipper", ask for a quiz, or ask for a chart of the '
-    "tools used."
+    "I'm a study aid, so I can't give medical advice, answer about a specific patient or "
+    'judge how well this operation was done. Try an instrument name such as "clipper", '
+    "a general question about the procedure, or ask for a quiz."
 )
+
+# Checked before any router. Personal advice, drugs and doses, patients, and judging the
+# surgery in the video get the fixed reply; Genie is never asked.
+DEFLECT = re.compile(
+    r"\b(doses?|dosages?|dosing|mg|milligrams?|prescri\w*|medications?|drugs?|antibiotics?|"
+    r"should i|i have|i'm having|my (doctor|surgery|operation|pain|symptoms?|gallbladder)|"
+    r"(my|this|the) patient'?s?|achieved|adequate\w*|how well|good job|mistakes?|"
+    r"(performed|done) (well|badly|poorly|correctly|right|wrong)|rate (the|this) \w+)\b"
+)
+# Sent straight to Genie when it is set up: it writes topic quizzes, knows the video's
+# length and answers general surgery questions, none of which the tools below can do.
+QUIZ_ASK = re.compile(QUIZ.pattern[:-3] + r"|flash ?cards?|make a quiz)\b")
+VIDEO_LENGTH = re.compile(
+    r"\b(how long is (the|this) (video|recording|operation|surgery|procedure)|"
+    r"(length|duration) of (the|this) (video|recording|operation|surgery|procedure)|"
+    r"video'?s? (length|duration)|"
+    r"when does (the|this) (video|recording|operation|surgery|procedure) "
+    r"(start|end|begin|finish)|"
+    r"how long (does|did) (the|this) (video|operation|surgery|procedure) (take|last|run))\b"
+)
+EDUCATIONAL = re.compile(
+    r"\b(typical(ly)?|usually|generally|in general|normally|commonly|explain|define|"
+    r"definition|why (is|are|do|does|would)|purpose of|calot|"
+    r"critical view)\b"
+)
+WHAT_IS = re.compile(r"\bwhat (is|are) (a|an|the)\b")
 DATA_DOWN_REPLY = "The clip data is unavailable right now. The quiz still works: try 'quiz me'."
 
 SYSTEM_PROMPT = """You are a study-aid router for one operation: a laparoscopic \
@@ -84,8 +127,9 @@ Rules:
 a tool. Reply only: "This is a study aid. Try search, quiz or chart."
 """
 GENIE_LINE = (
-    "- ask_data(question): slow. Use it only for a question about instrument timing that "
-    "none of the tools above can answer.\n"
+    "- ask_data(question): slow. Use it for a question about instrument timing that none "
+    "of the tools above can answer, a topic quiz, the video's length, or a general "
+    "educational question about surgery.\n"
 )
 RANK_ORDERS = ("longest", "shortest", "most_often", "least_often")
 
@@ -248,13 +292,53 @@ def named_case(text: str, default: str) -> str:
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
-def short_reply(text: str | None) -> str | None:
-    """Genie writes long markdown; keep the first two sentences of its first paragraph."""
+LIST_MARK = re.compile(r"(?m)^\s*(?:[-*\u2022]|\d+\.)\s+")
+HEADING = re.compile(r"(?m)^\s*#{1,6}\s+(.*?)\s*$")
+
+
+def short_reply(text: str | None, prose: bool = False) -> str | None:
+    """Genie writes long markdown. Data answers keep the first two sentences of the first
+    paragraph; prose answers (no result table) keep four sentences across paragraphs."""
     if not text:
         return None
-    paragraph = text.strip().split("\n\n")[0].replace("**", "").replace("`", "")
-    sentences = SENTENCE_END.split(" ".join(paragraph.split()))
-    return " ".join(sentences[:2]) or None
+    text = text.strip().replace("**", "").replace("`", "")
+    text = HEADING.sub(r"\1:", text)  # "## Typical tools" -> "Typical tools:"
+    if prose:
+        text = LIST_MARK.sub("\u2022 ", text)
+    else:
+        text = text.split("\n\n")[0]
+    sentences = SENTENCE_END.split(" ".join(text.split()))
+    return " ".join(sentences[: 4 if prose else 2]) or None
+
+
+def study_quiz(columns: list[str], rows: list[list]) -> StudyQuiz | None:
+    """Genie's quiz table (question, answer, ...) as quiz items. None if it is not one."""
+    names = [c.lower() for c in columns]
+    if not {"question", "answer"} <= set(names):
+        return None
+    items = []
+    for number, row in enumerate(rows, 1):
+        r = dict(zip(names, row, strict=False))
+        if not r.get("question") or not r.get("answer"):
+            continue
+        try:
+            start = float(r["start_sec"]) if r.get("start_sec") is not None else None
+            end = float(r["end_sec"]) if r.get("end_sec") is not None else None
+        except (TypeError, ValueError):
+            start = end = None
+        items.append(
+            StudyQuizItem(
+                question_number=int(r.get("question_number") or number),
+                question=str(r["question"]),
+                answer=str(r["answer"]),
+                explanation=str(r["explanation"]) if r.get("explanation") else None,
+                source=str(r.get("source") or "general"),
+                case_id=str(r["case_id"]) if r.get("case_id") else None,
+                start_sec=start,
+                end_sec=end,
+            )
+        )
+    return StudyQuiz(items=items) if items else None
 
 
 def plural(count: int, noun: str) -> str:
@@ -343,23 +427,57 @@ class ChatService:
         self.llm_timeout_sec = llm_timeout_sec
         self._pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="chat-llm")
 
-    def chat(self, message: str, case_id: str = "VID01") -> tuple[ChatResponse, str | None]:
+    def chat(
+        self, message: str, case_id: str = "VID01", duration_sec: float | None = None
+    ) -> tuple[ChatResponse, str | None]:
         """Answer one message. Also returns a note for the log when a router fell back."""
         message = " ".join(message.split())
         if not message:
             raise ValueError("message must contain text")
+        lower = message.lower()
+        if DEFLECT.search(lower):
+            response = ChatResponse(reply=STUDY_AID_REPLY, action="none", data=None, router="rules")
+            return response, None
+        if duration_sec and VIDEO_LENGTH.search(lower):
+            reply = (
+                f"{case_id} is {clock(duration_sec)} long: it starts at 0:00 and ends at "
+                f"{clock(duration_sec)}."
+            )
+            return ChatResponse(reply=reply, action="none", data=None, router="rules"), None
         note = None
+        if self.genie is not None and self._for_genie(lower):
+            try:
+                response = self._from_genie(message, case_id, duration_sec)
+                if response.action == "study_quiz" or not QUIZ_ASK.search(lower):
+                    return response, None
+                note = "genie: no quiz table"  # e.g. Genie declined; use the bank quiz
+            except GenieError as exc:
+                note = f"genie: {exc}"  # quizzes still work from the bank below
         if self.llm is not None:
             try:
-                return self._from_llm(message, case_id)
+                return self._from_llm(message, case_id, duration_sec)
             except (LLMError, GenieError) as exc:
                 note = f"{'genie' if isinstance(exc, GenieError) else 'llm'}: {exc}"
         response, data_note = self._from_rules(message, case_id)
         return response, note or data_note
 
+    @staticmethod
+    def _for_genie(lower: str) -> bool:
+        """Quiz requests, video length and general surgery questions."""
+        if QUIZ_ASK.search(lower):
+            return True
+        if MODEL_VIEW.search(lower) and not ML_MODEL.search(lower):
+            return False  # "show me the anatomy" opens the 3D view
+        if VIDEO_LENGTH.search(lower) or EDUCATIONAL.search(lower):
+            return True
+        # "what is the Calot triangle" yes; "what is the total time of the hook" stays a tool.
+        return bool(WHAT_IS.search(lower)) and not COMPLEX.search(lower)
+
     # --- routers -------------------------------------------------------------
 
-    def _from_llm(self, message: str, case_id: str) -> tuple[ChatResponse, str | None]:
+    def _from_llm(
+        self, message: str, case_id: str, duration_sec: float | None = None
+    ) -> tuple[ChatResponse, str | None]:
         future = self._pool.submit(self.llm.choose, message, case_id, self.genie is not None)
         try:
             choice = future.result(timeout=self.llm_timeout_sec)  # hard wall-clock limit
@@ -407,7 +525,7 @@ class ChatService:
             return self._run("together", case_id, "llm", first, other=second)
         if choice.name == "ask_data" and self.genie is not None:
             question = str(choice.arguments.get("question") or message)
-            return self._from_genie(question, case_id), None
+            return self._from_genie(question, case_id, duration_sec), None
         raise LLMError("invalid tool call")
 
     @staticmethod
@@ -429,9 +547,17 @@ class ChatService:
             raise LLMError("invalid tool call: bad time")
         return seconds
 
-    def _from_genie(self, question: str, case_id: str) -> ChatResponse:
-        answer = self.genie.ask(f"For case_id '{case_id}': {question}")  # has its own timeout
-        text = short_reply(answer.text or answer.description)
+    def _from_genie(
+        self, question: str, case_id: str, duration_sec: float | None = None
+    ) -> ChatResponse:
+        length = f" (video length {clock(duration_sec)})" if duration_sec else ""
+        answer = self.genie.ask(f"For case_id '{case_id}'{length}: {question}")  # own timeout
+        quiz = study_quiz(answer.columns, answer.rows)
+        if quiz is not None:
+            count = len(quiz.items)
+            reply = f"Here is a {count}-question quiz. Reveal each answer when you are ready."
+            return ChatResponse(reply=reply, action="study_quiz", data=quiz, router="genie")
+        text = short_reply(answer.text or answer.description, prose=not answer.rows)
         actions = genie_actions(answer, case_id)
         if actions and actions[0].results:
             clips = actions[0].results
@@ -456,7 +582,7 @@ class ChatService:
     def _from_rules(self, message: str, case_id: str) -> tuple[ChatResponse, str | None]:
         lower = message.lower()
         case_id = named_case(message, case_id)
-        if QUIZ.search(lower):
+        if QUIZ_ASK.search(lower):
             return self._run("quiz", case_id, "rules")
         if MODEL_VIEW.search(lower) and not ML_MODEL.search(lower):
             return self._run("model", case_id, "rules", step=self._named_step(lower, case_id))

@@ -26,7 +26,7 @@ Then open:
 | `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_TOKEN` | repo-root `.env` (git-ignored) | When all three are set, the backend uses live Databricks data |
 | `SURGF_CORS_ORIGINS` | backend environment | Optional comma-separated origins. Default `http://localhost:5173,http://127.0.0.1:5173` |
 | `SURGF_WARMUP` | backend environment | `0` turns off the startup query that wakes the SQL warehouse |
-| `DATABRICKS_GENIE_SPACE_ID` | repo-root `.env` | Optional. Turns on Genie for free-form questions in `/interpret` and `/chat`. The team space is `01f1e08655eb17c1931c9dbb6cd4750b` |
+| `DATABRICKS_GENIE_SPACE_ID` | repo-root `.env` | Optional. Turns on Genie for free-form questions in `/interpret` and `/chat`. The team space is `01f1e09d399e101dbee5a37e935198bf` (Lil Doc) |
 | `DATABRICKS_CHAT_ENDPOINT` | repo-root `.env` | Optional. Name of the Databricks serving endpoint that routes `/chat` messages, for example `databricks-meta-llama-3-3-70b-instruct`. Without it, keyword rules route |
 | `SURGF_CHAT_TIMEOUT_SEC` | backend environment | Optional. Time limit for the chat model before the rules take over. Default `8` |
 
@@ -376,6 +376,7 @@ type StepsResponse = { case_id: string; source: string; steps: Step[] };
 |---|---|---|
 | `message` | yes | What the user typed, 1 to 300 characters |
 | `case_id` | no | The open video. Default `VID01`. A message that names a video ("video 2") overrides it |
+| `video_duration_sec` | no | The player's `video.duration`. "How long is this video" is then answered instantly from it, and Genie questions carry it as `(video length m:ss)` |
 
 ```powershell
 curl.exe -s -X POST "http://localhost:8000/chat" -H "Content-Type: application/json" -d '{\"message\": \"show me when the clipper is used\", \"case_id\": \"VID01\"}'
@@ -396,6 +397,7 @@ const { reply, action, data, router } = await response.json();
 type ChatResponse =
   | { reply: string; action: "search";   data: SearchResponse;   router: Router }
   | { reply: string; action: "quiz";     data: QuizResponse;     router: Router }
+  | { reply: string; action: "study_quiz"; data: StudyQuiz;      router: "genie" }
   | { reply: string; action: "timeline"; data: TimelineResponse; router: Router }
   | { reply: string; action: "answer";   data: AnswerTable | null; router: Router }
   | { reply: string; action: "model";    data: ModelData;        router: Router }
@@ -404,7 +406,14 @@ type ChatResponse =
 type Router = "llm" | "rules" | "genie";   // which path decided; for debugging and the demo
 type ModelData = { case_id: string; step_key: string | null; step_label: string | null };
 type AnswerTable = { columns: string[]; rows: unknown[][]; sql: string | null };
+type StudyQuiz = { items: {
+  question_number: number; question: string; answer: string; explanation: string | null;
+  source: string;            // "data" (from this video) or "general"
+  case_id: string | null; start_sec: number | null; end_sec: number | null;
+}[] };
 ```
+
+**Lil Doc study modes (2026-11-14, Aadhitya):** before any router, advice, drug/dose, patient and "how well was the surgery done" questions get the fixed `none` reply and never reach Genie. When Genie is set up, quiz requests ("quiz me on the instruments", "flashcards"), video-length questions and general educational questions ("what tools are typically used in a cholecystectomy", "what is the Calot triangle") go straight to Genie. A Genie quiz table becomes `study_quiz` (render questions with answers hidden behind a reveal, plus a "show in video" seek when `case_id` matches the open video and `start_sec` is set). If Genie fails or returns no quiz table, quiz requests get the bank quiz (`quiz`). Genie prose answers without a table keep up to four sentences; data answers keep two.
 
 **What to render for each action:** always show `reply` as the assistant's chat message, then:
 
@@ -557,7 +566,7 @@ type AnswerTable = { columns: string[]; rows: unknown[][]; sql: string | null };
 `none`: `{"message": "what dose of antibiotics should I give"}`
 ```json
 {
-  "reply": "I'm a study aid for this operation, so I can't give medical advice or answer that. Try an instrument name such as \"clipper\", ask for a quiz, or ask for a chart of the tools used.",
+  "reply": "I'm a study aid, so I can't give medical advice, answer about a specific patient or judge how well this operation was done. Try an instrument name such as \"clipper\", a general question about the procedure, or ask for a quiz.",
   "action": "none",
   "data": null,
   "router": "rules"

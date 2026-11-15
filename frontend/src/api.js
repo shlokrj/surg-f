@@ -73,12 +73,14 @@ export async function interpretQuery(query, caseId) {
 // Send one free-typed chat message. The backend picks the feature and returns
 // { reply, action, data, router } in one call. Returns null in fixture mode, so the caller
 // falls back to /interpret and its local rules. See backend/docs/FRONTEND_GUIDE.md (Chat).
-export async function chatMessage(message, caseId) {
+export async function chatMessage(message, caseId, durationSec = 0) {
   if (fixtureMode) return null;
+  const body = { message, case_id: caseId };
+  if (durationSec > 0) body.video_duration_sec = durationSec;
   const response = await fetch(`${backendUrl}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, case_id: caseId }),
+    body: JSON.stringify(body),
   });
   if (!response.ok) throw new Error(`Chat request failed (${response.status})`);
   return response.json();
