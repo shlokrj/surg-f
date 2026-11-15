@@ -1,3 +1,14 @@
 # Databricks Apps entry point (deploy from the repo root so shared/ is included).
 # The Apps runtime sets UVICORN_HOST=0.0.0.0 and UVICORN_PORT for uvicorn automatically.
 command: ['uvicorn', 'app.main:app', '--app-dir', 'backend']
+# DATABRICKS_HOST is set by the Apps runtime. The token comes from the app's `db-token`
+# resource (secret surgf/databricks-token); never put secrets in this file.
+env:
+  - name: DATABRICKS_TOKEN
+    valueFrom: db-token
+  - name: DATABRICKS_HTTP_PATH
+    value: /sql/1.0/warehouses/296f20dd4b5961be
+  - name: DATABRICKS_GENIE_SPACE_ID
+    value: 01f1e09d399e101dbee5a37e935198bf
+  - name: DATABRICKS_CHAT_ENDPOINT
+    value: databricks-meta-llama-3-3-70b-instruct
