@@ -1,7 +1,6 @@
 /* Brand: "surg" and "f" as keycaps joined by "+", read like the Ctrl+F shortcut. Same markup in the hero
    and the small lockup; colors follow currentColor, so it works white-on-teal and teal-on-light.
-   The text content is "surg+f". ICON (magnifier-plus) remains the favicon glyph. */
-export const ICON = `<svg class="sf-icon" aria-hidden="true" viewBox="-300 -300 720 720" fill="none" stroke="currentColor"><circle r="234" stroke-width="72"/><path d="M168 168 390 390" stroke-width="72"/><path d="M-130 0h260M0-130v260" stroke-width="88"/></svg>`;
+   The text content is "surg+f". The favicon (public/favicon.svg) is a teal plus with a mini plus in each quadrant. */
 export const wordmark = (cls = '') => `<span class="sf-mark ${cls}"><kbd>surg</kbd><span class="sf-join">+</span><kbd class="sf-key-letter">f</kbd></span>`;
 
 /* Sky palette, darkest at the top. */
