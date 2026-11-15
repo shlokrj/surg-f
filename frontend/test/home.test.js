@@ -108,9 +108,9 @@ test('databricks section covers the real Databricks work, with the mark and chec
  const logo=db.querySelector('h2 a.db-logo');
  assert.equal(logo.href,'https://www.databricks.com/','the logo links to Databricks');
  assert.ok(logo.querySelector('.db-word path')&&logo.rel.includes('noopener'));
- assert.deepEqual([...db.querySelectorAll('.layer')].map(l=>l.id),['db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai']);
+ assert.deepEqual([...db.querySelectorAll('.layer')].map(l=>l.id),['db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai','db-apps']);
  assert.equal(db.querySelectorAll('.bundles i').length,50,'one bundle per surgery');
- assert.match(db.textContent,/9d18d20a/);assert.match(db.textContent,/surgf-import-clips/);assert.match(db.textContent,/surgf_quiz_facts/);
+ assert.match(db.textContent,/9d18d20a/);assert.match(db.querySelector('#db-apps').textContent,/Planned, not deployed yet/);assert.match(db.textContent,/surgf-import-clips/);assert.match(db.textContent,/surgf_quiz_facts/);
  assert.deepEqual([...db.querySelectorAll('[data-scrub]')].map(b=>b.dataset.scrub.split(',')[1]),['50','0.304','0.343','11264','1658']);
  assert.ok([...db.querySelectorAll('.layer-copy a')].every(a=>a.rel.includes('noopener')&&a.target==='_blank'));
  assert.ok(doc.querySelector('.footer-links a[href="#databricks"]'));
@@ -156,8 +156,7 @@ test('presentation and video demos: their own sections and chapters; the origina
  assert.deepEqual(order(pres),['landing-intro','problem','solution','feature-stack','architecture','model-notes','databricks','future','sources']);
  assert.deepEqual(chapters(pres).filter(id=>/^(problem|solution|model)-/.test(id)),['problem-needle','problem-docs','problem-uses','solution-label','solution-ask','solution-jump','solution-record','solution-practice','model-test','model-instruments','model-versions','model-boxes']);
  assert.deepEqual(order(video),['landing-intro','problem','solution','databricks','sources']);
- assert.deepEqual(chapters(video),['problem-needle','problem-docs','solution-ask','solution-jump','solution-practice','db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai']);
- assert.equal(video.querySelector('main').dataset.playMs,'3800','the video demo plays faster');
+ assert.deepEqual(chapters(video),['problem-needle','problem-docs','solution-ask','solution-jump','solution-practice','db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai','db-apps']);
  assert.equal(video.querySelector('#problem').dataset.per,'1.6');
  assert.equal(pres.querySelectorAll('#problem-docs .pb-form-row').length,7,'the seven VID01 steps');
  assert.match(pres.querySelector('#solution-record').textContent,/does not write clinical notes yet/);

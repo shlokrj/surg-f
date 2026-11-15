@@ -206,22 +206,6 @@ export function digScrollTop(section, i) {
   return section.getBoundingClientRect().top + window.scrollY + t / cfg.travel * span;
 }
 
-/* Where each scene's animation starts and ends, as page scroll positions, in page order. A stage with an
-   intro (the stack's block) contributes the intro as its own scene. On phones (no pin) start equals end. */
-export function digScenes(root) {
-  return [...root.querySelectorAll('.dig')].flatMap(section => {
-    const n = section.querySelectorAll('.layer').length;
-    if (isStacked()) return [...section.querySelectorAll('.layer')].map((el, index) => { const y = el.getBoundingClientRect().top + window.scrollY - 72; return {section, index, start: y, end: y}; });
-    const cfg = config(section);
-    const top = section.getBoundingClientRect().top + window.scrollY;
-    const span = Math.max(1, section.offsetHeight - window.innerHeight);
-    const at = t => top + t / cfg.travel * span;
-    const scenes = cfg.intro ? [{section, index: -1, start: top, end: at(cfg.intro - .55)}] : [];
-    for (let i = 0; i < n; i++) scenes.push({section, index: i, start: at(cfg.intro + (i + .004) * cfg.per), end: at(cfg.intro + (i + PLAY) * cfg.per)});
-    return scenes;
-  }).map(sc => ({...sc, start: Math.round(sc.start), end: Math.round(sc.end)}));
-}
-
 /* A chapter's progress by its layer id (null when this page version leaves the chapter out). */
 export const layerP = (section, ps, id) => { const i = [...section.querySelectorAll('.layer')].findIndex(l => l.id === id); return i < 0 ? null : ps[i]; };
 /* Page versions can show a subset of a stage's chapters (only) and set its pace (per). */
