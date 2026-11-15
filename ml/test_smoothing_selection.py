@@ -30,6 +30,8 @@ class SmoothingSelectionTests(unittest.TestCase):
         result = select(list(reversed(self.reports)), self.split, list(reversed(self.settings)))
         self.assertEqual(result['selected']['max_gap_sec'], 0)
         self.assertFalse(result['final_test_used'])
+        mlp = [dict(r, frame_threshold='per_label') for r in self.reports]  # MLP per-label thresholds accepted
+        self.assertEqual(select(mlp, self.split, self.settings)['selected']['max_gap_sec'], 0)
 
     def test_incomplete_duplicate_and_wrong_partition(self):
         for reports in [self.reports[:-1], self.reports+[self.reports[0]],
