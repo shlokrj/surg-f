@@ -1,5 +1,9 @@
 # Team handoffs
 
+## Spatial v3 in progress: native-resolution detector (2026-11-14, Mihir)
+
+Model/CV only; no UI changes. `train_anatomy.py` gained `--architecture mobilenet_v3_hires` (native 854×480 input instead of 320) and `--hflip`; the exporter reads the architecture from the checkpoint, and v1/v2 checkpoints still export unchanged. Run in progress: `train_anatomy.py --architecture mobilenet_v3_hires --hflip --grad-clip 10 --epochs 10` → `~/madhacks2026/localization/anatomy-hires-v3/` (CPU, roughly 5 min/epoch). The VID01 overlay changes only if v3 beats v2 on the same validation error analysis. Localization tests: 26 passed.
+
 ## Spatial v2 anatomy model replaces v1 on the VID01 overlay (2026-11-14, Mihir)
 
 **Root cause of the NaN stops:** both v1 and v2 stopped in epoch 5 because the shuffled batch at step 421 held two anatomy-negative images (`18_48900.jpg`, `39_27425.jpg`). With no box in the whole batch, torchvision's Faster R-CNN ROI-head losses (`loss_classifier`, `loss_box_reg`) are NaN; RPN losses stay finite. The training data has no degenerate boxes (smallest side 16 px). `train_anatomy.py` now skips a batch only when its loss is nonfinite **and** every image in it is box-free, records the skipped file names per epoch in `report.json`, and still fails on any other nonfinite loss. Gradient clipping (`--grad-clip`) is kept but was not the fix.
