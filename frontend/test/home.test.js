@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
-import {homePage,mountHome,plusDither} from '../src/home.js';
+import {homePage,mountHome,ditherPixels,wordmark} from '../src/home.js';
 const markup=()=>homePage({videoUrl:'/videos/VID01.mp4',filterOn:true,filterButton:'<button>Content filter</button>',error:''});
 test('homepage preserves real entry points and honest upload scope',()=>{
  const doc=new JSDOM(markup()).window.document;
@@ -25,15 +25,20 @@ test('scroll progress clamps, honors reduced motion, and cleans up listeners',()
  dispose();assert.ok(removed);assert.equal(queued,null);
 });
 
-test('revised branding uses magnifier-plus and stable decorative dither',()=>{
+test('wordmark keeps a real plus inside the lens and the dither is deterministic',()=>{
  const doc=new JSDOM(markup()).window.document;
  const title=doc.querySelector('h1');
- assert.equal(title.getAttribute('aria-label'),'surg+f');
- assert.equal(title.textContent,'surgf');
- assert.ok(title.querySelector('svg circle'));
- assert.equal(doc.querySelector('.plus-dither').getAttribute('aria-hidden'),'true');
- assert.ok(doc.querySelectorAll('.plus-dither path').length>100);
- assert.equal(plusDither(),plusDither());
+ assert.equal(title.textContent,'surg+f');
+ assert.equal(title.querySelector('.sf-plus').firstChild.textContent,'+');
+ assert.equal(title.querySelector('.sf-lens').getAttribute('aria-hidden'),'true');
+ assert.ok(title.querySelector('.sf-lens circle'));
+ assert.equal(doc.querySelector('.sky-dither').getAttribute('aria-hidden'),'true');
+ assert.equal(doc.querySelector('.plus-dither'),null);
+ assert.match(wordmark(),/surg<span class="sf-plus">\+/);
+ const a=ditherPixels(64,40),b=ditherPixels(64,40);
+ assert.deepEqual(a,b);
+ const row=y=>{let t=0;for(let x=0;x<64;x++){const i=(y*64+x)*4;t+=a[i]+a[i+1]+a[i+2];}return t;};
+ assert.ok(row(39)>row(0),'bottom rows are lighter than the top');
  assert.equal(doc.querySelector('.field-ring'),null);
  assert.doesNotMatch(doc.body.textContent,/Less scrubbing|More finding|familiar shortcut/);
 });

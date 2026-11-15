@@ -1,7 +1,7 @@
 import '@fontsource-variable/inclusive-sans';
 import './style.css';
 import './home.css';
-import { homePage, mountHome } from './home.js';
+import { homePage, mountHome, wordmark } from './home.js';
 let disposeHome = () => {};
 let renderedPage = null;
 import { searchClips, getTimeline, getQuiz, getSteps, interpretQuery, getActionRows, instrumentLabels } from './api.js';
@@ -30,7 +30,7 @@ const formatTime = seconds => {
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[c]));
-const logo = `<span class="wordmark" aria-label="Surg+F">Surg<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="m15.3 15.3 6 6M10 6v8M6 10h8"/></svg>F</span>`;
+const logo = wordmark('topbar-mark');
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // The whole page is redrawn from state. The <video> element is carried over to the new
@@ -45,7 +45,7 @@ function render() {
   const keepVideo = state.page === 'dash' && oldVideo?.dataset.src === state.videoUrl;
   const wasPlaying = keepVideo && !oldVideo.paused;
 
-  app.innerHTML = `<header class="topbar"><button type="button" class="logo-link" id="home-link" aria-label="Surg+F home">${state.page === 'home' ? 'Surg+F' : logo}</button>
+  app.innerHTML = `<header class="topbar"><button type="button" class="logo-link" id="home-link" aria-label="surg+f home">${logo}</button>
     <span class="top-spacer"></span>${state.page === 'dash' ? '<button type="button" class="top-action" id="change-video">Choose another video</button>' : '<nav class="home-nav" aria-label="Main"><a href="#case-preview">The demo</a><a href="#local-heading">Your video ↗</a></nav>'}</header>
     ${state.page === 'home' ? home() : dashboard()}`;
 
