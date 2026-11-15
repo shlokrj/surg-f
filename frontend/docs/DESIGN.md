@@ -55,15 +55,20 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
   4. Lakeflow and Delta: clips_all.csv rides through stage and MERGE into surgf_clips (11,264 labels, 1,658 predictions), and a rerun inserts 0.
   5. SQL, Genie and Llama: three logged chat checks with their route and time, and the Genie space's view, table and function.
   Numbers follow the scroll (`data-scrub`). Class names are scoped per section; check for collisions with `architecture.css` before adding generic names.
-- **Two versions** (`homePage({mode})`, chosen in `main.js`):
-  - **Public** (`/`): hero, Find the clip, the three feature cards, the stack, model notes, Open your own video. No Databricks section.
-  - **Demo** (`/demo` or any URL with `?demo`, used to present the project): hero, problem, solution, the three feature cards, the stack, model notes, Built on Databricks, What's next. The hero link and footer links follow the version.
-  - `/demo` relies on the host serving `index.html` for unknown paths (Vite dev does). `?demo` works on any static host.
+- **Homepage versions** (`VERSIONS` in `home.js`, chosen from the URL in `main.js`). Each lists its sections in order; `only` picks a stage's chapters and `per` its pace; `playMs` sets the arrow-key playback time. Scripts and the fact sheet are in `pitch/` at the repo root.
+  - **Product** (`/`): hero, Find the clip, the three feature cards, the stack, model notes, Open your own video.
+  - **Demo** (`/demo`, `?demo`): the original presentation version, unchanged: problem (4), solution (3), features, the stack, model notes, Built on Databricks, What's next.
+  - **Presentation demo** (`/presentation-demo`): the 5-minute pitch. Problem (17 seconds, writing it down, who needs it), solution (label, ask, jump, the labels are the record, practice in 3D), features, the stack, model notes (test, instruments, v1 to v2, boxes), Databricks, What's next.
+  - **Video demo** (`/video-demo`): the 3-minute Databricks-track video. Problem (17 seconds, writing it down), solution (ask, jump, practice in 3D), Databricks; per 1.6 and 2.3 s playback.
+  - `?mode=<name>` selects a version on any host; the paths need the host to serve `index.html` for unknown paths (Vite does).
+- **Presenter stops:** the arrow keys also stop at each feature card (its sticky resting position), so no section is skipped.
 - **Problem** (`src/problem.js`, `src/problem.css`; demo only): "Finding one moment.", four chapters built from real VID01 frames (painted by the shared `paintFrames`):
-  1. Half an hour: 24 frames, one every 72 s, fold into VID01's time line while the clock counts to 28:48.
+  1. Half an hour: 24 frames, one every 72 s, fold into VID01's time line while the clock counts to 28:53 (VID01's real length, 1,733 s).
   2. 17 seconds: the scrubber hunts with a live frame preview, then lands on the cut (860–877 s).
   3. Who needs it: residents, surgeons, educators and researchers, each tied to a real VID01 interval (or the 154 clipper clips across 50 surgeries) lit on the strip.
   4. No index: a pen sweeps the strip while the surgeons' lanes are drawn in, and the 11,264 hand-labeled clips count up.
+- **Writing it down** (problem chapter `docs`, presentation and video demos): an operative record of VID01's seven real steps and their annotated instruments fills in by hand, row by row, while a review clock runs to 28:53.
+- **The labels are the record** and **Practice in 3D** (solution chapters `record` and `practice`): the same record filled at once from the labels (captioned that Surg+F does not write clinical notes yet), and three real captures of the 3D panel (`public/screens/`) crossfading through three steps, captioned as an illustration that is not yet medically reviewed.
 - **Solution** (`src/solution.js`, `src/solution.css`; demo only, in place of Find the clip): "Ask, and jump to it." in three chapters: a read head labels every second, the demo question types and maps "cut" to scissors with the real VID01 result (and 103 more scissors clips), then the knob jumps to 14:20 on the real frame. The last chapter holds the "Open VID01 at 14:20" and "Explore the demo" buttons.
 - Find the clip's example now matches what it opens: "When is the cystic duct cut?", 14:20, scissors (it read "clipped, 11:38" but opened 14:20).
 - **Presenter keys:** Right moves quickly (under 1.5 s) to the start of the next scene, then plays its animation slowly (about 3.2 s, eased) to the end. Left slowly unplays the current scene, then moves quickly back to the previous scene's finished state. Mid-scene, Right finishes the scene and Left rewinds it. Scenes are every chapter of the pinned stages in page order, plus the stack's block intro (`digScenes` in `architecture.js`); chapter buttons play their scene the same way. A press during a glide counts from where the glide is headed, so each press is one scene. A wheel, touch or click cancels the glide. Not mentioned on the page on purpose. Ignored while typing or with a modifier key.
