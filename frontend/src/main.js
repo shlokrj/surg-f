@@ -526,17 +526,18 @@ function wirePanels() {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'panel-min';
+    button.innerHTML = '<i aria-hidden="true"></i>'; // a plus whose upright bar turns flat for minus (CSS)
     const sync = () => {
       const min = state.minimized.has(panel.id);
       panel.classList.toggle('is-min', min);
-      button.textContent = min ? '+' : '−';
       button.setAttribute('aria-expanded', String(!min));
       button.setAttribute('aria-label', `${min ? 'Expand' : 'Minimize'} ${title}`);
       button.title = min ? 'Expand' : 'Minimize';
     };
     button.addEventListener('click', () => {
-      if (!state.minimized.delete(panel.id)) state.minimized.add(panel.id);
-      sync();
+      const collapse = !state.minimized.has(panel.id);
+      if (collapse) state.minimized.add(panel.id); else state.minimized.delete(panel.id);
+      foldPanel(panel, collapse, sync);
     });
     head.append(button);
     sync();
@@ -552,6 +553,24 @@ function wirePanels() {
     close.addEventListener('click', () => closePanel(mode));
     head.append(close);
   });
+}
+/* Minimizing folds the panel body up (and expanding unfolds it) instead of snapping. The state class is
+   set before an unfold and after a fold, so the 3D viewer and video underneath keep running. */
+const FOLD = { duration: 340, easing: 'cubic-bezier(.4, 0, .2, 1)' };
+function foldPanel(panel, collapse, sync) {
+  const parts = () => [...panel.children].filter(el => !el.classList.contains('panel-head'));
+  if (reducedMotion() || !panel.animate) { sync(); return; }
+  panel.getAnimations({ subtree: true }).filter(a => a.id === 'fold').forEach(a => a.cancel());
+  if (collapse) {
+    panel.classList.add('is-folding');
+    const runs = parts().map(el => { const a = el.animate([{ height: `${el.offsetHeight}px`, opacity: 1 }, { height: '0px', opacity: 0 }], FOLD); a.id = 'fold'; return a.finished; });
+    Promise.all(runs).then(() => { panel.classList.remove('is-folding'); sync(); }).catch(() => {});
+  } else {
+    sync();
+    panel.classList.add('is-folding');
+    const runs = parts().map(el => { const a = el.animate([{ height: '0px', opacity: 0 }, { height: `${el.offsetHeight}px`, opacity: 1 }], FOLD); a.id = 'fold'; return a.finished; });
+    Promise.all(runs).then(() => panel.classList.remove('is-folding')).catch(() => {});
+  }
 }
 const CLOSABLE = { 'sec-chart': 'chart', 'sec-quiz': 'quiz', 'sec-studyquiz': 'studyquiz', 'sec-model': 'model' };
 // Closing discards the panel's temporary state and restores the ordinary layout.
