@@ -1,12 +1,24 @@
 # ML team progress
 
-## Current ownership: Shlok moves to frontend design (2026-11-14)
+## Current spatial assignment and run status (2026-11-14)
 
-Shlok now owns **general frontend design and presentation**, and is no longer assigned spatial ML work. **Aadhi owns spatial data, model training, evaluation, inference and artifact export**, including Shlok's unfinished trainer tasks. **Mihir owns spatial player integration and browser verification**. This supersedes earlier assignment tables and historical ownership notes below.
+Mihir alone owns the remaining spatial data/model/evaluation/export and player work on `feat/spatial-overlays`; Aadhi moved to other work. Shlok owns general frontend design. The prior spatial assignment sections below are historical. Mihir verified VID01 overlays in visible Chrome, including sampled-frame seeking, resize and fullscreen. Full Endoscapes preparation completed locally via `python3 ml/localization/fetch_anatomy_data.py --output-dir ~/madhacks2026/localization/anatomy-data`: 1,212 train and 409 validation images passed a second hash/decode/label check and `ready_data` accepted the full split (signature `0c003c2f469468b0acf3cb61a2788c7aff77b5b8d72ad9f59800ce1f71b07eff`). The five-epoch run under `~/madhacks2026/localization/anatomy-full-v1/` stopped after epoch 3 on the nonfinite-loss guard; the epoch-3 checkpoint has validation AP 0.345 (gallbladder AP50 0.945, cystic duct 0.321) and now backs a full-length VID01 anatomy artifact. Details, error analysis and limits: [handoff](../agent-kit/HANDOFFS.md#mihir-anatomy-model-and-vid01-overlay-deployed-2026-11-14). Bounded training/export checks passed. The current CholecT50 mirror has zero spatial boxes; Endoscapes generic `tool` does not establish six instrument subtype labels. See [localization runner and limits](localization/README.md#full-anatomy-data-training-and-export-mihir) and [current handoff](../agent-kit/HANDOFFS.md#mihir-spatial-implementation-status-2026-11-14).
+
+## Previous spatial ownership (superseded 2026-11-14)
+
+Shlok moved to **general frontend design and presentation**. At that point Aadhi owned spatial data/model/export and Mihir owned player integration. The newer Mihir-only assignment above supersedes this historical note.
 
 Spatial teammates continue on `feat/spatial-overlays`; Aadhi should retain the scoped evaluator already pushed in `78dfef0`. Shlok and Mihir must coordinate shared `frontend/src/main.js`, `style.css` and player markup: Shlok owns overall design, Mihir owns overlay behavior. Do not overwrite each other's edits. Full tasks and handoffs are in [the localization plan](LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow).
 
 This request authorizes pushing these ownership docs to main only. Unfinished spatial code remains on its branch until a later explicit publication request. Documentation-only update; Markdown links and diff checked, no application changes or new training runs.
+
+## Shlok evaluation task started (2026-11-14)
+
+At Shlok's explicit request, published the current spatial team branch and incoming main changes to main at `dd2dfaf`; frontend tests (6) and build passed after integration. New task work continues on `feat/spatial-overlays`, not main.
+
+Shlok added `evaluate_anatomy_coco.py` and pinned pycocotools 2.0.11. It restricts evaluation to the two annotated anatomy categories, validates inputs, retains empty/missing-prediction frames and reports COCO AP/AP50 plus per-class metrics. Real smoke evaluation: 2 validation images, 3 boxes; AP 0.05047, AP50 0.09926. This is pipeline verification, not an accuracy-qualified model. Report hashes/results are in `anatomy_smoke_metrics.json`.
+
+Verification: isolated localization Python `-m unittest discover -s ml/localization -p 'test_*.py'` passed all 13 tests with no skips; evaluator command in README ran successfully. Next Shlok task: configurable full trainer and checkpoint selection using Aadhi's complete train/validation manifests. Aadhi/Mihir ownership remains unchanged.
 
 
 ## Active spatial team assignments (2026-11-14)

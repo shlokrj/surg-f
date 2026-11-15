@@ -16,6 +16,6 @@
 
 ## Active ownership and branch boundaries
 
-Shlok owns general frontend design. Aadhi owns spatial data/model/evaluation/export; Mihir owns spatial player integration and browser verification. Follow [the current plan](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow); earlier Shlok spatial assignments are superseded. Shlok and Mihir must coordinate shared frontend files and preserve each other's work.
+Shlok owns general frontend design. Mihir now owns all remaining spatial work, including data/model/evaluation/export, player integration and browser verification; Aadhi has moved to other work. Follow [the current plan](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). Shlok and Mihir must coordinate shared frontend files and preserve each other's work.
 
-Aadhi and Mihir push new spatial work to `feat/spatial-overlays`, not main, until publication is explicitly requested. Mihir separately requested publication of the already integrated `frontend/dev` work on 2026-11-14; `main` now contains it through `6d468dd`. That publication does not authorize future feature-branch work. Use separate checkouts, preserve concurrent commits and never force-push.
+Mihir pushes new spatial work to `feat/spatial-overlays`, not main, until publication is explicitly requested. Mihir separately requested publication of the already integrated `frontend/dev` work on 2026-11-14; `main` now contains it through `6d468dd`. That publication does not authorize future feature-branch work. With Shlok's approval, the anatomy overlay work was also published to `main` on 2026-11-14 by fast-forward; later spatial work again stays on the branch until requested. Preserve concurrent commits and never force-push.

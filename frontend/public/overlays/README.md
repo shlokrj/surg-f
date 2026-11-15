@@ -1,5 +1,7 @@
-# Experimental localization preview
+# Experimental localization overlays
 
-`VID01.json` contains ten actual Grounding DINO predictions across three sampled CholecT50 frames (674, 680, 689). Some labels are wrong; these are not ground truth. Model revision, prompts, thresholds, frame hashes and processing details are stored in `provenance`.
+`VID01.json` contains anatomy predictions from the two-class Endoscapes Faster R-CNN MobileNetV3 model (`anatomy-full-v1`, epoch 3, validation AP 0.345) for every 0.24 s of VID01. Labels are gallbladder (score ≥ 0.65) and cystic duct (score ≥ 0.70) only: no instruments and no liver. These are model predictions, not ground truth or medical review; cystic duct detection is weak and VID01 accuracy is unmeasured. Checkpoint hash, data signature, video hash, thresholds and timebase are stored in `provenance`. See [runner documentation](../../../ml/localization/README.md#full-anatomy-data-training-and-export-mihir).
 
-Source imagery: CholecT50, Nwoye et al., Medical Image Analysis 2022; Cholec80, Twinanda et al., IEEE TMI 2017. Dataset license: [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Preserve attribution and the source dataset terms for this derived preview. No source imagery is included. See [official dataset](https://github.com/CAMMA-public/cholect50) and [runner documentation](../../../ml/localization/README.md).
+The earlier Grounding DINO preview (three frames, some wrong labels) is kept only as a test fixture at `frontend/test/fixtures/VID01-grounding-dino.json`.
+
+Training imagery: Endoscapes, Murali et al. (CC BY-NC-SA 4.0). Source video: Cholec80, Twinanda et al., IEEE TMI 2017; CholecT50, Nwoye et al., Medical Image Analysis 2022. Dataset license: [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Preserve attribution and the source dataset terms for this derived artifact. No source imagery is included.

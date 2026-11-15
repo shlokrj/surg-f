@@ -31,4 +31,10 @@ class ArtifactTests(unittest.TestCase):
         data=example(); data['frames'][0]['detections'] *= 2
         with self.assertRaises(ValueError): validate(data)
 
+    def test_display_dimensions_are_optional_but_paired(self):
+        data = example(); data.update(display_width=854, display_height=484)
+        self.assertIs(validate(data), data)
+        del data['display_height']
+        with self.assertRaises(ValueError): validate(data)
+
 if __name__ == '__main__': unittest.main()

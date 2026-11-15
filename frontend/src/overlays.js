@@ -4,6 +4,9 @@ export function validateOverlay(data, caseId, assetId) {
   if (data?.schema_version !== 1 || data.case_id !== caseId || data.video_asset_id !== assetId) throw Error('Overlay belongs to a different video or schema.');
   if (!['prediction','annotation','fixture'].includes(data.source)) throw Error('Unknown overlay source.');
   if (![data.image_width,data.image_height].every(v => Number.isInteger(v) && v > 0)) throw Error('Missing source dimensions.');
+  if (data.display_width !== undefined || data.display_height !== undefined) {
+    if (![data.display_width,data.display_height].every(v => Number.isInteger(v) && v > 0)) throw Error('Invalid video display dimensions.');
+  }
   if (!number(data.max_age_sec) || data.max_age_sec <= 0 || data.max_age_sec > .25) throw Error('Unsafe overlay expiry.');
   if (!data.provenance || typeof data.provenance !== 'object' || !Object.keys(data.provenance).length) throw Error('Missing provenance.');
   if (!Array.isArray(data.frames) || data.frames.length > 10000) throw Error('Invalid frame list.');
@@ -33,6 +36,13 @@ export function contentRect(w,h,sw,sh) {
   const scale = Math.min(w/sw,h/sh);
   return { width: sw*scale, height: sh*scale, left: (w-sw*scale)/2, top: (h-sh*scale)/2 };
 }
+// Dense artifacts would flood the jump list, so list detection frames at least 10 s apart.
+export function jumpFrames(frames, limit = 200, spacing = 10) {
+  if (frames.length <= limit) return frames;
+  const listed = []; let last = -Infinity;
+  for (const f of frames) if (f.detections.length && f.timestamp_sec - last >= spacing) { listed.push(f); last = f.timestamp_sec; }
+  return listed;
+}
 const cache = new Map();
 async function load(caseId, assetId) {
   const key = `${caseId}:${assetId}`;
@@ -51,18 +61,19 @@ export function mountOverlays({ video, host, controls, caseId, assetId, enabled 
   const categories = new Set(['instrument','anatomy']);
   let minimumScore = 0;
   const layer = document.createElement('div'); layer.className = 'spatial-layer'; layer.setAttribute('aria-hidden','true'); host.append(layer);
-  controls.innerHTML = `<div class="overlay-toolbar"><label class="overlay-toggle"><input type="checkbox" data-overlay-toggle> Bounding boxes <span>Experimental</span></label><button type="button" data-overlay-fullscreen>Fullscreen with overlays</button></div><div class="overlay-options" hidden><label><input type="checkbox" data-category="instrument" checked> Instruments</label><label><input type="checkbox" data-category="anatomy" checked> Anatomy</label><label>Sampled frame <select aria-label="Jump to sampled detection frame"><option value="">Choose a frame</option></select></label><label>Minimum score <input type="range" data-score min="0" max="1" step="0.05" value="0" aria-label="Minimum detection score"><output data-score-value>0.00</output></label></div><p class="overlay-status" role="status"></p>`;
-  const toggle = controls.querySelector('[data-overlay-toggle]'), options = controls.querySelector('.overlay-options'), status = controls.querySelector('.overlay-status'), select = controls.querySelector('select');
+  controls.innerHTML = `<div class="overlay-toolbar"><label class="overlay-toggle"><input type="checkbox" data-overlay-toggle> Bounding boxes <span>Experimental</span></label><button type="button" data-overlay-retry hidden>Retry loading boxes</button><button type="button" data-overlay-fullscreen>Fullscreen with overlays</button></div><div class="overlay-options" hidden><label><input type="checkbox" data-category="instrument" checked> Instruments</label><label><input type="checkbox" data-category="anatomy" checked> Anatomy</label><label>Sampled frame <select aria-label="Jump to sampled detection frame"><option value="">Choose a frame</option></select></label><label>Minimum score <input type="range" data-score min="0" max="1" step="0.05" value="0" aria-label="Minimum detection score"><output data-score-value>0.00</output></label></div><p class="overlay-status" role="status"></p>`;
+  const toggle = controls.querySelector('[data-overlay-toggle]'), retry = controls.querySelector('[data-overlay-retry]'), options = controls.querySelector('.overlay-options'), status = controls.querySelector('.overlay-status'), select = controls.querySelector('select');
   toggle.checked = enabled;
   const say = text => { if (status.textContent !== text) status.textContent = text; };
   function draw() {
     if (disposed) return;
+    retry.hidden = !error || !!data || !assetId || !toggle.checked;
     const visible = toggle.checked && data && !error && !video.seeking && !video.error && video.readyState >= 2;
     if (!toggle.checked) say('Boxes off. Sparse detections appear only near sampled frames.');
     else if (error) say(error);
     else if (!data) say('Loading bounding-box data…');
     let frame = visible ? frameAt(data,video.currentTime) : null;
-    if (visible && (video.videoWidth !== data.image_width || video.videoHeight !== data.image_height)) { error = 'Overlay dimensions do not match this video.'; frame = null; say(error); }
+    if (visible && (video.videoWidth !== (data.display_width ?? data.image_width) || video.videoHeight !== (data.display_height ?? data.image_height))) { error = 'Overlay dimensions do not match this video.'; frame = null; say(error); }
     const r = contentRect(host.clientWidth,host.clientHeight,video.videoWidth || 1,video.videoHeight || 1);
     Object.assign(layer.style,{left:`${r.left}px`,top:`${r.top}px`,width:`${r.width}px`,height:`${r.height}px`});
     const next = `${frame?.frame_id ?? ''}:${[...categories]}:${minimumScore}:${!!visible}`;
@@ -88,12 +99,18 @@ export function mountOverlays({ video, host, controls, caseId, assetId, enabled 
     if (data || pending || !assetId || disposed) return; pending = true; error = '';
     try {
       const loaded = await load(caseId,assetId); if (disposed) return; data = loaded;
-      for (const f of data.frames) { const o = document.createElement('option'); o.value = String(f.timestamp_sec); o.textContent = `${Math.floor(f.timestamp_sec/60)}:${String(Math.floor(f.timestamp_sec%60)).padStart(2,'0')} · frame ${f.frame_id}`; select.append(o); }
+      for (const f of jumpFrames(data.frames)) { const o = document.createElement('option'); o.value = String(f.timestamp_sec); o.textContent = `${Math.floor(f.timestamp_sec/60)}:${String(Math.floor(f.timestamp_sec%60)).padStart(2,'0')} · frame ${f.frame_id}`; select.append(o); }
+      for (const input of controls.querySelectorAll('[data-category]')) {
+        if (data.frames.some(f => f.detections.some(d => d.category === input.dataset.category))) continue;
+        input.checked = false; input.disabled = true; categories.delete(input.dataset.category);
+        input.parentElement.append(' (none in this file)');
+      }
     } catch (reason) { if (!disposed) error = reason.message; }
     finally { pending = false; }
     draw();
   }
   toggle.addEventListener('change',() => { options.hidden = !toggle.checked; onToggle(toggle.checked); ensureData(); draw(); });
+  retry.addEventListener('click', () => { if (!pending && !data) ensureData(); });
   controls.querySelectorAll('[data-category]').forEach(input => input.addEventListener('change',() => { input.checked ? categories.add(input.dataset.category) : categories.delete(input.dataset.category); draw(); }));
   controls.querySelector('[data-score]').addEventListener('input', event => { minimumScore = Number(event.target.value); controls.querySelector('[data-score-value]').textContent = minimumScore.toFixed(2); draw(); });
   select.addEventListener('change',() => { if (select.value !== '') { video.pause(); video.currentTime = Number(select.value); } });

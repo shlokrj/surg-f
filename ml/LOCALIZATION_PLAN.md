@@ -1,18 +1,19 @@
 # Stage 3: localized video overlays
 
-Status: **Aadhi (Aadhitya) and Mihir own spatial implementation; Shlok has moved to frontend design.** This supersedes all earlier three-person spatial assignments. The earlier integrated frontend was published to `main` through `6d468dd` at Mihir's request. New spatial work stays on `feat/spatial-overlays` until explicitly published; that main publication does not include unfinished feature-branch work.
+Status: **Mihir owns the remaining spatial implementation alone; Aadhi has moved to other work and Shlok owns general frontend design.** This supersedes earlier spatial assignments. The earlier integrated frontend was published to `main` through `6d468dd` at Mihir's request. New spatial work stays on `feat/spatial-overlays` until explicitly published.
+
+Current checkpoint (2026-11-14, later): the two-class Endoscapes model reached validation AP 0.345 at epoch 3 (gallbladder strong, cystic duct weak; epoch 4 hit the nonfinite-loss guard). `frontend/public/overlays/VID01.json` is now a full-length anatomy-only export (every 0.24 s, per-class thresholds chosen on validation), checked in headless Chrome 157 during seeking, playback, resize and case switching. Six-instrument boxes, liver, reviewed VID01 ground truth and better cystic duct quality remain open. See the [handoff](../agent-kit/HANDOFFS.md#mihir-anatomy-model-and-vid01-overlay-deployed-2026-11-14) and [runner instructions](localization/README.md#full-anatomy-data-training-and-export-mihir).
 
 ## Current assignments and shared workflow
 
 | Owner | Current scope | Owned paths / handoff |
 |---|---|---|
 | Shlok | General frontend design: layout, typography, styling, responsiveness and overall presentation | General frontend components and styles. Coordinate shared `main.js`, `style.css` and player markup with Mihir before either edits the same sections. Preserve working search, quiz, chart, steps and overlay behavior. No remaining spatial ML assignment. |
-| Aadhi (Aadhitya) | Spatial data **and** model/evaluation: downloads, splits, annotation audit, full anatomy trainer, metrics, checkpoints, inference and overlay exports | `ml/localization/` Python, requirements, data/run manifests and related tests. Takes over Shlok's unfinished model tasks. Hand Mihir schema-valid artifacts, asset/timebase binding, class map and measured quality limitations. |
-| Mihir | Spatial player integration, overlay interaction and real-browser acceptance | `frontend/src/overlays.js`, overlay tests and `frontend/public/overlays/`; minimal integration changes in shared frontend files coordinated with Shlok. General frontend redesign now belongs to Shlok. |
+| Mihir | Spatial data/model/evaluation/export, player integration and real-browser acceptance | `ml/localization/`, overlay artifacts, `frontend/src/overlays.js` and overlay tests. Coordinate shared frontend markup/styles with Shlok. Keep experimental predictions and quality limits explicit. |
 
-Aadhi and Mihir fetch/pull and push spatial work on `feat/spatial-overlays`, using separate checkouts. Preserve concurrent commits; reconcile rejected pushes without force-push or resets. Commit completed changes with lowercase Conventional Commit subjects and no co-author trailers. Shlok's design work is a separate lane; no new design branch is created by this documentation update.
+Mihir fetches/pulls and pushes spatial work on `feat/spatial-overlays`. Preserve concurrent commits; reconcile rejected pushes without force-push or resets. Commit completed changes with lowercase Conventional Commit subjects and no co-author trailers. Shlok's design work remains a separate lane.
 
-### Aadhi — data, models and evaluation
+### Mihir — data, models and evaluation (transferred from Aadhi)
 
 1. Pull the latest spatial branch before starting. It includes Shlok's scoped COCO evaluator in `78dfef0`, beyond the earlier main snapshot. Retain that work; do not rebuild it from scratch. The real two-image smoke result is pipeline evidence only, not representative accuracy.
 2. Complete resume-safe train/validation image downloads, hashes, decode checks, overlap protection and readiness manifests. Keep images/checkpoints outside Git. Audit genuine six-instrument box supervision; Endoscapes generic tool labels cannot provide instrument subtypes.
@@ -24,14 +25,14 @@ Aadhi and Mihir fetch/pull and push spatial work on `feat/spatial-overlays`, usi
 
 1. Verify actual VID01 playback with the current sparse artifact; record browser/version and screenshots or a short recording. DOM media simulations do not establish playback/fullscreen correctness.
 2. Finish toggle/category/score controls, loading/error/retry, keyboard interaction, seek/play expiry, resize/letterboxing/fullscreen, missing data and local-upload behavior. Ensure case switches and late responses never leak stale boxes.
-3. Coordinate incoming artifacts with Aadhi and presentation/shared files with Shlok. Keep predictions experimental until evidence supports otherwise; never substitute fabricated boxes for real results.
+3. Bind any new artifacts to the actual video asset and coordinate presentation/shared files with Shlok. Keep predictions experimental until evidence supports otherwise; never substitute fabricated boxes for real results.
 4. Add regression coverage, run the build, and hand off browser evidence and remaining defects. Avoid broad layout/style redesign in Shlok's lane.
 
 ## Handoffs and final completion gate
 
-Aadhi → Mihir: validated artifact, model/class map, data and checkpoint provenance, measured validation quality, matching video asset and example timestamps. Mihir → Shlok: integration points, visual constraints and browser acceptance evidence. Shlok → Mihir: design changes affecting player layout or shared DOM/CSS. Agree schema changes in `agent-kit/CONTRACTS.md` before changing producers/consumers.
+Mihir owns validated artifacts, model/class map, data and checkpoint provenance, measured validation quality, matching video asset, player integration and browser acceptance. Mihir → Shlok: integration points, visual constraints and browser acceptance evidence. Shlok → Mihir: design changes affecting player layout or shared DOM/CSS. Record schema changes in `agent-kit/CONTRACTS.md` before changing producers/consumers.
 
-Before spatial publication: reproducible training/evaluation, explicitly supported classes, correct video alignment, passing automated/browser checks and documented limitations. Tracking, action recognition, six validated instrument types and all anatomy targets are not implied by the two-class smoke. Main publication still requires Shlok's request; the current request publishes ownership docs only.
+Before spatial publication: reproducible training/evaluation, explicitly supported classes, correct video alignment, passing automated/browser checks and documented limitations. Tracking, action recognition, six validated instrument types and all anatomy targets are not implied by the two-class smoke. Main publication still requires Shlok's request. On 2026-11-14 Shlok approved publishing the anatomy model tooling and full-length VID01 anatomy overlay; `main` was fast-forwarded to `feat/spatial-overlays`.
 
 ## Intended experience
 

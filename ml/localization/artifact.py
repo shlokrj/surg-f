@@ -20,6 +20,10 @@ def validate(data):
     for key in ('image_width', 'image_height'):
         if type(data.get(key)) is not int or data[key] < 1:
             raise ValueError('positive source dimensions required')
+    if 'display_width' in data or 'display_height' in data:
+        for key in ('display_width', 'display_height'):
+            if type(data.get(key)) is not int or data[key] < 1:
+                raise ValueError('paired positive video display dimensions required')
     age = data.get('max_age_sec')
     if not finite(age) or not 0 < age <= 0.25:
         raise ValueError('sparse detections expire within 250 ms')

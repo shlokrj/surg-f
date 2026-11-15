@@ -1,6 +1,6 @@
 # Spatial overlay prototype (stage 3)
 
-Current ownership: **Shlok — general frontend design; Aadhi — spatial data/models/evaluation/export; Mihir — spatial player/browser verification.** Spatial work stays on `feat/spatial-overlays`. Shlok and Mihir coordinate shared frontend markup/styles. See [tasks and handoffs](../LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). Earlier owner notes below are historical.
+Current ownership: **Shlok — general frontend design; Mihir — all remaining spatial data/model/export/player work and browser verification.** Aadhi has moved to other work. Spatial work stays on `feat/spatial-overlays`. Shlok and Mihir coordinate shared frontend markup/styles. See [tasks and handoffs](../LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). Earlier owner notes below are historical.
 
 
 Owner: Shlok. Branch: `feat/spatial-overlays`. Aadhitya continues stage 2 independently on `ml-dev`.
@@ -19,7 +19,7 @@ Use `--revision` to reproduce the exact model commit saved in the artifact. Pack
 
 A three-frame CPU smoke run on real VID01 frames succeeded. See `frontend/public/overlays/VID01.json` for exact model/image provenance and detections. These are actual model predictions, not verified boxes. Their scores are not calibrated probabilities. No localization AP is claimed: the current mirror audit found classification labels and no top-level spatial fields among 100,863 samples. An official box-bearing dataset or reviewed annotations are still needed for quality evaluation. Do not use existing final-test cases for prompt tuning.
 
-For the player, place the generated artifact at `frontend/public/overlays/CASE.json`. It must match the versioned asset identifier in `frontend/src/cases.js`. VID01 offset -0.04 s refers to the known 25 fps Cholec80 asset; verify offsets for any replacement asset. The current frontend checks asset ID and dimensions, not video bytes: the deployer must maintain the asset-version binding. Sparse detections expire after 120 ms, never more than 250 ms. This avoids pretending one sampled frame is continuous tracking. Use the sampled-frame selector to inspect paused detections.
+For the player, place the generated artifact at `frontend/public/overlays/CASE.json`. It must match the versioned asset identifier in `frontend/src/cases.js`. VID01 offset -0.04 s refers to the known 25 fps Cholec80 asset; verify offsets for any replacement asset. The current frontend checks asset ID and dimensions, not video bytes: the deployer must maintain the asset-version binding. VID01's MP4 reports decoded 854×480, SAR 253:255, and Chrome display dimensions 854×484. Its artifact therefore includes optional paired `display_width`/`display_height` fields; these are valid only after verifying the exact deployed video asset. Boxes remain normalized to the full source frame and stretch with the displayed image. Sparse detections expire after 120 ms, never more than 250 ms. This avoids pretending one sampled frame is continuous tracking. Use the sampled-frame selector to inspect paused detections.
 
 Sources: [official model card](https://huggingface.co/IDEA-Research/grounding-dino-tiny), [Transformers usage](https://huggingface.co/docs/transformers/model_doc/grounding-dino). Model code/weights are Apache-2.0. Source frames are CholecT50 (Nwoye et al., Medical Image Analysis 2022, CC BY-NC-SA 4.0); no source images or videos are committed. Preserve the dataset attribution and terms for derived preview artifacts.
 
@@ -86,3 +86,51 @@ The downloader selects two positive images from distinct surgeries in each offic
 The smoke runner uses [Torchvision Faster R-CNN MobileNetV3 320](https://docs.pytorch.org/vision/0.21/models/generated/torchvision.models.detection.fasterrcnn_mobilenet_v3_large_320_fpn.html), COCO_V1 pretrained weights, and a new head with background/cystic duct/gallbladder classes. It validates image hashes and surgery separation, performs exactly three CPU optimizer steps with seed 17, checks finite losses/inference and saves a local checkpoint, raw validation predictions and report. This is a lightweight alternative supervised baseline, not a fine-tuned Grounding DINO checkpoint.
 
 The real run succeeded on Endoscapes train surgeries 1/2 and validation 121/122. `anatomy_smoke_report.json` records all losses and versions. Three updates on two images do not establish useful accuracy; the 36/37 validation detections are counts, not correct detections. No checkpoint or image is committed, and the app still uses the old experimental preview. Next: prepare full train/validation imagery, add category-scoped COCO metrics and a bounded full training experiment with best-checkpoint selection on validation only. Browser acceptance remains separate.
+
+## Category-scoped COCO evaluation (Shlok)
+
+Install `requirements-eval.txt` in the localization environment. Run:
+
+```sh
+python ml/localization/evaluate_anatomy_coco.py /path/to/val/annotations.json /path/to/predictions.json --output /path/to/new/metrics.json
+```
+
+Input references must explicitly contain only class 1 cystic duct and class 2 gallbladder, with reviewed detection-keyframe flags. Predictions use the smoke runner format: image_id, pixel xyxy boxes, integer labels and scores. The evaluator includes every reference image, counts missing prediction images, reports ignored out-of-scope detections, rejects invalid geometry/IDs, and leaves undefined metrics null. Uses pycocotools COCO bbox AP at IoU .50:.05:.95 and AP50, plus per-class recall at maxDets 100; bbox areas are computed from geometry. Do not use this category map with a different model without explicit conversion.
+
+`anatomy_smoke_metrics.json` records AP 0.05047 / AP50 0.09926 on only two validation images (three reference boxes) after three optimizer steps. This verifies metrics plumbing, not generalizable performance. No threshold/model was selected from this tiny result. Full training and representative validation remain unfinished; Mihir owns the remaining inputs and experiments.
+
+## Full anatomy data, training and export (Mihir)
+
+Use a separate Python environment with `requirements.txt` (including `remotezip==0.12.6` and pycocotools); keep images, checkpoints and derived video frames outside Git. `fetch_anatomy_data.py` reads the official train/validation detection-keyframe annotations through bounded remote ZIP reads, applies the existing surgery-overlap guard, checks each downloaded image's decode size and SHA-256, and resumes without replacing verified files. Its manifest binds source annotations, prepared labels, the CholecT50 split and every image hash. `--limit 2` is a bounded pipeline check only; rerun without it to finish all images. The local full download under `~/madhacks2026/localization/anatomy-data/` completed: 1,212 train and 409 validation images. A second downloader pass and `ready_data` verified every selected image hash, prepared labels and surgery separation (signature `0c003c2f469468b0acf3cb61a2788c7aff77b5b8d72ad9f59800ce1f71b07eff`). The five-epoch CPU run at `~/madhacks2026/localization/anatomy-full-v1/` completed epochs 0–3 (about 3 minutes each) and stopped at epoch 4 on the `nonfinite training loss` guard; `--resume` reproduces the stop. `best.pt` is epoch 3: validation AP 0.345, AP50 0.633; gallbladder AP50 0.945, cystic duct AP50 0.321. A new run with gradient clipping or a lower learning rate is the next training experiment; use a new output directory.
+
+```sh
+python ml/localization/fetch_anatomy_data.py --output-dir /path/to/anatomy-data --limit 2
+python ml/localization/fetch_anatomy_data.py --output-dir /path/to/anatomy-data
+python ml/localization/train_anatomy.py --data-dir /path/to/anatomy-data \
+  --output-dir /path/to/new/anatomy-run --epochs 5 --batch-size 2 --device cpu
+```
+
+The trainer refuses missing or changed images, unexpected categories, changed prepared labels and overlapping train/validation surgeries. It loads images lazily, trains the two-class Faster R-CNN MobileNetV3 320 model, checks finite losses and predictions, measures the initial-head validation baseline, and selects `best.pt` by validation COCO AP. `last.pt` and `--resume` retain optimizer and random-generator state; `report.json` includes split/data signature, seed, versions and per-epoch metrics. Use a new output directory for a new run. `--max-train-images` and `--max-val-images` permit bounded pipeline checks; their reports are explicitly marked as such and cannot establish accuracy. A real two-image/two-image run completed one epoch with finite mean loss 1.1615 and undefined AP because that tiny validation slice contains no supported reference object.
+
+After a representative validation run, export sampled-frame predictions to a **new file outside Git** before considering player deployment:
+
+Analyze fixed-threshold validation errors and choose per-class export thresholds:
+
+```sh
+python ml/localization/analyze_anatomy_errors.py /path/to/anatomy-data/val/annotations.json \
+  /path/to/anatomy-run/best-predictions.json --output /path/to/new/errors.json
+```
+
+It matches boxes one-to-one per class at IoU 0.5, sweeps score thresholds 0.05–0.95, picks each class's threshold by validation F1 and reports false-positive types (duplicate, localization, class confusion, background), misses by box size and per-surgery recall. Thresholds chosen this way are optimistic because no untouched test split is used. The committed `anatomy_full_v1_errors.json` is the report for the epoch-3 checkpoint.
+
+```sh
+SURGF_FFMPEG=/path/to/ffmpeg python -m unittest discover -s ml/localization -p 'test_*.py'
+python ml/localization/export_anatomy_video.py \
+  --checkpoint /path/to/anatomy-run/best.pt --video frontend/public/videos/VID01.mp4 \
+  --case-id VID01 --video-asset-id VID01-cholec80-25fps-v1 \
+  --every-sec 0.24 --max-age-sec 0.25 --display-width 854 --display-height 484 \
+  --score-threshold 0.65 --class-threshold "cystic duct=0.7" \
+  --ffmpeg /path/to/ffmpeg --output /path/to/new/VID01-anatomy.json
+```
+
+The exporter takes **player seconds** (`--seconds` or `--every-sec` with optional `--start`/`--end`), maps each to the nearest decoded frame index, and sets `timestamp_sec` to that frame's presentation time (stream start + index/fps). Do not pass CholecT50 frame numbers as decoded indices, and do not apply the CholecT50 offset to decoded frames. It decodes the video once as raw RGB (FFmpeg 5+, `-fps_mode passthrough`), normalizes boxes to source dimensions, binds the video SHA-256, checkpoint epoch/hash and data signature, records class map, per-class thresholds and a digest of every frame's RGB hash, and validates the artifact schema. 0.24 s is exactly 6 frames at 25 fps; with `max_age_sec` 0.25 the boxes stay on during playback. The deployed VID01 export used the command above (no bundled ffmpeg on PATH here; `imageio-ffmpeg`'s FFmpeg 9.0 binary works): 7,221 frames, 7,465 boxes, 1.34 M characters. An earlier one-frame export bound frame 674 to 26.92 s because of the old frame-ID semantics; ignore it. The model supports only cystic duct and gallbladder anatomy; it does not validate six instrument subtypes or liver. The currently available CholecT50 mirror lacks subtype box annotations, and Endoscapes has only a generic tool box category. Official subtype-box data or independently reviewed labels remain necessary for instrument accuracy claims.

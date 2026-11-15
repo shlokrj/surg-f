@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "case_id": "VID01",
+  "video_asset_id": "VID01-cholec80-25fps-v1",
+  "source": "prediction",
+  "image_width": 854,
+  "image_height": 480,
+  "display_width": 854,
+  "display_height": 484,
+  "max_age_sec": 0.12,
+  "frames": [
+    {
+      "frame_id": 674,
+      "timestamp_sec": 673.96,
+      "detections": [
+        {
+          "instance_id": "000674-0",
+          "category": "anatomy",
+          "label": "liver",
+          "score": 0.303148090839386,
+          "bbox_xyxy": [
+            0.5409432618902774,
+            0.6758164723714193,
+            0.8877847211422351,
+            0.9923090616861979
+          ]
+        },
+        {
+          "instance_id": "000674-1",
+          "category": "instrument",
+          "label": "irrigator",
+          "score": 0.44015437364578247,
+          "bbox_xyxy": [
+            0.05003771011388274,
+            0.007652640342712402,
+            0.9320497177802985,
+            0.9844088236490885
+          ]
+        },
+        {
+          "instance_id": "000674-2",
+          "category": "instrument",
+          "label": "scissors",
+          "score": 0.478868305683136,
+          "bbox_xyxy": [
+            0.05078262132559783,
+            0.44729820887247723,
+            0.32589668077384004,
+            0.6401775360107422
+          ]
+        },
+        {
+          "instance_id": "000674-3",
+          "category": "anatomy",
+          "label": "cystic duct",
+          "score": 0.30666428804397583,
+          "bbox_xyxy": [
+            0.6306499686676669,
+            0.16309968630472818,
+            0.8776383768479216,
+            0.4933049201965332
+          ]
+        }
+      ]
+    },
+    {
+      "frame_id": 680,
+      "timestamp_sec": 679.96,
+      "detections": [
+        {
+          "instance_id": "000680-0",
+          "category": "instrument",
+          "label": "scissors",
+          "score": 0.3167647421360016,
+          "bbox_xyxy": [
+            0.08892264801668619,
+            0.07995541095733642,
+            0.6070162127671253,
+            0.5652367273966471
+          ]
+        },
+        {
+          "instance_id": "000680-1",
+          "category": "anatomy",
+          "label": "liver",
+          "score": 0.3735271096229553,
+          "bbox_xyxy": [
+            0.6037942140387149,
+            0.5295217514038086,
+            0.9168235903880635,
+            0.9392256418863932
+          ]
+        },
+        {
+          "instance_id": "000680-2",
+          "category": "instrument",
+          "label": "irrigator",
+          "score": 0.3891289234161377,
+          "bbox_xyxy": [
+            0.049747855657715986,
+            0.010087519884109497,
+            0.9324916866400761,
+            0.9722269694010417
+          ]
+        }
+      ]
+    },
+    {
+      "frame_id": 689,
+      "timestamp_sec": 688.96,
+      "detections": [
+        {
+          "instance_id": "000689-0",
+          "category": "instrument",
+          "label": "scissors",
+          "score": 0.6112533807754517,
+          "bbox_xyxy": [
+            0.21075498415658847,
+            0.002569824457168579,
+            0.5647620529424949,
+            0.3634145418802897
+          ]
+        },
+        {
+          "instance_id": "000689-1",
+          "category": "instrument",
+          "label": "irrigator",
+          "score": 0.4280828833580017,
+          "bbox_xyxy": [
+            0.05602631133389976,
+            0.008706927299499512,
+            0.9334197211879757,
+            0.9847991307576497
+          ]
+        },
+        {
+          "instance_id": "000689-2",
+          "category": "anatomy",
+          "label": "liver",
+          "score": 0.30146118998527527,
+          "bbox_xyxy": [
+            0.08076619990257246,
+            0.6358839670817057,
+            0.6259614109155445,
+            0.9913302103678385
+          ]
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "video_pixel_aspect_ratio": "253:255",
+    "video_display_mapping": "FFmpeg reports decoded 854x480 with SAR 253:255; Chrome 157 exposes 854x484 display dimensions for the same asset. Normalized source boxes map across the full displayed frame.",
+    "model_id": "IDEA-Research/grounding-dino-tiny",
+    "model_revision": "a2bb814dd30d776dcf7e30523b00659f4f141c71",
+    "weights_sha256": "1a2412ef99bd74bcd3c2a246fa1e48581f8889a1300c9051974741314fc042f3",
+    "transformers": "4.57.6",
+    "torch": "2.6.0",
+    "prompts": {
+      "surgical grasper": [
+        "instrument",
+        "grasper"
+      ],
+      "bipolar forceps": [
+        "instrument",
+        "bipolar"
+      ],
+      "surgical hook": [
+        "instrument",
+        "hook"
+      ],
+      "surgical scissors": [
+        "instrument",
+        "scissors"
+      ],
+      "clip applier": [
+        "instrument",
+        "clipper"
+      ],
+      "suction irrigation instrument": [
+        "instrument",
+        "irrigator"
+      ],
+      "gallbladder": [
+        "anatomy",
+        "gallbladder"
+      ],
+      "liver": [
+        "anatomy",
+        "liver"
+      ],
+      "cystic duct": [
+        "anatomy",
+        "cystic duct"
+      ]
+    },
+    "box_threshold": 0.3,
+    "text_threshold": 0.25,
+    "source_image_sha256": {
+      "000674.png": "4f88f8e49f11c8252ee8067cd3be235b41963a837c43e2933354d6b84a57547b",
+      "000680.png": "fc54ac4c4007cde8e32fc47315d79e48c48bc482f0b324484bb904f5a63c29b5",
+      "000689.png": "fcb2c29c67ecc6b5a922fe6271a4ba88cfa482902ea461fe633a4ac7b12dfa30"
+    },
+    "time_offset_sec": -0.04,
+    "inference_seconds": [
+      4.2753152909863275,
+      2.1456870420079213,
+      2.1259919160220306
+    ],
+    "unmapped_phrases": {
+      "suction irrigation instrument liver": 2,
+      "surgical scissorsction irrigation instrument": 1
+    },
+    "quality": "experimental; not surgically validated",
+    "tracking": false,
+    "source_dataset": "CholecT50; CC BY-NC-SA 4.0"
+  }
+}
