@@ -1,5 +1,5 @@
 import './style.css';
-import { searchClips, getTimeline, getQuiz, getSteps, interpretQuery, getActionRows, instrumentLabels } from './api.js';
+import { searchClips, getTimeline, getQuiz, getSteps, interpretQuery, chatMessage, getActionRows, instrumentLabels } from './api.js';
 import { quizCard, wireQuiz } from './quiz.js';
 import { timelinePanel, timelineTick } from './timeline.js';
 import { avatar, greeting, switched, localVideoNote, errorReply, reply, STEP_NOTES } from './lildoc.js';
@@ -393,6 +393,21 @@ function scrollToSection(selector) {
 
 // --- asking Lil Doc ----------------------------------------------------------
 
+const SLASH_COMMAND = /(^|\s)\/(timestamp|quiz|chart|model)\b/i;
+
+// Turn a POST /chat response into the same plan shape /interpret returns, with the data
+// attached, so the rest of runSearch draws both the same way.
+function planFromChat(chat, caseId) {
+  const plan = { interpreter: chat.router === 'genie' ? 'genie' : 'rules', message: chat.reply };
+  if (chat.action === 'search') {
+    const labels = [...new Set(chat.data.results.map(hit => hit.label))];
+    plan.actions = labels.map((label, index) => ({ type: 'timestamp', label, case_id: caseId, results: index === 0 ? chat.data.results : [] }));
+  } else {
+    plan.actions = [{ type: chat.action === 'timeline' ? 'chart' : 'quiz' }];
+  }
+  return plan;
+}
+
 // keepOutputs: add the new result to what is already on the page (used by the quiz's
 // "watch" links, so the graded quiz stays where it is).
 async function runSearch(raw, { keepOutputs = false } = {}) {
@@ -407,9 +422,17 @@ async function runSearch(raw, { keepOutputs = false } = {}) {
   let answer = errorReply;
   let target = null;
   try {
-    // The backend turns the typed text into actions (rules first, Databricks Genie for
-    // free-form questions). If it cannot be reached, fall back to the local rules above.
-    const plan = await interpretQuery(query, caseId).catch(() => null);
+    // Free-typed messages go to POST /chat: the backend picks the feature and returns its
+    // data in one call. Slash commands, and anything /chat cannot take (older backend,
+    // network error, fixture mode), use /interpret, which falls back to the local rules.
+    const chat = SLASH_COMMAND.test(query) ? null : await chatMessage(query, caseId).catch(() => null);
+    if (state.caseId !== caseId) return;
+    if (chat && (chat.action === 'none' || chat.action === 'answer' || (chat.action === 'search' && !chat.data.results.length))) {
+      // Nothing to draw: a declined question, a Genie answer in words, or no matches.
+      answer = chat.router === 'genie' ? `Here’s what I dug up: ${chat.reply}` : chat.reply;
+      return;
+    }
+    const plan = chat ? planFromChat(chat, caseId) : await interpretQuery(query, caseId).catch(() => null);
     if (state.caseId !== caseId) return;
     const actions = plan?.actions ?? local.modes.map(type => ({ type, label: type === 'timestamp' ? local.label : null }));
     const modes = [...new Set(actions.map(action => action.type))];
@@ -417,12 +440,13 @@ async function runSearch(raw, { keepOutputs = false } = {}) {
     const stamps = actions.filter(action => action.type === 'timestamp');
     const labels = [...new Set(stamps.map(action => action.label).filter(Boolean))];
     const chartRequest = modes.includes('chart') ? parseChartRequest(query) : null;
+    if (chartRequest && !chartRequest.categories.length) chartRequest.categories.push('instruments', 'verbs', 'targets');
 
     const lookups = stamps.map(async action => action.results
       ?? (action.label ? (await searchClips(action.label)).filter(hit => hit.case_id === (action.case_id ?? caseId)) : []));
     const extra = [];
-    let timeline = state.timeline;
-    let quiz = keepOutputs ? state.quiz : null;
+    let timeline = chat?.action === 'timeline' && chat.data.case_id === caseId ? chat.data : state.timeline;
+    let quiz = chat?.action === 'quiz' ? chat.data : keepOutputs ? state.quiz : null;
     if (chartRequest?.categories.includes('instruments') && !timeline) extra.push((async () => { timeline = await getTimeline(caseId); })());
     if (modes.includes('quiz') && !quiz) extra.push((async () => { quiz = await getQuiz(); })());
     const [found] = await Promise.all([Promise.all(lookups), ...extra]);
