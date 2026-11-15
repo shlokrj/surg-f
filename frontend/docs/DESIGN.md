@@ -32,12 +32,15 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
 
 ## Feature stack, how it works, model notes (2026-11-14)
 
-- **Feature stack:** the three feature sections are sticky cards (`.stack-card`, `top: 5vh + i·22px`). As the next card slides up, `--cover` (0–1) scales the previous card to 94% and dims its content. Reduced motion unpins them.
-- **How it works:** a pinned scene (`.arch`, `100svh + 6 × 42svh` of scroll) on a plus-dithered panel. Scroll progress sets `--fill`, which draws the line and moves a `+` runner. Six keycap nodes light up in turn, and the detail below swaps to the active step's text and card.
-  - Steps: surgery video, frame features, label model, clip index, search and chat, the moment.
-  - Facts come from the README, SPEC, DATABRICKS, backend README and Aadhi's `public/model-evals.md`.
-  - Each card uses only real data: the 50 cases with VID01/VID02 live, feature shapes `[1734,768]` and `[2840,768]`, the 29 CholecT50 labels, real clip rows, and a live `/search` and Genie answer checked on 2026-11-14.
-  - Narrow screens and reduced motion show the steps as a list.
+- **Feature stack:** the three feature sections are sticky cards (`.stack-card`, `top: 7vh + i·18px`, each 18px shorter than the one before). Cards keep full width; the covered card's content dims. A spacer inside the container (padding does not count for sticky) lets all three rest evenly offset, like Hangar's stack, then leave as one block.
+- **Dig into the stack** (`src/architecture.js`, `src/architecture.css`; hackathon theme "let's dig in"):
+  - One pinned stage. The block of six CSS-3D slabs pulls apart (`--e`), then shrinks into a layer map on the right (`--nav`). Each label is a button that scrolls to its layer, and the current layer's slab slides out toward the scene.
+  - Scrolling digs down one layer at a time. The copy on the left swaps, the current scene rises out of the card while the next comes up from below (`--s`), and the card darkens with depth (`--depth`). Each scene plays over its layer's scroll span (`--p`).
+  - Scenes: the player finds the box (a scan, candidate boxes, then a lock on the real VID01 overlay prediction at 860 s, gallbladder 0.997); search types the demo question, lights App → FastAPI → SQL, shows the real query and returns VID01 860–877 s; the clip index rains real VID01 rows into a Delta stack, scans them and slides out the scissors row; the label model separates its planes, sends signals through and lights the reliable labels with their F1; frame features sends a real frame through ResNet-50's four stages to a 768-number vector (bars marked illustrative); surgery video fans real VID01 frames 14:16–14:23 into an arc above the full VID01 instrument time line.
+  - Frames are painted at runtime from the case video (`videoForCase('VID01')`), so no source imagery is committed. Without the video, cards keep a gradient fallback.
+  - The player scene should switch to a stronger real detection once stage 3 localization works.
+  - Every link was checked on 2026-11-14. The classifier is scikit-learn `MLPClassifier`, not PyTorch; PyTorch runs SurgVLP extraction and the detector only.
+  - Phones drop the pin: intro, block, then each layer's copy and scene in reading order, each scene playing as it crosses the viewport. Reduced motion shows each layer in its final state and swaps layers without movement.
 - **Model notes:** Aadhi's held-out F1 scores (final model, MLflow `9d18d20a`).
   - Instrument, best action and best target bars grow, and their numbers count up, once in view.
   - A v1→v2 comparison, three reading notes, and a link to the full `model-evals.md`.
