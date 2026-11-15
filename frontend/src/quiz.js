@@ -36,29 +36,28 @@ function questionItem(question, qIndex, state) {
 
 export function quizCard(state) {
   const quiz = state.quiz;
+  const head = intro => `<div class="panel-head"><h2 id="quiz-title">Quiz</h2><p>${intro}</p></div>`;
   if (!quiz?.questions?.length) {
-    return '<section class="feature-card quiz"><h2>Cholecystectomy quiz</h2><p>The quiz could not be loaded. Check the backend connection and try again.</p></section>';
+    return `<section class="panel quiz" id="sec-quiz" aria-labelledby="quiz-title">${head('Questions about the operation in general.')}
+      <div class="panel-body"><p class="panel-note">The quiz could not be loaded. Check the backend connection and try again.</p></div></section>`;
   }
   const total = quiz.questions.length;
   const answered = quiz.questions.filter((_, i) => state.quizAnswers[i]).length;
   const score = quiz.questions.filter((q, i) => state.quizAnswers[i] === q.correct_option_id).length;
-  const notes = [
-    quiz.reviewed === false ? 'Practice content. It has not been reviewed by a clinician yet.' : '',
-    quiz.demo ? 'This is a saved sample quiz because the backend could not be reached.' : '',
-  ].filter(Boolean);
   const footer = state.quizSubmitted
     ? `<p class="quiz-score" role="status"><strong>${score} of ${total} correct</strong></p>
-       <button type="button" class="quiz-submit" id="quiz-new">Try another quiz</button>`
+       <button type="button" class="btn-primary" id="quiz-new">Try another quiz</button>`
     : `<p class="quiz-progress" id="quiz-progress">${answered} of ${total} answered</p>
-       <button type="submit" class="quiz-submit" ${answered < total ? 'disabled' : ''}>Submit answers</button>`;
-  return `<section class="feature-card quiz">
-    <h2>Cholecystectomy quiz</h2>
-    <p class="quiz-intro">${total} questions about the operation in general. They are not specific to ${escapeHtml(state.caseId)}.</p>
-    ${notes.map(note => `<p class="quiz-note">${note}</p>`).join('')}
-    <form id="quiz-form" novalidate>
-      <ol class="quiz-list">${quiz.questions.map((question, i) => questionItem(question, i, state)).join('')}</ol>
-      <div class="quiz-foot">${footer}</div>
-    </form>
+       <button type="submit" class="btn-primary quiz-submit" ${answered < total ? 'disabled' : ''}>Submit answers</button>`;
+  return `<section class="panel quiz" id="sec-quiz" aria-labelledby="quiz-title">
+    ${head(`${total} questions about the operation in general.`)}
+    <div class="panel-body">
+      ${quiz.demo ? '<p class="quiz-note">This is a saved sample quiz because the backend could not be reached.</p>' : ''}
+      <form id="quiz-form" novalidate>
+        <ol class="quiz-list">${quiz.questions.map((question, i) => questionItem(question, i, state)).join('')}</ol>
+        <div class="quiz-foot">${footer}</div>
+      </form>
+    </div>
   </section>`;
 }
 

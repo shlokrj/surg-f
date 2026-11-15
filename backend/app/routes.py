@@ -7,6 +7,7 @@ from .models import (
     InterpretResponse,
     QuizResponse,
     SearchResponse,
+    StepsResponse,
     TimelineResponse,
     TimelineSource,
 )
@@ -83,6 +84,36 @@ def timeline(
         raise HTTPException(status_code=404, detail=f"Unknown case_id: {case_id}") from exc
     except RepositoryError as exc:
         raise _unavailable(request, exc) from exc
+
+
+@router.get(
+    "/cases/{case_id}/steps",
+    response_model=StepsResponse,
+    summary="Steps of the operation in one video",
+    description="The surgical phases of the video in time order, for the default timeline. "
+    "They come from the Cholec80 phase annotations saved in `backend/fixtures/`, so the "
+    "response is the same with or without Databricks. Available for VID01 and VID02.",
+    responses={
+        404: {"model": ErrorResponse, "description": "No steps are saved for this case_id."},
+        **INVALID,
+    },
+    tags=["chart"],
+)
+def steps(
+    request: Request,
+    case_id: Annotated[
+        str,
+        Path(
+            pattern=r"^[A-Za-z0-9_-]{1,32}$",
+            description="Video ID (case sensitive)",
+            examples=["VID01"],
+        ),
+    ],
+) -> StepsResponse:
+    try:
+        return request.app.state.steps_service.steps(case_id)
+    except CaseNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=f"No steps for case_id: {case_id}") from exc
 
 
 @router.get(

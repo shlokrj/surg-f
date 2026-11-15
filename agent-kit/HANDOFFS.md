@@ -64,6 +64,8 @@ Mihir's `/chart` UI can count the **six instrument labels** currently returned b
 
 Please record the sample or blocker and next owner in the relevant progress row, then point Mihir to the commit or fixture path.
 
+**Frontend follow-up (Mihir, 2026-11-14):** Data/ML delivered the verified VID01/VID02 action intervals in `ml-dev` commit `c0ae595`. The frontend now imports the same `shared/triplets.annotation.csv` (269 rows) and renders verb/target interval counts, including instrument-specific verbs. Rohan remains the next owner for the agreed video-scoped API/fixture. Keep `null_verb`/`null_target` semantics and overlapping intervals when proposing counts. Once that endpoint is available, Mihir will switch from the committed CSV to the API.
+
 ## Shared `ml-dev` branch (Aadhitya + Shlok)
 
 Both people and their agents commit and push to `ml-dev`. Update `main` only when Shlok explicitly requests it. Track separate work in [ML progress](../ml/PROGRESS.md): Shlok owns SurgVLP/features, coverage analysis, dataset splits, classifier training, and MLflow. Aadhitya owns videos, prediction export/import, and clip-level evaluation.
