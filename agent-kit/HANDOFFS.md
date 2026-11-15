@@ -1,5 +1,11 @@
 # Team handoffs
 
+## Spatial player browser check and retry handoff (2026-11-14)
+
+Mihir added a keyboard-accessible **Retry loading boxes** action for failed overlay-file requests on `feat/spatial-overlays` (`8928876`). `node --test frontend/test/*.test.js` passed 7 tests, including a failed request followed by a successful retry; `npm --prefix frontend run build` passed. In Chrome 157.0.8103.51 on macOS, fixture mode with the real VID01 MP4 reached `11:14 / 28:53` and showed the default-on content filter and overlay controls. The local screenshot is `~/Downloads/SurgF-VID01-overlay-browser-check.png` and is not committed.
+
+**Aadhi → Mihir:** the video reports `854×484`, while `frontend/public/overlays/VID01.json` declares `854×480`. Provide the verified source-to-video pixel transform and asset binding. Mihir will then correct the player/artifact alignment as appropriate and verify visible boxes, seeking, and fullscreen in a real browser. The dimension guard still blocks boxes; browser overlay acceptance is pending.
+
 ## Current ownership: Shlok moves to frontend design (2026-11-14)
 
 Shlok now owns **general frontend design and presentation**, and is no longer assigned spatial ML work. **Aadhi owns spatial data, model training, evaluation, inference and artifact export**, including Shlok's unfinished trainer tasks. **Mihir owns spatial player integration and browser verification**. This supersedes earlier assignment tables and historical ownership notes below.
