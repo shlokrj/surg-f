@@ -73,3 +73,15 @@ test('logo and back-to-top scroll only the window, never the clipped hero layers
  assert.equal(window.location.hash,'');
  dispose();
 });
+test('how it works and model notes render real project data',()=>{
+ const doc=new JSDOM(markup()).window.document;
+ const steps=[...doc.querySelectorAll('.arch-node')];
+ assert.equal(steps.length,6);
+ assert.equal(doc.querySelectorAll('.arch-detail').length,6);
+ assert.equal(doc.querySelectorAll('.art-cases span').length,50);
+ assert.equal(doc.querySelectorAll('.chip').length,29,'6 instruments, 9 actions and 14 targets');
+ const model=doc.querySelector('#model-notes');
+ assert.match(model.textContent,/9d18d20a/);
+ assert.deepEqual([...model.querySelectorAll('.m-card')[0].querySelectorAll('.f1-num')].map(n=>n.dataset.count),['0.89','0.83','0.52','0.29','0.26','0.19']);
+ assert.equal(doc.querySelectorAll('.stack-card').length,3);
+});

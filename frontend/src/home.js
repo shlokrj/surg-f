@@ -176,10 +176,85 @@ function quizPreview(quiz) {
     <ul class="fx-options">${q.options.map(o => `<li class="${o.id === q.correct_option_id ? 'is-correct' : ''}"><span class="opt-key">${o.id.toUpperCase()}</span>${esc(o.text)}</li>`).join('')}</ul></div>`;
 }
 
-const feature = ({id, title, body, action, command, horizon, preview, flip}) => `<section class="feature ${flip ? 'is-flipped' : ''}" aria-labelledby="${id}">
+const feature = ({id, title, body, action, command, horizon, preview, index}) => `<section class="feature stack-card" style="--i:${index}" aria-labelledby="${id}">
   <div class="feature-copy"><h2 id="${id}">${title}</h2><p>${body}</p><button type="button" class="btn-secondary" data-open-sample ${command ? `data-command="${command}"` : ''}>${action}</button></div>
   <div class="feature-visual"><canvas class="sky-dither" data-horizon="${horizon}" data-ceiling="7.2" aria-hidden="true"></canvas>${preview}</div>
 </section>`;
+
+/* How it works. Facts from README.md, agent-kit/SPEC.md, DATABRICKS.md, backend/README.md and
+   frontend/public/model-evals.md (Aadhi). A pinned scroll scene steps through the pipeline. */
+const ARCH = [
+  {title: 'Surgery video', body: 'CholecT50: 50 real gallbladder surgeries, labeled second by second by surgeons. VID01 and VID02 play here at 25 fps.'},
+  {title: 'Frame features', body: 'SurgVLP, a vision model pretrained on surgical video, turns every frame into 768 numbers. Extraction runs as Databricks serverless jobs.'},
+  {title: 'Label model', body: 'A small network we trained reads five seconds of features and predicts 29 labels at once: 6 instruments, 9 actions and 14 targets. Every run is logged in MLflow.'},
+  {title: 'Clip index', body: 'Surgeon labels and model predictions become timestamped clips in one Delta table, rebuilt by a Lakeflow job.'},
+  {title: 'Search and chat', body: 'A FastAPI backend searches the clips with Databricks SQL. Free-form questions are answered with Databricks Genie.'},
+  {title: 'The moment', body: 'Pick a result and the player jumps straight to that second.'},
+];
+const INSTRUMENTS = ['grasper', 'hook', 'bipolar', 'clipper', 'irrigator', 'scissors'];
+const ACTIONS = ['grasp', 'retract', 'dissect', 'coagulate', 'clip', 'cut', 'aspirate', 'irrigate', 'pack'];
+const TARGETS = ['gallbladder', 'cystic plate', 'cystic duct', 'cystic artery', 'cystic pedicle', 'blood vessel', 'fluid', 'abdominal wall', 'liver', 'adhesion', 'omentum', 'peritoneum', 'gut', 'specimen bag'];
+const chips = (list, cls) => list.map(t => `<span class="chip ${cls}">${t}</span>`).join('');
+/* Each step's card uses only project data: case list, feature shapes (agent-kit/PROGRESS.md), the
+   CholecT50 label set, real clip rows, and a live /search and Genie answer checked on 2026-11-14. */
+const ARCH_ART = [
+  `<div class="art-cases">${Array.from({length: 50}, (_, i) => `<span class="${i < 2 ? 'is-live' : ''}"></span>`).join('')}</div><p class="art-cap"><strong>50</strong> labeled surgeries. <strong>VID01</strong> and <strong>VID02</strong> are playable here.</p>`,
+  `<div class="art-matrix"><div><span>VID01</span><code>1,734 × 768</code></div><div><span>VID02</span><code>2,840 × 768</code></div></div><p class="art-cap">One row per second of video, 768 numbers per frame.</p>`,
+  `<div class="art-labels"><div>${chips(INSTRUMENTS, 'is-tool')}</div><div>${chips(ACTIONS, 'is-verb')}</div><div>${chips(TARGETS, 'is-target')}</div></div><p class="art-cap">6 instruments, 9 actions and 14 targets, predicted together.</p>`,
+  `<table class="art-table"><thead><tr><th>case</th><th>start</th><th>end</th><th>label</th></tr></thead><tbody><tr><td>VID01</td><td>674</td><td>690</td><td>clipper</td></tr><tr><td>VID01</td><td>698</td><td>747</td><td>clipper</td></tr><tr><td>VID01</td><td>860</td><td>877</td><td>scissors</td></tr></tbody></table><p class="art-cap">Clip rows in <code>workspace.default.surgf_clips</code>.</p>`,
+  `<div class="art-io"><code>GET /search?q=clipper</code><span>161 clips</span></div><div class="art-io"><code>When is the cystic duct cut?</code><span>860–877 s, from Genie</span></div><p class="art-cap">Live answers from the backend, checked on 14 Nov 2026.</p>`,
+  `<div class="art-player"><div class="art-bar"><span class="art-played"></span><span class="art-mark"></span></div><div class="art-times"><span>14:20</span><span>28:53</span></div></div><p class="art-cap">The cystic duct cut in VID01 starts at 14:20.</p>`,
+];
+function architectureSection() {
+  return `<section class="arch" id="architecture" aria-labelledby="arch-heading" style="--steps:${ARCH.length}">
+    <div class="arch-sticky">
+      <div class="arch-head"><h2 id="arch-heading">How it works.</h2><p>From labeled surgery video to the second you need.</p></div>
+      <div class="arch-stage">
+        <canvas class="sky-dither" data-horizon=".7" data-ceiling="4.6" aria-hidden="true"></canvas>
+        <div class="arch-rail">
+          <div class="arch-track" aria-hidden="true"><span class="arch-fill"></span><span class="arch-runner">+</span></div>
+          <ol class="arch-nodes">${ARCH.map((step, i) => `<li class="arch-node" data-step="${i}"><span class="arch-num">${i + 1}</span><span class="arch-title">${step.title}</span></li>`).join('')}</ol>
+        </div>
+      </div>
+      <div class="arch-details">${ARCH.map((step, i) => `<div class="arch-detail" data-step="${i}"><div class="arch-text"><h3>${step.title}</h3><p>${step.body}</p></div><div class="arch-art">${ARCH_ART[i]}</div></div>`).join('')}</div>
+    </div>
+  </section>`;
+}
+
+/* Model notes: numbers from frontend/public/model-evals.md (Aadhi), final model MLflow run 9d18d20a,
+   F1 on 4 held-out surgeries. */
+const F1 = {
+  instruments: [['Grasper', .89], ['Hook', .83], ['Bipolar', .52], ['Scissors', .29], ['Irrigator', .26], ['Clipper', .19]],
+  actions: [['Retract', .86], ['Dissect', .78], ['Coagulate', .46], ['Grasp', .40]],
+  targets: [['Gallbladder', .88], ['Specimen bag', .75], ['Liver', .51], ['Omentum', .21]],
+};
+const f1Bars = rows => `<ul class="f1-bars">${rows.map(([label, v]) => `<li><span>${label}</span><span class="f1-track"><span style="--v:${v}"></span></span><span class="f1-num" data-count="${v}" data-digits="2">${v.toFixed(2)}</span></li>`).join('')}</ul>`;
+function modelSection() {
+  return `<section class="model" id="model-notes" aria-labelledby="model-heading">
+    <div class="model-head">
+      <div><h2 id="model-heading">How well the model sees.</h2><p>Scored on 4 surgeries it never saw in training. F1 runs from 0 to 1 and is measured second by second.</p></div>
+      <div class="model-avg"><span class="model-avg-num" data-count=".34" data-digits="2">0.34</span><span>average F1 across all 29 labels</span></div>
+    </div>
+    <div class="model-grid">
+      <div class="m-card m-wide"><h3>Instruments</h3>${f1Bars(F1.instruments)}</div>
+      <div class="m-card"><h3>Best actions</h3>${f1Bars(F1.actions)}</div>
+      <div class="m-card"><h3>Best targets</h3>${f1Bars(F1.targets)}</div>
+      <div class="m-card m-wide m-compare"><h3>From v1 to v2</h3>
+        <dl>
+          <div><dt>Training surgeries</dt><dd><span>12</span><span aria-hidden="true">→</span><strong data-count="42" data-digits="0">42</strong></dd></div>
+          <div><dt>Average F1</dt><dd><span>0.30</span><span aria-hidden="true">→</span><strong data-count=".34" data-digits="2">0.34</strong></dd></div>
+          <div><dt>Scissors F1</dt><dd><span>0.07</span><span aria-hidden="true">→</span><strong data-count=".29" data-digits="2">0.29</strong></dd></div>
+        </dl>
+      </div>
+    </div>
+    <ul class="model-notes">
+      <li><strong>Labeled clips</strong> come from surgeons. Treat them as ground truth.</li>
+      <li><strong>AI-predicted clips</strong> are suggested moments. They land in the right part of the video, but start and end times are approximate.</li>
+      <li><strong>Common events are reliable:</strong> grasper, hook, retract, dissect, gallbladder and specimen bag. Rare labels are not.</li>
+    </ul>
+    <p class="model-source">Test surgeries were never used for training or tuning. Final model: MLflow run <code>9d18d20a</code>. <a href="/model-evals.md">Read the full evaluation</a></p>
+  </section>`;
+}
 
 export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}}) {
   return `<main class="landing" id="main-content">
@@ -203,15 +278,19 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
       <div class="preview-video surgical-media ${filterOn ? 'filtered' : ''}">${filterButton}<video src="${videoUrl}" muted playsinline preload="metadata" aria-label="Surgical footage from the VID01 demo case"></video><span class="preview-unavailable" hidden>Video preview unavailable. You can still open the case.</span></div>
       <button type="button" id="sample-event" class="find-result"><span class="find-query">${searchGlyph}When is the cystic duct clipped?</span><span class="find-time">11:38 <span aria-hidden="true">↗</span></span></button><div class="console-caption"><span>Annotated: clipper clips the cystic duct</span><span>Jump to this moment</span></div></div>
     </section>
-    ${feature({id: 'feature-steps', title: 'Follow the operation, step by step.', body: 'Each case is split into its surgical phases. Select a step to jump straight to it.', action: 'Open the case timeline', horizon: .62, preview: stepsPreview(showcase.steps)})}
-    ${feature({id: 'feature-chart', title: 'See which instruments appear, and for how long.', body: 'Time on screen for each instrument, totalled from the dataset annotations.', action: 'Show the instrument chart', command: '/chart instruments', horizon: .62, flip: true, preview: instrumentsPreview(showcase.timeline)})}
-    ${feature({id: 'feature-quiz', title: 'Test yourself on the procedure.', body: 'Five questions on step order and instruments, each with an explanation and example clips.', action: 'Start the quiz', command: '/quiz', horizon: .62, preview: quizPreview(showcase.quiz)})}
+    <div class="feature-stack">
+    ${feature({index: 0, id: 'feature-steps', title: 'Follow the operation, step by step.', body: 'Each case is split into its surgical phases. Select a step to jump straight to it.', action: 'Open the case timeline', horizon: .62, preview: stepsPreview(showcase.steps)})}
+    ${feature({id: 'feature-chart', title: 'See which instruments appear, and for how long.', body: 'Time on screen for each instrument, totalled from the dataset annotations.', action: 'Show the instrument chart', command: '/chart instruments', horizon: .62, index: 1, preview: instrumentsPreview(showcase.timeline)})}
+    ${feature({id: 'feature-quiz', title: 'Test yourself on the procedure.', body: 'Five questions on step order and instruments, each with an explanation and example clips.', action: 'Start the quiz', command: '/quiz', horizon: .62, index: 2, preview: quizPreview(showcase.quiz)})}
+    </div>
+    ${architectureSection()}
+    ${modelSection()}
     <section class="local-section" aria-labelledby="local-heading"><div><h2 id="local-heading">Open your own video.</h2><p>MP4 and MOV files open for local playback. Indexed search covers the demo cases.</p></div><button type="button" id="drop-zone" class="btn-secondary local-open" aria-label="Open a local MP4 or MOV for playback only">Open a video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>${error ? `<p class="home-error" role="alert">${error}</p>` : ''}</section>
     <footer class="site-footer" aria-label="About surg+f">
       <div class="footer-sticky">
         <div class="footer-top">
           <div class="footer-identity">${wordmark()}<p>Search surgical video.</p></div>
-          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#feature-steps">Features</a><a href="#top">Back to top</a><button type="button" class="btn-primary" data-open-sample>Open a case</button></nav>
+          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#architecture">How it works</a><a href="#model-notes">Model</a><a href="#top">Back to top</a><button type="button" class="btn-primary" data-open-sample>Open a case</button></nav>
         </div>
         <canvas class="footer-word" aria-hidden="true"></canvas>
         <div class="footer-legal"><span>Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>
@@ -220,11 +299,30 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
   </main>`;
 }
 
+function countUp(scope) {
+  const items = [...scope.querySelectorAll('[data-count]')];
+  const start = performance.now(), duration = 1100;
+  const tick = now => {
+    const t = Math.min(1, (now - start) / duration), eased = 1 - Math.pow(1 - t, 3);
+    for (const el of items) {
+      const target = Number(el.dataset.count), digits = Number(el.dataset.digits);
+      el.textContent = (target * eased).toFixed(digits);
+    }
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
 export function mountHome(root) {
   if (!root) return () => {};
   const intro = root.querySelector('.landing-intro');
   const canvases = [...root.querySelectorAll('.sky-dither')];
   const footer = root.querySelector('.site-footer');
+  const stack = [...root.querySelectorAll('.stack-card')];
+  const arch = root.querySelector('.arch');
+  const archNodes = arch ? [...arch.querySelectorAll('[data-step]')] : [];
+  const model = root.querySelector('.model');
+  let modelShown = false;
   const footerWord = root.querySelector('.footer-word');
   const footerCache = {};
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -239,6 +337,28 @@ export function mountHome(root) {
       const fp = media.matches ? 1 : Math.max(0, Math.min(1, -footer.getBoundingClientRect().top / span));
       footer.style.setProperty('--footer-progress', fp.toFixed(4));
       if (footerWord) paintFooterWord(footerWord, fp, footerCache);
+    }
+    const vh = window.innerHeight;
+    /* Stacked cards: each card shrinks and dims as the next one slides over it. */
+    stack.forEach((card, i) => {
+      const next = stack[i + 1];
+      const cover = !next || media.matches ? 0 : Math.max(0, Math.min(1, (vh - next.getBoundingClientRect().top) / (vh - card.getBoundingClientRect().top || 1)));
+      card.style.setProperty('--cover', cover.toFixed(3));
+    });
+    /* How it works: progress through the pinned scene picks the active step. */
+    if (arch) {
+      const span = Math.max(1, arch.offsetHeight - vh);
+      const p = media.matches ? 1 : Math.max(0, Math.min(1, -arch.getBoundingClientRect().top / span));
+      const steps = ARCH.length, active = media.matches ? -1 : Math.min(steps - 1, Math.floor(p * steps));
+      arch.style.setProperty('--fill', Math.max(0, Math.min(1, (p * steps - .5) / (steps - 1))).toFixed(4));
+      archNodes.forEach(node => node.classList.toggle('is-active', media.matches || Number(node.dataset.step) === active));
+      archNodes.forEach(node => node.classList.toggle('is-done', !media.matches && Number(node.dataset.step) < active));
+    }
+    /* Model notes: bars grow and numbers count up once, when the section comes into view. */
+    if (model && !modelShown && (media.matches || model.getBoundingClientRect().top < vh * .78)) {
+      modelShown = true;
+      model.classList.add('is-in');
+      if (!media.matches) countUp(model);
     }
     canvases.forEach(paintDither);
   };
