@@ -1,9 +1,8 @@
-/* Wordmark. Geometry comes from Inclusive Sans metrics (units of 1/1000 em): a normal "+" is centered
-   0.295em above the baseline and its bars, like the letter stems, are 84 units thick. The plus, lens and
-   handle are drawn at that weight with flat ends, with the plus at the glyph's own center. The real "+"
-   stays in the text (visually collapsed) so the mark reads, copies and announces as "surg+f". */
-const lens = `<svg class="sf-lens" aria-hidden="true" viewBox="-300 -300 720 720" fill="none" stroke="currentColor" stroke-width="84"><circle r="248"/><path d="M-150 0h300M0-150v300M180 180 380 380"/></svg>`;
-export const wordmark = (cls = '') => `<span class="sf-mark ${cls}">surg<span class="sf-plus">+</span>${lens}f</span>`;
+/* Brand: "surg" and "f" as keycaps joined by "+", read like the Ctrl+F shortcut. Same markup in the hero
+   and the small lockup; colors follow currentColor, so it works white-on-teal and teal-on-light.
+   The text content is "surg+f". ICON (magnifier-plus) remains the favicon glyph. */
+export const ICON = `<svg class="sf-icon" aria-hidden="true" viewBox="-300 -300 720 720" fill="none" stroke="currentColor"><circle r="234" stroke-width="72"/><path d="M168 168 390 390" stroke-width="72"/><path d="M-130 0h260M0-130v260" stroke-width="88"/></svg>`;
+export const wordmark = (cls = '') => `<span class="sf-mark ${cls}"><kbd>surg</kbd><span class="sf-join">+</span><kbd class="sf-key-letter">f</kbd></span>`;
 
 /* Sky palette, darkest at the top. */
 /* The last stop is the page color (--page), so the hero fades into the section below with no seam. */
@@ -86,8 +85,8 @@ export function paintDither(canvas) {
 export const DEMO_QUESTION = 'When is the cystic duct cut?';
 export const DEMO_SEEK = 860;
 
-/* Footer mark as a plus dither. The wordmark is drawn once per size into a coarse coverage grid
-   (same lens geometry as wordmark(), at weight 600 / stroke 113). Scroll progress raises the Bayer
+/* Footer mark as a plus dither. The keycap "surg + f" mark is drawn once per size into a coarse
+   coverage grid (weight 600). Scroll progress raises the Bayer
    threshold, so the word fills in with "+" marks and darkens. Redraws only when the 64-step level changes. */
 /* Cell size scales with width: 4 px on phones, 7 px on desktop. */
 const footCell = width => Math.max(4, Math.min(7, Math.round(width / 200)));
@@ -97,25 +96,25 @@ export function footerMask(cols, rows) {
   const c = off.getContext?.('2d');
   if (!c) return null;
   const font = em => { c.font = `600 ${em}px "Inclusive Sans Variable", sans-serif`; c.letterSpacing = `${-0.03 * em}px`; };
+  // Keycaps: rounded outlines around "surg" and "f", joined by "+", matching the CSS lockup proportions.
   font(100);
-  const unit = (c.measureText('surg').width + c.measureText('f').width) / 100 + .81;
-  const em = Math.min(cols * .84 / unit, rows * .7);
+  const pad = .26, gap = .16, wS = c.measureText('surg').width / 100, wP = c.measureText('+').width / 100, wF = c.measureText('f').width / 100;
+  const fKey = Math.max(wF + 2 * pad, 1.16); // single-letter key is square, like a real keycap
+  const unit = (wS + 2 * pad) + gap + wP + gap + fKey;
+  const em = Math.min(cols * .86 / unit, rows * .55);
   font(em);
-  const surg = c.measureText('surg').width, total = surg + c.measureText('f').width + .81 * em;
-  let x = (cols - total) / 2;
-  const base = rows / 2 + .245 * em;
   c.fillStyle = c.strokeStyle = '#000';
-  c.fillText('surg', x, base);
-  x += surg + .075 * em;
-  const cx = x + .3 * em, cy = base - .295 * em;
-  c.lineWidth = .113 * em;
-  c.beginPath(); c.arc(cx, cy, .248 * em, 0, Math.PI * 2); c.stroke();
-  c.beginPath();
-  c.moveTo(cx - .125 * em, cy); c.lineTo(cx + .125 * em, cy); // slightly shorter arms keep the gap
-  c.moveTo(cx, cy - .125 * em); c.lineTo(cx, cy + .125 * em); // to the ring open at coarse cells
-  c.moveTo(cx + .18 * em, cy + .18 * em); c.lineTo(cx + .38 * em, cy + .38 * em);
-  c.stroke();
-  c.fillText('f', x + .735 * em, base);
+  c.lineWidth = .06 * em;
+  const base = rows / 2 + .2 * em, top = base - .86 * em, h = 1.16 * em;
+  let x = (cols - unit * em) / 2;
+  const key = (label, w, kw) => {
+    c.beginPath(); c.roundRect(x, top, kw * em, h, .2 * em); c.stroke();
+    c.fillText(label, x + (kw - w) / 2 * em, base);
+    x += kw * em;
+  };
+  key('surg', wS, wS + 2 * pad);
+  x += gap * em; c.fillText('+', x, base); x += (wP + gap) * em;
+  key('f', wF, fKey);
   const alpha = c.getImageData(0, 0, cols, rows).data, cover = new Uint8Array(cols * rows);
   for (let i = 0; i < cover.length; i++) cover[i] = alpha[i * 4 + 3] > 140 ? 1 : 0;
   return {cols, rows, cover};
@@ -190,7 +189,7 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
         <div class="hero-frame">
           <canvas class="sky-dither hero-dither" aria-hidden="true"></canvas>
           <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><button type="button" id="open-sample" class="nav-case">Open a case</button></nav>
-          <div class="intro-copy"><h1 id="landing-title">${wordmark()}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="#case-preview">See the demo <span aria-hidden="true">↓</span></a></div>
+          <div class="intro-copy"><h1 id="landing-title"><button type="button" class="sf-press" title="Search the demo">${wordmark('sf-hero')}</button></h1><p>Search surgical video.</p><a class="hero-demo-link" href="#case-preview">See the demo <span aria-hidden="true">↓</span></a></div>
           <form class="hero-search" id="hero-search" role="search">
             <label class="sr-only" for="hero-q">Ask about the VID01 demo case</label>
             ${searchGlyph}<input id="hero-q" name="q" value="${DEMO_QUESTION}" placeholder="Ask about the VID01 demo case" autocomplete="off" spellcheck="false" required>
@@ -261,10 +260,26 @@ export function mountHome(root) {
   window.addEventListener('resize', schedule);
   media.addEventListener('change', schedule);
   root.addEventListener('click', jump);
+  /* Hero keys: clicking presses both keys like a chord, then focuses the search box (the Ctrl+F idea).
+     Pointer only; the browser's own Ctrl+F is never intercepted. */
+  const press = root.querySelector('.sf-press');
+  let pressTimer = 0;
+  const onPress = () => {
+    const mark = press.querySelector('.sf-mark');
+    mark.classList.add('is-pressed');
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(() => {
+      mark.classList.remove('is-pressed');
+      const input = root.querySelector('#hero-q');
+      input?.focus({preventScroll: true});
+      input?.select();
+    }, 160);
+  };
+  press?.addEventListener('click', onPress);
   const video = root.querySelector('video');
   const unavailable = () => { root.querySelector('.preview-unavailable').hidden = false; };
   video.addEventListener('error', unavailable);
   update();
   root.ownerDocument?.fonts?.ready?.then(() => { footerCache.size = null; schedule(); });
-  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); video.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
+  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); press?.removeEventListener('click', onPress); clearTimeout(pressTimer); video.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
 }

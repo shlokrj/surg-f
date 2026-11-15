@@ -30,10 +30,12 @@ test('wordmark keeps the real plus with the lens around it, and the plus dither 
  const doc=new JSDOM(markup()).window.document;
  const title=doc.querySelector('h1');
  assert.equal(title.textContent,'surg+f');
- assert.equal(title.querySelector('.sf-plus').textContent,'+');
- assert.equal(title.querySelector('.sf-lens').getAttribute('aria-hidden'),'true');
- assert.ok(title.querySelector('.sf-lens circle'));
- assert.equal(doc.querySelector('.small-brand .sf-mark').outerHTML,title.querySelector('.sf-mark').outerHTML,'nav and hero marks are identical');
+ assert.deepEqual([...title.querySelectorAll('kbd')].map(k=>k.textContent),['surg','f'],'surg and f sit on keycaps');
+ assert.equal(title.querySelector('.sf-press').tagName,'BUTTON','hero keys are a real button');
+ const brand=doc.querySelector('.small-brand .sf-mark');
+ assert.equal(brand.textContent,'surg+f');
+ assert.equal(brand.querySelectorAll('kbd').length,2);
+ assert.equal(doc.querySelector('.footer-identity .sf-mark').outerHTML,brand.outerHTML,'nav and footer lockups are identical');
  assert.ok([...doc.querySelectorAll('.sky-dither')].every(c=>c.getAttribute('aria-hidden')==='true'));
  const a=ditherCells(64,40),b=ditherCells(64,40);
  assert.deepEqual(a,b);
