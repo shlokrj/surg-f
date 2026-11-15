@@ -18,6 +18,7 @@ import io
 import json
 from pathlib import Path
 import subprocess
+import sys
 
 from databricks.sdk.service.compute import Environment
 from databricks.sdk.service.jobs import JobEnvironment, NotebookTask, Source, SubmitTask
@@ -103,14 +104,13 @@ def main():
     up = sub.add_parser('upload-run'); up.add_argument('local'); up.add_argument('name')
     probe = sub.add_parser('probe'); probe.add_argument('--timeout-min', type=int, default=20)
     train = sub.add_parser('train'); train.add_argument('run_name'); train.add_argument('--timeout-min', type=int, default=180)
-    train.add_argument('extra', nargs=argparse.REMAINDER)
     export = sub.add_parser('export'); export.add_argument('run_name'); export.add_argument('output')
     export.add_argument('--video', default='VID01.mp4'); export.add_argument('--timeout-min', type=int, default=120)
-    export.add_argument('extra', nargs=argparse.REMAINDER)
     sub.add_parser('status').add_argument('run_id', type=int)
     fetch = sub.add_parser('fetch'); fetch.add_argument('remote'); fetch.add_argument('local')
-    a = parser.parse_args()
-    strip = lambda extra: extra[1:] if extra[:1] == ['--'] else extra
+    argv = sys.argv[1:]
+    split = argv.index('--') if '--' in argv else len(argv)
+    a, extra = parser.parse_args(argv[:split]), argv[split + 1:]  # everything after -- goes to the ml script
     if a.action == 'upload-data':
         upload_data(a.local)
     elif a.action == 'upload-run':
@@ -118,9 +118,9 @@ def main():
     elif a.action == 'probe':
         submit('probe', timeout_min=a.timeout_min)
     elif a.action == 'train':
-        submit('train', a.run_name, strip(a.extra), a.timeout_min)
+        submit('train', a.run_name, extra, a.timeout_min)
     elif a.action == 'export':
-        submit('export', a.run_name, dict(checkpoint_run=a.run_name, video=a.video, output=a.output, args=strip(a.extra)),
+        submit('export', a.run_name, dict(checkpoint_run=a.run_name, video=a.video, output=a.output, args=extra),
                a.timeout_min)
     elif a.action == 'status':
         w = client(); run = w.jobs.get_run(a.run_id)
