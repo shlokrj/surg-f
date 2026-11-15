@@ -4,6 +4,7 @@ import { databricksSection } from './databricks.js';
 import { problemSection } from './problem.js';
 import { solutionSection } from './solution.js';
 import { futureSection } from './future.js';
+import { sourcesSection, updateSources } from './sources.js';
 
 /* Brand: "surg" and "f" as keycaps joined by "+", read like the Ctrl+F shortcut. Same markup in the hero
    and the small lockup; colors follow currentColor, so it works white-on-teal and teal-on-light.
@@ -198,24 +199,24 @@ const feature = ({id, title, body, action, command, horizon, preview, index}) =>
      Databricks first.
    Scripts: pitch/ at the repo root. */
 const VERSIONS = {
-  public: {playMs: 3200, sections: [['find'], ['features'], ['architecture'], ['model'], ['local']]},
+  public: {playMs: 3200, sections: [['find'], ['features'], ['architecture'], ['model'], ['local'], ['sources']]},
   demo: {playMs: 3200, sections: [
     ['problem', {only: ['length', 'needle', 'uses', 'index']}], ['solution', {only: ['label', 'ask', 'jump']}],
-    ['features'], ['architecture'], ['model'], ['databricks'], ['future'],
+    ['features'], ['architecture'], ['model'], ['databricks'], ['future'], ['sources'],
   ]},
   'presentation-demo': {playMs: 3000, sections: [
     ['problem', {only: ['needle', 'docs', 'uses']}], ['solution', {only: ['label', 'ask', 'jump', 'record', 'practice']}],
-    ['features'], ['architecture'], ['model', {only: ['test', 'instruments', 'versions', 'boxes']}], ['databricks'], ['future'],
+    ['features'], ['architecture'], ['model', {only: ['test', 'instruments', 'versions', 'boxes']}], ['databricks'], ['future'], ['sources'],
   ]},
   'video-demo': {playMs: 2300, sections: [
     ['problem', {only: ['needle', 'docs'], per: 1.6}], ['solution', {only: ['ask', 'jump', 'practice'], per: 1.6}],
-    ['databricks', {per: 1.6}],
+    ['databricks', {per: 1.6}], ['sources'],
   ]},
 };
 export const VERSION_NAMES = Object.keys(VERSIONS);
 const FOOTER_LINKS = {
   problem: ['problem', 'The problem'], solution: ['solution', 'The solution'], find: ['case-preview', 'The demo'],
-  architecture: ['architecture', 'The stack'], model: ['model-notes', 'Model'], databricks: ['databricks', 'Databricks'], future: ['future', 'What’s next'],
+  architecture: ['architecture', 'The stack'], model: ['model-notes', 'Model'], databricks: ['databricks', 'Databricks'], future: ['future', 'What’s next'], sources: ['sources', 'Sources'],
 };
 export function homePage({videoUrl, filterOn, filterButton, blurButton = '', error, showcase = {}, mode = 'public'}) {
   const demo = mode !== 'public' && Boolean(VERSIONS[mode]);
@@ -239,6 +240,7 @@ export function homePage({videoUrl, filterOn, filterButton, blurButton = '', err
     problem: () => problemSection(opts.problem), solution: () => solutionSection(opts.solution),
     architecture: () => architectureSection(opts.architecture), model: () => modelSection(opts.model),
     databricks: () => databricksSection(opts.databricks), future: () => futureSection(opts.future),
+    sources: () => sourcesSection(),
   };
   const links = sections.filter(id => FOOTER_LINKS[id]).map(id => `<a href="#${FOOTER_LINKS[id][0]}">${FOOTER_LINKS[id][1]}</a>`).join('');
   return `<main class="landing${demo ? ' is-demo' : ''}${filterOn ? ' is-blurred' : ''}" id="main-content" data-version="${VERSIONS[mode] ? mode : 'public'}" data-play-ms="${version.playMs}">
@@ -301,6 +303,7 @@ export function mountHome(root) {
       card.style.setProperty('--cover', cover.toFixed(3));
     });
     updateArchitecture(root, media.matches);
+    updateSources(root, media.matches);
     /* The logo and "Open a case" stay pinned; past the hero they switch to the light page style. */
     nav?.classList.toggle('is-solid', intro.getBoundingClientRect().bottom < 80);
     canvases.forEach(paintDither);

@@ -117,8 +117,8 @@ test('databricks section covers the real Databricks work, with the mark and chec
 });
 test('public and demo versions: demo runs problem, solution, features, stack, model, Databricks',()=>{
  const order=mode=>[...new JSDOM(markup(mode)).window.document.querySelectorAll('main > section, main > div.feature-stack')].map(el=>el.id||el.className.split(' ')[0]);
- assert.deepEqual(order('public'),['landing-intro','case-preview','feature-stack','architecture','model-notes','local-section']);
- assert.deepEqual(order('demo'),['landing-intro','problem','solution','feature-stack','architecture','model-notes','databricks','future']);
+ assert.deepEqual(order('public'),['landing-intro','case-preview','feature-stack','architecture','model-notes','local-section','sources']);
+ assert.deepEqual(order('demo'),['landing-intro','problem','solution','feature-stack','architecture','model-notes','databricks','future','sources']);
  const pub=new JSDOM(markup('public')).window.document,demo=new JSDOM(markup('demo')).window.document;
  assert.equal(pub.querySelector('#databricks'),null,'no Databricks section in the public version');
  assert.equal(pub.querySelector('#problem'),null);
@@ -153,9 +153,9 @@ test('presentation and video demos: their own sections and chapters; the origina
  const chapters=d=>[...d.querySelectorAll('.dig .layer')].map(l=>l.id);
  const demo=doc('demo'),pres=doc('presentation-demo'),video=doc('video-demo');
  assert.deepEqual(chapters(demo).slice(0,7),['problem-length','problem-needle','problem-uses','problem-index','solution-label','solution-ask','solution-jump']);
- assert.deepEqual(order(pres),['landing-intro','problem','solution','feature-stack','architecture','model-notes','databricks','future']);
+ assert.deepEqual(order(pres),['landing-intro','problem','solution','feature-stack','architecture','model-notes','databricks','future','sources']);
  assert.deepEqual(chapters(pres).filter(id=>/^(problem|solution|model)-/.test(id)),['problem-needle','problem-docs','problem-uses','solution-label','solution-ask','solution-jump','solution-record','solution-practice','model-test','model-instruments','model-versions','model-boxes']);
- assert.deepEqual(order(video),['landing-intro','problem','solution','databricks']);
+ assert.deepEqual(order(video),['landing-intro','problem','solution','databricks','sources']);
  assert.deepEqual(chapters(video),['problem-needle','problem-docs','solution-ask','solution-jump','solution-practice','db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai']);
  assert.equal(video.querySelector('main').dataset.playMs,'2300','the video demo plays faster');
  assert.equal(video.querySelector('#problem').dataset.per,'1.6');
@@ -164,4 +164,20 @@ test('presentation and video demos: their own sections and chapters; the origina
  assert.equal(pres.querySelectorAll('#solution-practice img[src^="/screens/model-step"]').length,3);
  assert.match(pres.querySelector('#solution-practice').textContent,/not yet medically reviewed/);
  assert.equal(doc('public').querySelector('#problem'),null,'the product page is unchanged');
+});
+test('sources: right before the footer on every version, with the citations the dataset authors ask for',()=>{
+ for(const mode of ['public','demo','presentation-demo','video-demo']){
+  const d=new JSDOM(markup(mode)).window.document;
+  const src=d.querySelector('#sources');
+  assert.ok(src,mode);
+  assert.equal(src.nextElementSibling.tagName,'FOOTER',mode+': sources sit right before the footer');
+  assert.ok(d.querySelector('.footer-links a[href="#sources"]'),mode);
+ }
+ const src=new JSDOM(markup('public')).window.document.querySelector('#sources');
+ assert.deepEqual([...src.querySelectorAll('.src-group h3')].map(h=>h.textContent),['Surgical video and labels','Models and methods','3D anatomy','Platform and software']);
+ const hrefs=[...src.querySelectorAll('a')].map(a=>a.href);
+ for(const u of ['https://doi.org/10.1016/j.media.2022.102433','https://arxiv.org/abs/2109.03223','https://doi.org/10.1109/TMI.2016.2593957','https://huggingface.co/datasets/Voxel51/cholect50','https://arxiv.org/abs/2307.15220','https://doi.org/10.1038/s41597-025-04642-4','https://doi.org/10.1093/nar/gkn613','https://creativecommons.org/licenses/by-nc-sa/4.0/'])assert.ok(hrefs.includes(u),u);
+ assert.ok([...src.querySelectorAll('a')].every(a=>a.target==='_blank'&&a.rel.includes('noopener')));
+ assert.doesNotMatch(src.textContent,/2202\.05324/,'the Hugging Face card\'s arXiv ID is an unrelated paper');
+ assert.match(src.textContent,/@article\{nwoye2022rendezvous/);
 });

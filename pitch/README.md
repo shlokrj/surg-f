@@ -62,6 +62,10 @@ Every number in the scripts is on the site and traced to the repo. Do not round 
 | Boxes | Faster R-CNN on Endoscapes; gallbladder precision and recall 0.93; cystic duct recall 0.39 | `frontend/src/modelnotes.js`, the eval docs |
 | Databricks run log | Volume `/Volumes/workspace/default/surgf`; Lakeflow job `surgf-import-clips` (stage, then MERGE; a rerun inserts 0); smoothing sweep picked 2 s : 2 s; Llama route 2.0 s; Genie answer 11.7 s | `agent-kit/DATABRICKS.md`, `ml/PROGRESS.md` |
 
+## Citations
+
+Every version ends with a **Sources** section listing the papers, datasets and tools we used, with BibTeX. If a judge asks about data licences: CholecT50, Cholec80 and Endoscapes are CC BY-NC-SA 4.0 (non-commercial), and BodyParts3D is CC BY 4.0. For CholecT50 we cite the Rendezvous paper, as the dataset's authors ask; the citation on the Hugging Face card points to the wrong arXiv paper.
+
 ## Things to say carefully
 
 - **The 3D model is an illustration.** It is a generic body (BodyParts3D) that follows the video's steps; the clips, cut and triangle are schematic and not yet medically reviewed. Say "practice the anatomy" or "rehearse each step", not "practice the surgery".
