@@ -1,5 +1,16 @@
 # Team handoffs
 
+## 3D model for `/model` (Rohan, 2026-11-14)
+
+Shlok and Mihir: `/model` is now a working 3D view of the gallbladder area that follows the video step by step. Details and file list are under "3D model" in [frontend/README.md](../frontend/README.md); the licence and what is drawn rather than sourced are in [frontend/public/models/ATTRIBUTION.md](../frontend/public/models/ATTRIBUTION.md).
+
+- **New files, all mine:** `frontend/src/model/` (viewer, panel, step pictures, styles, manifest), `frontend/public/models/`, `frontend/scripts/build-anatomy-model.mjs`, `frontend/test/model.test.js`. New dependency `three`; dev dependencies `@gltf-transform/core` and `meshoptimizer` for the build script only.
+- **Shared files I touched, kept small:** in `frontend/src/main.js`, two imports, the `model` branch of `outputSections()`, one `disposeModel()` line in `render()`, `playTime()`, `stepBy()`, two options on `seekTo()`, the `[data-step-nav]` handler and `mountModel()` call in `wire()`, and the `model` case in `planFromChat()` and `runSearch()`. In `frontend/src/timeline.js`, previous/next arrows in the Timeline panel head (`.tl-head`). In `frontend/src/lildoc.js`, the `/model` reply. No change to `style.css`, `case.css`, `home.js`, `home.css` or the overlay code. Panel classes use an `anat-` prefix because `home.css` owns `.model-*`.
+- **Shlok:** the panel uses the existing `panel` shell and tokens; the arrows, organ chips and stage are new styles in `frontend/src/model/model.css`. Please adjust them to the design system as you see fit.
+- **Needs a medical reviewer (after the build, as Rohan decided):** the seven step pictures in `frontend/src/model/steps.js`, the port positions and the drawn cystic artery are schematic. The panel shows "not yet medically reviewed" until `REVIEWED` in that file is set to `true`.
+- **Backend:** `POST /chat` can now return `action: "model"` with `{case_id, step_key, step_label}`; see the Chat section of the backend frontend guide.
+- **Checked** in headless Edge only (software rendering), not by hand, and not on a phone.
+
 ## Spatial anatomy overlay published to main (2026-11-14)
 
 With Shlok's approval, Mihir fast-forwarded `main` to `feat/spatial-overlays`, publishing the anatomy model tooling, the exporter fix, the full-length VID01 anatomy artifact and the player changes described in the section below. Checks at the published commit: 23 localization tests, 15 frontend tests and the frontend build passed. **Demo change:** `main`'s VID01 boxes are now gallbladder/cystic duct anatomy only; the earlier Grounding DINO instrument boxes are gone (kept as a test fixture). Further spatial work continues on `feat/spatial-overlays`; teammates should pull `main`.
