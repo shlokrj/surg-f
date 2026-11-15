@@ -1,5 +1,18 @@
 # Team handoffs
 
+## Active spatial team assignments (2026-11-14)
+
+**Shlok, Aadhi (Aadhitya), and Mihir now share `feat/spatial-overlays`. Push all new feature work there; do not merge or push to main until Shlok explicitly requests it.** This supersedes older Shlok-only stage-3 ownership, Aadhi-only-stage-2 notes and the previous main publication instruction. Main already has the earlier prototype; it is not the target for this work round.
+
+| Owner | Current task | Status / next handoff |
+|---|---|---|
+| Shlok | Anatomy trainer, category-scoped metrics, checkpoint selection and inference | Assigned, not yet complete. Start with scoped evaluation and configurable training; use Aadhi's data manifests. Hand off checkpoint/class map/metrics. |
+| Aadhi | Complete image downloads/manifests, overlap guards, instrument annotation audit and model-to-overlay export | Assigned, not yet complete. Start full train/validation data preparation. Hand Shlok verified inputs, then Mihir versioned artifacts. |
+| Mihir | Real-browser overlay integration, UX and regression verification | Assigned, not yet complete. Start actual VID01 playback checks using the existing artifact. Hand off screenshots/recording and acceptance results. |
+
+Read [the complete assignments](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow) for owned paths, ordered tasks, dependencies and completion criteria. Use separate checkouts and preserve concurrent branch commits. Existing prototype limitations remain: inaccurate Grounding DINO labels, no full anatomy training/accuracy result, no verified six-instrument box dataset, and outstanding real-browser acceptance. Prior checks: 6 frontend tests, 11 localization tests and frontend build passed; this assignment change is documentation-only.
+
+
 ## Spatial work published to main (2026-11-14)
 
 Shlok requested publication for teammate handoff. All stage-3 work through `1f49b33` is now integrated into `main`, including detector/overlay prototype, annotation preparation, evaluation utilities and the real-image training smoke runner. Start from `main`; older branch references below describe historical work. Task reassignment will be discussed separately, so existing owners remain unchanged.

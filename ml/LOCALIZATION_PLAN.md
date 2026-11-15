@@ -1,6 +1,47 @@
 # Stage 3: localized video overlays
 
-Status: **experimental offline runner and player integration implemented; browser acceptance pending; started 2026-11-14 at Shlok's explicit request; owner Shlok, branch `feat/spatial-overlays`**. Aadhitya independently continues stage 2 on `ml-dev`. This adds spatial localization to the current search and tool-presence pipeline. The initial deliverable is an offline detector-to-player prototype. Verification results will be recorded as work completes; this is not a production-accuracy claim.
+Status: **active three-person implementation: Shlok, Aadhi (Aadhitya), and Mihir**. Shared integration branch: `feat/spatial-overlays`. Main contains the earlier prototype through `634c40f`; all further work is pushed to the spatial branch. **Do not merge or push this feature to main until Shlok explicitly requests final publication.** This instruction supersedes earlier blanket main-push permission and earlier Shlok-only stage-3 ownership. Historical progress entries remain evidence of past work, not current assignments.
+
+## Current assignments and shared workflow
+
+All three people and their agents should read this section and their owner section below before editing. Work concurrently on the shared remote branch, using separate clones or worktrees; do not switch a checkout another agent is using. Fetch/pull before starting and before publication. If the branch advances after local commits, preserve both histories with a normal merge (resolve conflicts and rerun affected checks); never force-push or reset another person's work. Commit each finished change with a lowercase Conventional Commit subject, using the configured user's identity and no co-author trailers. Push to `origin feat/spatial-overlays` only.
+
+| Owner | Start now | Owns | Handoff / done when |
+|---|---|---|---|
+| Shlok | Build category-scoped detection metrics and a configurable full anatomy trainer from the smoke runner | `ml/localization/train_anatomy*.py`, `evaluate.py`, new metric/training/inference scripts and their tests; model run reports | Reproducible training, validation-only model selection, saved checkpoint/provenance, per-class localization metrics and exportable predictions. Give Aadhi a checkpoint and explicit class map; give Mihir honest capability/quality notes. |
+| Aadhi (Aadhitya) | Prepare full train/validation imagery with verified manifests and resume-safe downloads; investigate six-instrument box supervision | `ml/localization/prepare_anatomy.py`, `fetch_anatomy*.py`, `audit_coco.py`, data/split manifests and related tests; new annotation conversion and overlay-export scripts | Shlok can load data without missing/corrupt files; surgeries remain disjoint and protected overlaps are excluded. Mihir receives validated versioned overlay artifacts bound to playable assets. Instrument annotation availability and label mappings are explicitly verified. |
+| Mihir | Verify and finish the real browser player flow using the existing VID01 artifact | `frontend/src/overlays.js`, integration in `main.js`, `cases.js`, overlay CSS, frontend tests/README and published `frontend/public/overlays/` artifacts | Toggle/filter/score/seek/play/resize/fullscreen/case-switch/local-upload/missing-data behavior verified in a real browser with evidence; usable responsive controls and no stale boxes. Coordinate incoming artifact publication with Aadhi. |
+
+Assignments are **ready to start**, not completed. No one should duplicate another owner's jobs. Existing stage-2 jobs may finish independently; Aadhi should record their state before starting expensive spatial work and avoid restarting them accidentally. Other backend and frontend work remains outside this feature's scope.
+
+### Shlok — model and evaluation
+
+1. Add an explicit evaluated-category scope for cystic duct/gallbladder. Do not count unannotated liver or instrument classes as negatives. Add meaningful COCO-style AP/recall or clearly documented fixed-threshold metrics, empty-frame behavior, and matching tests.
+2. Build full training from the verified three-step smoke: configurable data paths, seed, epochs, device, resume/checkpoint handling, finite-loss checks and recorded input hashes. Start with a bounded run; use Aadhi's complete manifests for scaling. Compare to a declared baseline on the same validation surgeries.
+3. Select checkpoints/thresholds on validation only. Keep final-test surgeries untouched until the model is fixed. Record per-class support, metrics, timing, failure cases and limitations. A falling training loss alone is not acceptance.
+4. Supply Aadhi an inference entry point with the exact class map, normalization, checkpoint hash and model version. Decide whether evidence supports a demo; unsupported classes remain unavailable, not relabeled to plausible classes.
+
+### Aadhi — data, supervision and artifact delivery
+
+1. Extend bounded downloads to all required training and validation images, with resumability, hashes, decode/dimension validation and a missing-file report. Preserve source licenses/attribution; keep images and model weights outside Git. Use published overlap mapping plus the current frozen stage-2 split; Endoscapes IDs are not CholecT50 IDs.
+2. Publish train/validation manifests and a compact readiness report for Shlok. Preserve explicit negative frames only for the two supported anatomy labels. Do not use the test partition for iteration.
+3. Obtain or inventory genuine six-instrument localization annotations. The downloaded CholecT50 COCO conversion has zero boxes; Endoscapes `tool` cannot distinguish instrument types. Document access blockers rather than manufacturing ground truth or treating pseudo-labels as reviewed labels.
+4. After Shlok provides a checkpoint, generate bounded predictions for agreed playable clips. Validate source dimensions, timestamps, source/asset IDs, model/image hashes and schema with `artifact.py`. Give Mihir sample artifacts plus expected timestamps. Sparse boxes must expire; dense playback or tracking needs measured throughput and separate verification.
+
+### Mihir — player and user-facing verification
+
+1. Run the current app with the actual VID01 video. Use sampled frames 674/680/689 and record screenshots or a short recording. DOM tests simulate media state and do not establish actual browser playback/fullscreen correctness.
+2. Check loading/error/retry states, category/score filtering, readable labels, keyboard interaction, empty detections, seeking/playing, resize/letterboxing and fullscreen. Verify case changes and late fetch responses never leak old boxes; local uploads stay unavailable unless an exact artifact binding exists.
+3. Coordinate frontend artifact publication with Aadhi. Retain experimental/source labeling and avoid presenting scores as calibrated probabilities. Do not replace real predictions with fabricated high-quality boxes.
+4. Add regression coverage for bugs found, run the frontend build, and record actual browser/version and test results. Preserve existing quiz, charts, search and backend interpretation integration.
+
+## Handoffs and final completion gate
+
+Aadhi → Shlok: versioned data roots, category map, hashes, split/overlap report, missing-file count and ready command. Shlok → Aadhi: checkpoint, inference command, class map and measured validation results. Aadhi → Mihir: schema-valid artifact, matching asset version and timestamps. Mihir → team: browser evidence and remaining defects. Any schema change needs all affected owners to agree in `agent-kit/CONTRACTS.md` before producers/consumers diverge; Aadhi coordinates the data contract, Mihir the frontend adapter, Shlok the model fields.
+
+Update only your owner row/evidence in `ml/PROGRESS.md` and relevant implementation docs at each handoff; preserve teammates' entries. For shared files (`artifact.py`, `CONTRACTS.md`, README and plan), announce intended edits in the tracker and pull the latest version first. Do not edit another owner's implementation without coordinating the handoff.
+
+Before Shlok requests main publication: training/evaluation evidence is reproducible; the agreed classes and limitations are documented; sample artifacts match actual video time/geometry; browser acceptance and automated checks pass; no images/credentials/checkpoints accidentally enter Git; unfinished optional features are explicitly deferred. Tracking, action recognition and all 15 anatomy targets are not implied by the two-class anatomy milestone. Numeric accuracy/latency targets must be agreed from validation evidence, not invented as achieved.
 
 ## Intended experience
 
@@ -54,19 +95,8 @@ Spatial detections remain separate from `surgf_clips`. The static artifact v1 is
 
 Source boxes in xywh or model coordinates must be converted, undoing crop/resize transforms. Do not use classifier center-crop coordinates as full-frame boxes. Map into the rendered video content rectangle, accounting for letterboxing. The dataset's 1 fps frame ID is not a 25 fps encoded-video frame index. Carry timestamps and verified per-asset offsets explicitly. Define a maximum overlay age; do not hold a one-second sampled box over arbitrary motion or invent intermediate tracking results.
 
-## Later implementation sequence and handoffs
-
-These are proposed responsibilities consistent with existing lanes, not work started now:
-
-1. **Shlok / ML:** audit taxonomy and localization labels, define held-out evaluation, benchmark the detector on a small representative subset; only then decide on fine-tuning or tracking.
-2. **Aadhitya / ML-data:** obtain/version available spatial annotations, verify image/video coordinates and timebase, package overlay artifacts with provenance. Review tracking/mask export if added.
-3. **Rohan / backend-data:** agree with ML on separate storage and a bounded frame/time-range response; validate coordinates, taxonomy, source and asset version. No route/table name is committed by this document.
-4. **Mihir / frontend:** build toggle and overlay layer against an explicitly labeled fixture after the schema is agreed; verify pause, seek, resizing, fullscreen and stale-data removal.
-
-Acceptance later: per-class box AP/recall and localization IoU on held-out surgeries, separate tool versus anatomy results, false-positive review, missing-label accounting, latency and memory measurements. If masks/tracks are used, add mask quality and identity/jitter checks. If verbs/triplets are shown, evaluate those predictions and instance associations separately. Record demo-only or unsupported categories honestly; do not derive correctness from attractive overlays.
-
 ## Current stopping point
 
-Shlok is implementing a versioned artifact, bounded offline Grounding DINO inference and a player toggle. No stage-2 jobs or shared clip-table schemas are changed. Initial labels use the six existing instrument names plus explicitly experimental anatomy prompts; no seventh instrument or verb detector is invented. Separate masks/tracking and action relations remain deferred.
+The versioned artifact, bounded Grounding DINO runner, player prototype and supervised anatomy smoke test are implemented. The assignments above cover the remaining full training, data and browser work. No stage-2 jobs or shared clip-table schemas are changed. Initial labels use the six existing instrument names plus explicitly experimental anatomy prompts; no seventh instrument or verb detector is invented. Separate masks/tracking and action relations remain deferred.
 
 Anatomy preparation now uses Endoscapes cystic duct/gallbladder boxes with published cross-dataset overlap checks; see [localization setup](localization/README.md). This is label preparation, not a trained or validated replacement model.

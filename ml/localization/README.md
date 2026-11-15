@@ -1,5 +1,7 @@
 # Spatial overlay prototype (stage 3)
 
+Current team: Shlok owns model/evaluation, Aadhi owns data/export, Mihir owns player/browser verification. Work and push on `feat/spatial-overlays`; main publication requires Shlok's explicit final request. See [ordered tasks and owned paths](../LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). This supersedes earlier single-owner notes below.
+
 Owner: Shlok. Branch: `feat/spatial-overlays`. Aadhitya continues stage 2 independently on `ml-dev`.
 
 The offline runner uses IDEA-Research's Transformers conversion of Grounding DINO-T, not the SurgVLP classifier. Install `requirements.txt` into a separate environment. It processes at most 100 explicitly chosen full-resolution PNG frames, writes a versioned JSON artifact, and refuses to overwrite output. No remote compute job or shared clip-table change is needed.
