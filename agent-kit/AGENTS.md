@@ -14,6 +14,8 @@
 3. Fetch again before pushing. Check for new upstream commits and relevant changes on `origin/main`. Reconcile them safely and rerun affected checks if the base changed. Push normally, then verify the intended commits and Markdown updates are on GitHub. If a push is rejected, resync and inspect the incoming changes before retrying.
 4. In the handoff, link the commit or PR and report the checks that ran, any remaining blocker, and who takes the next step.
 
-## Active stage 3: shared spatial branch
+## Active ownership and branch boundaries
 
-Shlok, Aadhi and Mihir share `feat/spatial-overlays`. Follow the current owner assignments in [the localization plan](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). All feature commits must be pushed to this branch; **do not merge or push to main until Shlok explicitly requests final publication**, even though earlier turns authorized main pushes. Use separate checkouts; preserve teammates' commits, never force-push, and coordinate edits to shared contracts. Older progress notes are historical and do not override the active assignment table.
+Shlok owns general frontend design. Aadhi owns spatial data/model/evaluation/export; Mihir owns spatial player integration and browser verification. Follow [the current plan](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow); earlier Shlok spatial assignments are superseded. Shlok and Mihir must coordinate shared frontend files and preserve each other's work.
+
+Aadhi and Mihir push spatial changes to `feat/spatial-overlays`, not main, until Shlok explicitly requests publication. The current ownership-documentation request authorizes a docs-only main update. Use separate checkouts, preserve concurrent commits and never force-push.

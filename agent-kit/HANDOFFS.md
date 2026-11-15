@@ -1,5 +1,14 @@
 # Team handoffs
 
+## Current ownership: Shlok moves to frontend design (2026-11-14)
+
+Shlok now owns **general frontend design and presentation**, and is no longer assigned spatial ML work. **Aadhi owns spatial data, model training, evaluation, inference and artifact export**, including Shlok's unfinished trainer tasks. **Mihir owns spatial player integration and browser verification**. This supersedes earlier assignment tables and historical ownership notes below.
+
+Spatial teammates continue on `feat/spatial-overlays`; Aadhi should retain the scoped evaluator already pushed in `78dfef0`. Shlok and Mihir must coordinate shared `frontend/src/main.js`, `style.css` and player markup: Shlok owns overall design, Mihir owns overlay behavior. Do not overwrite each other's edits. Full tasks and handoffs are in [the localization plan](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow).
+
+This request authorizes pushing these ownership docs to main only. Unfinished spatial code remains on its branch until a later explicit publication request. Documentation-only update; Markdown links and diff checked, no application changes or new training runs.
+
+
 ## Active spatial team assignments (2026-11-14)
 
 **Shlok, Aadhi (Aadhitya), and Mihir now share `feat/spatial-overlays`. Push all new feature work there; do not merge or push to main until Shlok explicitly requests it.** This supersedes older Shlok-only stage-3 ownership, Aadhi-only-stage-2 notes and the previous main publication instruction. Main already has the earlier prototype; it is not the target for this work round.
