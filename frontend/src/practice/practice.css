@@ -66,6 +66,7 @@
 @keyframes pr-pass-in { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
 
 .pr-feedback { min-height: 48px; padding: 10px 14px; border: 1px solid var(--line); border-left-width: 4px; border-radius: var(--radius); background: var(--surface); font-size: var(--text-md); }
+.pr-feedback[hidden] { display: none; }
 .pr-feedback.is-error { border-color: #e3b7a9; border-left-color: var(--danger); background: var(--danger-tint); }
 .pr-feedback.is-success { border-color: #b5dcc9; border-left-color: var(--brand); background: var(--brand-tint); }
 .pr-why { display: block; margin-top: 4px; color: var(--ink-muted); }
@@ -86,6 +87,8 @@
 .pr-ref-note { color: var(--ink-muted); }
 .pr-ref-buttons { display: flex; gap: 6px; margin-left: -6px; }
 .pr-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+/* Continue is green from the start so it stands out; until the stage passes it is softened and inert. */
+.pr-actions .btn-primary[data-pr="continue"]:disabled { background: var(--brand); border-color: var(--brand-strong); color: #fff; opacity: .6; box-shadow: none; }
 
 .pr-recap { padding: 20px 24px; }
 .pr-recap[hidden] { display: none; }
