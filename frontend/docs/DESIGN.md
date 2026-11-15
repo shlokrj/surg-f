@@ -54,6 +54,14 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
   4. Lakeflow and Delta: clips_all.csv rides through stage and MERGE into surgf_clips (11,264 labels, 1,658 predictions), and a rerun inserts 0.
   5. SQL, Genie and Llama: three logged chat checks with their route and time, and the Genie space's view, table and function.
   Numbers follow the scroll (`data-scrub`). Class names are scoped per section; check for collisions with `architecture.css` before adding generic names.
+- **Two versions** (`homePage({mode})`, chosen in `main.js`):
+  - **Public** (`/`): hero, Find the clip, the three feature cards, the stack, model notes, Open your own video. No Databricks section.
+  - **Demo** (`/demo` or any URL with `?demo`, used to present the project): hero, the problem statement, the stack, model notes, Built on Databricks, then Find the clip and the three feature cards, then Open your own video. The hero link and footer links follow the version.
+  - `/demo` relies on the host serving `index.html` for unknown paths (Vite dev does). `?demo` works on any static host.
+- **Problem statement** (`src/problem.js`, `src/problem.css`; demo only): "Finding one moment.", a pinned stage in three chapters built from real VID01 frames (painted from the video by the shared `paintFrames`):
+  1. Half an hour: a contact sheet of 24 frames, one every 72 s, folds into VID01's time line while the clock counts to 28:48.
+  2. 17 seconds: the scrubber hunts back and forth with a live frame preview, then lands on the cut (860–877 s) with a callout: 17 s of 1,728 s.
+  3. No index: the surgeons' instrument lanes grow under the strip, the question types itself, and the jump lands on 14:20.
 - **Pinned nav:** the logo and "Open a case" stay fixed at the top of the homepage. Over the hero they are white; past it they switch to a frosted logo and a teal button. The footer no longer repeats them.
 
 ## Case page
