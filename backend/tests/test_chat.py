@@ -10,7 +10,7 @@ from app.chat import STUDY_AID_REPLY, LLMError, LLMRouter, ToolChoice, tool_spec
 from app.config import FIXTURES_DIR, settings_from
 from app.genie import GenieAnswer, GenieError
 from app.main import build_llm, create_app
-from app.models import ChatResponse
+from app.models import ChatResponse, Clip
 from app.repository import RepositoryError
 
 CREDS = settings_from(
@@ -139,6 +139,35 @@ def test_data_store_failure_still_answers_and_quiz_still_works():
     body = ask(client, "clipper")
     assert body["action"] == "none" and body["data"] is None
     assert ask(client, "quiz me")["action"] == "quiz"
+
+
+class MixedRepository:
+    """Like the live table: instrument rows plus verb and target rows in the same column."""
+
+    mode = "databricks"
+    rows = [("grasper", 0, 5), ("grasp", 0, 5), ("gallbladder", 0, 5), ("clipper", 10, 20)]
+
+    def find_by_label(self, label):
+        return [c for c in self.find_by_case("VID01") if c.label == label]
+
+    def find_by_case(self, case_id):
+        return [
+            Clip(case_id=case_id, start_sec=s, end_sec=e, label=label, source="annotation")
+            for label, s, e in self.rows
+        ]
+
+    def warm_up(self):
+        return None
+
+
+def test_timeline_keeps_only_the_six_instruments():
+    client = make_client(repository=MixedRepository())
+    timeline = client.get("/cases/VID01/timeline").json()
+    assert [s["label"] for s in timeline["segments"]] == ["grasper", "clipper"]
+    assert {s["label"] for s in timeline["summary"]} == {"grasper", "clipper"}
+    body = ask(client, "chart the tools used")
+    assert body["data"] == timeline
+    assert "2 segments across 2 instruments" in body["reply"]
 
 
 # --- LLM router (mocked) -----------------------------------------------------------
