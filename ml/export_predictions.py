@@ -1,13 +1,16 @@
 """Turn tool-classifier predictions on one held-out case into clip rows for surgf_clips.
 
-Reads train_tools.py output (tool_classifiers.joblib + metrics.json) and a validated feature bundle,
+Reads train_tools.py output (tool_classifiers.joblib + metrics.json) or train_multilabel.py output
+(multilabel_mlp.joblib + metrics.json; instruments by default, verbs/targets too with --all-labels, MLP only)
+and a validated feature bundle,
 predicts each frame, and merges consecutive positive frames (1 fps, frame N = second N) into
 case_id,start_sec,end_sec,label,source=prediction rows. Import them with databricks/import_clips.sql.
 Optional smoothing cleans up flicker: --max-gap fills off-gaps of up to N seconds between clips, then
 --min-len drops clips shorter than N seconds. The defaults (0, 1) leave clips unchanged. Choose them
 on validation cases only.
 Refuses training cases: predictions there would look better than the model really is.
-Usage: python ml/export_predictions.py MODEL_DIR BUNDLE_DIR out.csv [--max-gap 0] [--min-len 1]
+Usage: python ml/export_predictions.py MODEL_DIR BUNDLE_DIR out.csv [--max-gap 0] [--min-len 1] [--all-labels]
+Scoring (evaluate_clips.py) knows instrument labels only, so sweeps keep the instruments-only default.
 """
 import argparse
 import csv
@@ -41,7 +44,7 @@ def smooth(intervals, max_gap=0, min_len=1):
     return [(start, end) for start, end in merged if end - start >= min_len]
 
 
-def predict_clips(model_dir, bundle, max_gap=0, min_len=1):
+def predict_clips(model_dir, bundle, max_gap=0, min_len=1, groups=('instruments',)):
     smooth([], max_gap, min_len)  # Validate settings before reading model or features.
     model_dir, bundle = Path(model_dir), Path(bundle)
     metadata = validate_bundle(bundle, require_complete=True)
@@ -52,6 +55,8 @@ def predict_clips(model_dir, bundle, max_gap=0, min_len=1):
     for key in ['checkpoint_sha256', 'preprocessing', 'samples_sha256']:
         if key not in report or key not in metadata or report[key] != metadata[key]:
             raise ValueError(f'model/bundle provenance mismatch: {key}')
+    if (model_dir / 'multilabel_mlp.joblib').exists():
+        return mlp_clips(model_dir, bundle, case_id, max_gap, min_len, groups)
     saved = joblib.load(model_dir / 'tool_classifiers.joblib')
     threshold = saved['threshold']
     if (not isinstance(threshold, (int, float)) or not np.isfinite(threshold)
@@ -76,6 +81,31 @@ def predict_clips(model_dir, bundle, max_gap=0, min_len=1):
     return rows
 
 
+def mlp_clips(model_dir, bundle, case_id, max_gap, min_len, groups=('instruments',)):
+    """Clips from the 29-label MLP for the given label groups, with its +-window context and per-label thresholds."""
+    from train_multilabel import with_context
+    saved = joblib.load(model_dir / 'multilabel_mlp.joblib')
+    labels, thresholds = saved['labels'], np.asarray(saved['thresholds'], dtype=float)
+    if (len(thresholds) != len(labels) or not np.isfinite(thresholds).all()
+            or np.any((thresholds < 0) | (thresholds > 1))):
+        raise ValueError('invalid MLP thresholds')
+    features = np.load(bundle / 'features.npy', allow_pickle=False)
+    with open(bundle / 'manifest.csv') as f:
+        frames = np.array([int(r['frame_id']) for r in csv.DictReader(f)])
+    probabilities = np.asarray(saved['model'].predict_proba(with_context(features, saved['window'])))
+    if (probabilities.shape != (len(frames), len(labels)) or not np.isfinite(probabilities).all()
+            or np.any((probabilities < 0) | (probabilities > 1))):
+        raise ValueError('invalid model probabilities')
+    rows = []
+    for j, label in enumerate(labels):
+        group, name = label.split(':', 1)  # plain dataset names are unique across groups (DECISIONS.md)
+        if group in groups:
+            hits = frames[probabilities[:, j] >= thresholds[j]]
+            rows += [(case_id, start, end, name, 'prediction')
+                     for start, end in smooth(to_intervals(sorted(hits)), max_gap, min_len)]
+    return rows
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('model_dir')
@@ -83,8 +113,10 @@ def main():
     p.add_argument('out')
     p.add_argument('--max-gap', type=int, default=0)
     p.add_argument('--min-len', type=int, default=1)
+    p.add_argument('--all-labels', action='store_true', help='MLP only: also export verbs and targets')
     a = p.parse_args()
-    rows, out = predict_clips(a.model_dir, a.bundle, a.max_gap, a.min_len), a.out
+    groups = ('instruments', 'verbs', 'targets') if a.all_labels else ('instruments',)
+    rows, out = predict_clips(a.model_dir, a.bundle, a.max_gap, a.min_len, groups), a.out
     with open(out, 'w', newline='') as f:
         w = csv.writer(f)
         w.writerow(['case_id', 'start_sec', 'end_sec', 'label', 'source'])

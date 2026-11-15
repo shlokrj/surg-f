@@ -1,5 +1,5 @@
 /* Surg+F styles. One set of tokens; every screen uses them.
-   Type: IBM Plex Sans everywhere. IBM Plex Mono only for timecodes and literal /commands. */
+   Type: Inclusive Sans Variable everywhere. IBM Plex Mono only for timecodes and literal /commands. */
 
 :root {
   --ink: #1d302b;
@@ -21,10 +21,10 @@
   --danger: #9a3b25;
   --danger-tint: #fcefea;
 
-  --text-xs: 12px;
-  --text-sm: 13px;
-  --text-md: 14px;
-  --text-base: 15px;
+  --text-xs: 13px;
+  --text-sm: 14px;
+  --text-md: 15px;
+  --text-base: 16px;
   --text-lg: 18px;
   --text-xl: 22px;
   --radius: 8px;
@@ -32,7 +32,7 @@
   --topbar: 64px;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
 
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-family: 'Inclusive Sans Variable', system-ui, sans-serif;
   font-size: var(--text-base);
   line-height: 1.5;
   color: var(--ink);
@@ -60,32 +60,37 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
 .btn-primary:hover { background: var(--brand-strong); }
 .btn-primary:active { transform: translateY(2px); box-shadow: none; }
 .btn-primary:disabled { background: #e3eae6; border-color: #cfd9d3; color: #5c6f66; box-shadow: none; transform: none; }
+.btn-secondary {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px;
+  border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); color: var(--ink);
+  font-size: var(--text-base); font-weight: 600; transition: background-color .15s, border-color .15s;
+}
+.btn-secondary:hover { background: var(--surface-tint); border-color: #9db5aa; }
 .btn-quiet { padding: 4px 6px; border: 0; border-radius: var(--radius-sm); background: none; color: #14614f; font-size: var(--text-sm); font-weight: 600; }
 .btn-quiet:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 /* Small toggles: content filter and the video switcher share one look. */
 .filter-toggle, .case-switch button {
-  min-height: 34px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
-  background: var(--surface); color: var(--ink); font-size: var(--text-sm); font-weight: 500; white-space: nowrap;
+  min-height: 36px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--ink); font-size: var(--text-md); font-weight: 500; white-space: nowrap;
   transition: background-color .15s, border-color .15s;
 }
 .filter-toggle:hover, .case-switch button:hover { background: var(--surface-tint); border-color: #9db5aa; }
 .filter-toggle[aria-pressed="true"], .case-switch button[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+.filter-toggle[aria-pressed="true"]:hover, .case-switch button[aria-pressed="true"]:hover { background: var(--brand-strong); border-color: var(--brand-strong); }
 .case-switch { display: flex; gap: 6px; }
 
 /* --- top bar ---------------------------------------------------------------- */
 .topbar {
   position: sticky; top: 0; z-index: 20; height: var(--topbar); display: flex; align-items: center; gap: 24px;
-  padding: 0 32px; background: var(--brand-deep); color: #fff;
+  padding: 0 32px; background: #fffffff2; color: var(--ink); border-bottom: 1px solid var(--line); backdrop-filter: blur(12px);
 }
 .top-spacer { flex: 1; }
-.wordmark { display: inline-flex; align-items: center; font-weight: 700; letter-spacing: -.04em; white-space: nowrap; }
-.wordmark svg { width: .95em; height: .95em; fill: none; stroke: #8cdec5; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.topbar .wordmark { font-size: 24px; }
+.topbar-mark { font-size: 26px; color: var(--brand-strong); }
 .logo-link { display: inline-flex; align-items: center; padding: 4px 6px; margin: -4px -6px; border: 0; border-radius: var(--radius-sm); background: none; }
-.logo-link:hover .wordmark { opacity: .82; }
-.top-action { min-height: 36px; padding: 0 14px; border: 1px solid #779b8e; border-radius: var(--radius-sm); background: transparent; font-size: var(--text-md); font-weight: 500; }
-.top-action:hover { background: #1f4f4b; }
+.logo-link:hover .sf-mark { opacity: .8; }
+.top-action { min-height: 36px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font-size: var(--text-md); font-weight: 500; }
+.top-action:hover { background: var(--surface-tint); border-color: #9db5aa; }
 
 /* --- home ------------------------------------------------------------------- */
 .home { min-height: calc(100vh - var(--topbar)); display: grid; grid-template-columns: minmax(520px, 55%) minmax(360px, 45%); background: #fbfcfa; }
@@ -187,7 +192,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
 .tl-hits { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 8px 12px 48px; }
 .tl-hits-flat { margin-top: 16px; padding-left: 0; }
 .tl-hit { padding: 4px 8px; border: 1px solid var(--hit-line); border-radius: var(--radius-sm); background: var(--hit-tint); color: var(--hit-ink); font: var(--text-sm) var(--mono); box-shadow: 0 1px 0 #d9b84a; transition: background-color .15s, transform .1s, box-shadow .1s; }
-.tl-hit span { font-family: 'IBM Plex Sans', system-ui, sans-serif; font-weight: 600; text-transform: capitalize; }
+.tl-hit span { font-family: 'Inclusive Sans Variable', system-ui, sans-serif; font-weight: 600; text-transform: capitalize; }
 .tl-hit:hover { background: var(--hit); }
 .tl-hit:active { transform: translateY(1px); box-shadow: none; }
 .tl-hit.is-predicted { border-style: dashed; background: #fffbea; box-shadow: none; }

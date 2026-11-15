@@ -1,5 +1,10 @@
 # Surg+F frontend
 
+## Frontend v2 design branch
+
+Shlok's homepage revamp lives on `feat/shlok-frontend-v2`. Read [design criteria](docs/DESIGN.md) and [anti-slop criteria](docs/ANTI_SLOP.md) before changing presentation or copy. Homepage markup/scroll lifecycle are isolated in `src/home.js` and `src/home.css`; Inclusive Sans is self-hosted. Native scrolling and reduced-motion support preserve immediate access to the case. This round is committed locally only at Shlok's request.
+
+
 Current ownership: **Shlok — general frontend design; Aadhi — spatial data/models/evaluation/export; Mihir — spatial player/browser verification.** The integrated frontend is on `main` through `6d468dd`; new spatial work stays on `feat/spatial-overlays` until explicitly published. Shlok and Mihir coordinate shared frontend markup/styles. See [tasks and handoffs](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). Earlier owner notes below are historical.
 
 The dashboard lets users switch between hosted VID01 and VID02. The video, operation steps, and requested outputs are on the left; Lil Doc and the chat input are on the right. Earlier user questions remain clickable in the conversation and rerun their query. Search results are scoped to the open case using the shared `GET /search?q=...` clip contract.
@@ -35,7 +40,7 @@ This writes `frontend/public/videos/VID01.mp4` (692,593,324 bytes, 28:53) and `V
 
 ## Content filter
 
-The home preview and dashboard player start with a modest 10 px blur over the surgical footage for demos. The dashboard overlay covers the full video image. A separate control bar sits above it, keeping play/pause, seek and time, volume, speed, and fullscreen clear and usable. The fullscreen control toggles back to the normal player size and updates its label when fullscreen is exited with Escape. The **Content filter: On/Off** button is beside “Demo case” on the home page and above the dashboard video. Turning it off reveals the footage; selecting a new video turns it back on. The filter is a visual overlay and does not change video data or analysis.
+The home preview and dashboard player start with a modest 10 px blur over the surgical footage for demos. The dashboard overlay covers the full video image. A separate control bar sits above it, keeping play/pause, seek and time, volume, speed, and fullscreen clear and usable. The fullscreen control toggles back to the normal player size and updates its label when fullscreen is exited with Escape. The content filter is an eye button in the top-right corner of the home preview and the case player. It shows a slashed eye while the footage is blurred and an open eye while it is visible, and it has `aria-pressed` plus the label “Blur footage”. Turning it off reveals the footage; selecting a new video turns it back on. The filter is a visual overlay and does not change video data or analysis.
 
 ## Search features
 
@@ -51,7 +56,7 @@ The four buttons are multi-select controls: clicking an unselected button insert
 
 Run `npm run build`. With the Databricks backend and VID01 video available, enter `/timestamp clipper`; the first known interval is `674–690` seconds. Select it and confirm the video seeks to 11:14. `/chart` and `/quiz` require the six instrument-label queries to succeed. A cold warehouse may take time to respond.
 
-On the home page, **View clipper event at 11:14** opens VID01 at 674 seconds. The requested seek stays pending while the dashboard reloads for timeline and search results, and the player clears it only after the `seeked` event. Check that the time control reads 11:14 after the clip loads.
+On the home page, submitting the prefilled hero search **When is the cystic duct cut?** opens VID01 at 860 seconds, the scissors/cut/cystic_duct triplet (860–877 s). Selecting the demo card **When is the cystic duct clipped? 11:38** opens VID01 at 698 seconds, the annotated `clipper, clip, cystic_duct` triplet (698–747 s), and asks Lil Doc the same question. Typing any other question in the hero search opens VID01 and sends it to Lil Doc. Local routing maps “clip/clipped/clipping” to `clipper` and “cut/cutting” to `scissors`. In fixture mode, instrument search also returns the verified VID01/VID02 annotation intervals from `shared/triplets.annotation.csv`. The requested seek stays pending while the dashboard reloads for timeline and search results, and the player clears it only after the `seeked` event. Check that the time control reads 11:38 after the clip loads. On the case page, **Open your own video** in the top bar opens a local MP4/MOV (playback only); the logo returns home.
 
 With the backend returning real rows and `VID01.mp4` available, search `clipper`. Click the first result and confirm `VID01` seeks to `11:14` (674 s). Repeat with VID02: the first `clipper` annotation is `VID02 1255–1268` (20:55). Also check a result from a case without video (for example any `clipper` hit outside VID01/VID02), a `prediction` result, and a no-match query. Run `npm run build` for a production build.
 

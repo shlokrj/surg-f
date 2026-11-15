@@ -47,6 +47,8 @@ def select(reports, split, settings):
             raise ValueError('missing run/source/matching provenance')
         for name in ['frame_threshold', 'iou_threshold']:
             value = common[name]
+            if name == 'frame_threshold' and value == 'per_label':  # MLP: thresholds live in the model artifact
+                continue
             if not isinstance(value, (int, float)) or not math.isfinite(value) or not 0 < value <= 1:
                 raise ValueError('invalid evaluation threshold')
         if shared is None:

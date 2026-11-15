@@ -1,4 +1,4 @@
-"""Turn CholecT50 instrument labels into clip interval rows for surgf_clip_staging.
+"""Turn CholecT50 instrument, verb, and target labels into clip interval rows for surgf_clip_staging.
 
 Input: samples.json from huggingface.co/datasets/Voxel51/cholect50 (labels only, ~500 MB).
 Assumes frame_number == second (CholecT50 frames are sampled at 1 fps). Verify against playback.
@@ -24,8 +24,10 @@ def to_intervals(frames):
 def main(src, dst):
     frames = defaultdict(list)  # (case_id, label) -> frame numbers
     for s in json.load(open(src))["samples"]:
-        for c in (s.get("instruments") or {}).get("classifications", []):
-            frames[(s["video_id"], c["label"])].append(s["frame_number"])
+        for group in ("instruments", "verbs", "targets"):  # all searchable labels (DECISIONS.md 2026-11-14)
+            for c in (s.get(group) or {}).get("classifications", []):
+                if c["label"] not in ("null_verb", "null_target"):  # "no action/target", not searchable
+                    frames[(s["video_id"], c["label"])].append(s["frame_number"])
     rows = 0
     with open(dst, "w", newline="") as out:
         w = csv.writer(out)

@@ -1,0 +1,270 @@
+/* Wordmark. Geometry comes from Inclusive Sans metrics (units of 1/1000 em): a normal "+" is centered
+   0.295em above the baseline and its bars, like the letter stems, are 84 units thick. The plus, lens and
+   handle are drawn at that weight with flat ends, with the plus at the glyph's own center. The real "+"
+   stays in the text (visually collapsed) so the mark reads, copies and announces as "surg+f". */
+const lens = `<svg class="sf-lens" aria-hidden="true" viewBox="-300 -300 720 720" fill="none" stroke="currentColor" stroke-width="84"><circle r="248"/><path d="M-150 0h300M0-150v300M180 180 380 380"/></svg>`;
+export const wordmark = (cls = '') => `<span class="sf-mark ${cls}">surg<span class="sf-plus">+</span>${lens}f</span>`;
+
+/* Sky palette, darkest at the top. */
+/* The last stop is the page color (--page), so the hero fades into the section below with no seam. */
+const SKY = ['#1a8a81', '#2a988e', '#3ba69b', '#52b4a8', '#6cc3b7', '#8ad2c6', '#acdfd5', '#cdece5', '#e6f2ee', '#f7f9f6'];
+const RGB = SKY.map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
+const BAYER = [0,32,8,40,2,34,10,42,48,16,56,24,50,18,58,26,12,44,4,36,14,46,6,38,60,28,52,20,62,30,54,22,3,35,11,43,1,33,9,41,51,19,59,27,49,17,57,25,15,47,7,39,13,45,5,37,63,31,55,23,61,29,53,21].map(n => (n + .5) / 64);
+
+const hash = (x, y) => { let h = (x * 374761393 + y * 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+const smooth = t => t * t * (3 - 2 * t);
+const clamp01 = t => Math.max(0, Math.min(1, t));
+function noise(x, y) {
+  const xi = Math.floor(x), yi = Math.floor(y), u = smooth(x - xi), v = smooth(y - yi);
+  const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+const ridge = x => .55 * noise(x * 3.1, 7.3) + .3 * noise(x * 8.7, 2.1) + .15 * noise(x * 21, 5.9);
+const sky = g => {
+  const top = SKY.length - 1, x = Math.max(0, Math.min(top, g)), i = Math.min(top - 1, Math.floor(x)), f = x - i;
+  return RGB[i].map((c, k) => Math.round(c + (RGB[i + 1][k] - c) * f));
+};
+
+/* Deterministic plus-mark dither over a cols×rows grid. The sky is quantized into small levels; inside
+   a level an 8×8 Bayer threshold decides which cells carry a lighter "+". A plus covers about a quarter of
+   its cell, so it is drawn LIFT levels brighter and the average color stays continuous (no banding).
+   The bottom gets an uneven pale ombre shaped by value noise. */
+const STEP = .42, LIFT = STEP * 4;
+export function ditherCells(cols, rows, {horizon: base = .6, ceiling = 9, ramp = 1} = {}) {
+  const bg = new Uint8ClampedArray(cols * rows * 3), mark = new Uint8ClampedArray(cols * rows * 4);
+  const top = SKY.length - 1;
+  const aspect = cols / Math.max(1, rows);
+  for (let x = 0; x < cols; x++) {
+    const u = x / Math.max(1, cols - 1);
+    const horizon = base + .16 * ridge(u * aspect * .55) - .07 * Math.exp(-((u - .5) ** 2) / .08);
+    for (let y = 0; y < rows; y++) {
+      const v = y / Math.max(1, rows - 1), t = (v - horizon) / (1 - horizon);
+      let g = Math.pow(v, 1.35) * 5.2 * ramp;
+      if (t > 0) g += (smooth(Math.min(1, t)) * 5 + (noise(u * aspect * 9, v * 9) - .5) * 1.6 * Math.min(1, t * 2.5)) * ramp;
+      g = Math.max(0, Math.min(ceiling, g));
+      // Bottom fifth: every column eases to the page color by the last row, so the hero ends on a straight,
+      // seamless line instead of a jagged terrain edge.
+      if (ceiling >= top) g += (top - g) * smooth(clamp01((v - .8) / .2));
+      const level = Math.floor(g / STEP) * STEP, frac = (g - level) / STEP, i = y * cols + x;
+      const settled = g >= top - .02; // fully faded: exact page color, no marks
+      const [r, gr, b] = settled ? RGB[top] : sky(level);
+      bg[i * 3] = r; bg[i * 3 + 1] = gr; bg[i * 3 + 2] = b;
+      if (!settled && frac > BAYER[(y & 7) * 8 + (x & 7)]) {
+        const [mr, mg, mb] = sky(level + LIFT);
+        mark[i * 4] = mr; mark[i * 4 + 1] = mg; mark[i * 4 + 2] = mb; mark[i * 4 + 3] = 255;
+      }
+    }
+  }
+  return {bg, mark};
+}
+
+export function paintDither(canvas) {
+  const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+  /* Sized from layout (not transforms), so scroll scaling never triggers a repaint. */
+  const width = Math.round(canvas.offsetWidth * dpr), height = Math.round(canvas.offsetHeight * dpr);
+  if (!width || !height || (canvas.width === width && canvas.height === height)) return;
+  let ctx = null;
+  try { ctx = canvas.getContext('2d'); } catch { /* no canvas support */ }
+  if (!ctx) return;
+  canvas.width = width; canvas.height = height;
+  const cell = 6 * dpr, arm = 2 * dpr, bar = dpr;
+  const cols = Math.ceil(width / cell), rows = Math.ceil(height / cell);
+  const {bg, mark} = ditherCells(cols, rows, {horizon: Number(canvas.dataset.horizon) || undefined, ceiling: Number(canvas.dataset.ceiling) || undefined, ramp: Number(canvas.dataset.ramp) || undefined});
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    const i = y * cols + x, px = x * cell, py = y * cell;
+    ctx.fillStyle = `rgb(${bg[i * 3]},${bg[i * 3 + 1]},${bg[i * 3 + 2]})`;
+    ctx.fillRect(px, py, cell, cell);
+    if (!mark[i * 4 + 3]) continue;
+    const cx = px + (cell >> 1), cy = py + (cell >> 1);
+    ctx.fillStyle = `rgb(${mark[i * 4]},${mark[i * 4 + 1]},${mark[i * 4 + 2]})`;
+    ctx.fillRect(cx - arm, cy, arm * 2 + bar, bar);
+    ctx.fillRect(cx, cy - arm, bar, arm * 2 + bar);
+  }
+}
+
+/* The prefilled hero question. VID01 has one annotated scissors-cut-cystic-duct triplet, 860–877 s. */
+export const DEMO_QUESTION = 'When is the cystic duct cut?';
+export const DEMO_SEEK = 860;
+
+/* Footer mark as a plus dither. The wordmark is drawn once per size into a coarse coverage grid
+   (same lens geometry as wordmark(), at weight 600 / stroke 113). Scroll progress raises the Bayer
+   threshold, so the word fills in with "+" marks and darkens. Redraws only when the 64-step level changes. */
+/* Cell size scales with width: 4 px on phones, 7 px on desktop. */
+const footCell = width => Math.max(4, Math.min(7, Math.round(width / 200)));
+export function footerMask(cols, rows) {
+  let off;
+  try { off = document.createElement('canvas'); off.width = cols; off.height = rows; } catch { return null; }
+  const c = off.getContext?.('2d');
+  if (!c) return null;
+  const font = em => { c.font = `600 ${em}px "Inclusive Sans Variable", sans-serif`; c.letterSpacing = `${-0.03 * em}px`; };
+  font(100);
+  const unit = (c.measureText('surg').width + c.measureText('f').width) / 100 + .81;
+  const em = Math.min(cols * .84 / unit, rows * .7);
+  font(em);
+  const surg = c.measureText('surg').width, total = surg + c.measureText('f').width + .81 * em;
+  let x = (cols - total) / 2;
+  const base = rows / 2 + .245 * em;
+  c.fillStyle = c.strokeStyle = '#000';
+  c.fillText('surg', x, base);
+  x += surg + .075 * em;
+  const cx = x + .3 * em, cy = base - .295 * em;
+  c.lineWidth = .113 * em;
+  c.beginPath(); c.arc(cx, cy, .248 * em, 0, Math.PI * 2); c.stroke();
+  c.beginPath();
+  c.moveTo(cx - .125 * em, cy); c.lineTo(cx + .125 * em, cy); // slightly shorter arms keep the gap
+  c.moveTo(cx, cy - .125 * em); c.lineTo(cx, cy + .125 * em); // to the ring open at coarse cells
+  c.moveTo(cx + .18 * em, cy + .18 * em); c.lineTo(cx + .38 * em, cy + .38 * em);
+  c.stroke();
+  c.fillText('f', x + .735 * em, base);
+  const alpha = c.getImageData(0, 0, cols, rows).data, cover = new Uint8Array(cols * rows);
+  for (let i = 0; i < cover.length; i++) cover[i] = alpha[i * 4 + 3] > 140 ? 1 : 0;
+  return {cols, rows, cover};
+}
+export function paintFooterWord(canvas, progress, cache) {
+  const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+  const w = canvas.offsetWidth, h = canvas.offsetHeight;
+  if (!w || !h) return;
+  const size = `${w}x${h}x${dpr}`;
+  if (cache.size !== size) {
+    const step = footCell(w);
+    const mask = footerMask(Math.ceil(w / step), Math.ceil(h / step));
+    if (!mask) return;
+    Object.assign(cache, {size, mask, step, level: -1});
+    canvas.width = w * dpr; canvas.height = h * dpr;
+  }
+  const level = Math.round((.14 + .86 * progress) * 64);
+  if (level === cache.level) return;
+  cache.level = level;
+  let ctx = null;
+  try { ctx = canvas.getContext('2d'); } catch { /* no canvas */ }
+  if (!ctx) return;
+  const {cols, rows, cover} = cache.mask, cell = cache.step * dpr, arm = Math.round(cache.step * .36 * dpr), bar = Math.max(1, Math.round(cache.step * .2 * dpr));
+  const t = progress, mix = (a, b) => Math.round(a + (b - a) * t);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = `rgb(${mix(190, 104)},${mix(212, 160)},${mix(206, 150)})`;
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    if (!cover[y * cols + x] || BAYER[(y & 7) * 8 + (x & 7)] * 64 >= level) continue;
+    const px = x * cell + (cell >> 1), py = y * cell + (cell >> 1);
+    ctx.fillRect(px - arm, py - (bar >> 1), arm * 2, bar);
+    ctx.fillRect(px - (bar >> 1), py - arm, bar, arm * 2);
+  }
+}
+
+const searchGlyph = `<svg class="glyph" aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 5 5"/></svg>`;
+const clock = seconds => { const n = Math.floor(Number(seconds) || 0); return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`; };
+const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+
+/* Feature previews draw only from the saved backend fixtures passed in by main.js. */
+function stepsPreview(steps) {
+  const list = steps?.steps ?? [];
+  const total = list.at(-1)?.end_sec || 1;
+  return `<div class="fx-card"><div class="fx-head"><strong>VID01</strong><span>${list.length} steps</span></div>
+    <div class="phase-bar" aria-hidden="true">${list.map(s => `<span class="${s.key === 'ClippingCutting' ? 'is-hit' : ''}" style="flex:${(s.end_sec - s.start_sec).toFixed(1)}"></span>`).join('')}</div>
+    <ol class="step-list">${list.map(s => `<li class="${s.key === 'ClippingCutting' ? 'is-hit' : ''}"><span>${esc(s.label)}</span><span class="tnum">${clock(s.start_sec)}</span></li>`).join('')}</ol>
+    <p class="fx-note">Phases from Cholec80. Total ${clock(total)}.</p></div>`;
+}
+function instrumentsPreview(timeline) {
+  const rows = (timeline?.summary ?? []).slice().sort((a, b) => b.total_sec - a.total_sec);
+  const max = rows[0]?.total_sec || 1;
+  return `<div class="fx-card"><div class="fx-head"><strong>VID01</strong><span>Time on screen</span></div>
+    <ul class="bar-list">${rows.map(r => `<li><span class="bar-label">${esc(r.label)}</span><span class="bar-track"><span style="width:${Math.max(3, r.total_sec / max * 100).toFixed(1)}%"></span></span><span class="tnum">${clock(r.total_sec)}</span></li>`).join('')}</ul>
+    <p class="fx-note">Totals from dataset annotations. Intervals can overlap.</p></div>`;
+}
+function quizPreview(quiz) {
+  const q = quiz?.questions?.[0];
+  if (!q) return '';
+  return `<div class="fx-card"><div class="fx-head"><strong>Question 1 of ${quiz.questions.length}</strong><span>${quiz.reviewed ? 'Reviewed' : 'Not yet clinically reviewed'}</span></div>
+    <p class="fx-prompt">${esc(q.prompt)}</p>
+    <ul class="fx-options">${q.options.map(o => `<li class="${o.id === q.correct_option_id ? 'is-correct' : ''}"><span class="opt-key">${o.id.toUpperCase()}</span>${esc(o.text)}</li>`).join('')}</ul></div>`;
+}
+
+const feature = ({id, title, body, action, command, horizon, preview, flip}) => `<section class="feature ${flip ? 'is-flipped' : ''}" aria-labelledby="${id}">
+  <div class="feature-copy"><h2 id="${id}">${title}</h2><p>${body}</p><button type="button" class="btn-secondary" data-open-sample ${command ? `data-command="${command}"` : ''}>${action}</button></div>
+  <div class="feature-visual"><canvas class="sky-dither" data-horizon="${horizon}" data-ceiling="7.2" aria-hidden="true"></canvas>${preview}</div>
+</section>`;
+
+export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}}) {
+  return `<main class="landing" id="main-content">
+    <section class="landing-intro" aria-labelledby="landing-title">
+      <div class="intro-sticky">
+        <div class="hero-frame">
+          <canvas class="sky-dither hero-dither" aria-hidden="true"></canvas>
+          <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><button type="button" id="open-sample" class="nav-case">Open a case</button></nav>
+          <div class="intro-copy"><h1 id="landing-title">${wordmark()}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="#case-preview">See the demo <span aria-hidden="true">↓</span></a></div>
+          <form class="hero-search" id="hero-search" role="search">
+            <label class="sr-only" for="hero-q">Ask about the VID01 demo case</label>
+            ${searchGlyph}<input id="hero-q" name="q" value="${DEMO_QUESTION}" placeholder="Ask about the VID01 demo case" autocomplete="off" spellcheck="false" required>
+            <button type="submit" aria-label="Search VID01"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+          </form>
+        </div>
+      </div>
+    </section>
+    <section class="case-section" id="case-preview" aria-labelledby="case-heading">
+      <div class="case-copy"><h2 id="case-heading">Find the clip.</h2><p>Ask when a step happens and jump straight to the annotated moment.</p><button type="button" class="btn-primary" id="sample">Explore the demo</button></div>
+      <div class="case-console"><div class="console-bar"><span class="console-case"><strong>VID01</strong><span>Cholecystectomy</span></span></div>
+      <div class="preview-video surgical-media ${filterOn ? 'filtered' : ''}">${filterButton}<video src="${videoUrl}" muted playsinline preload="metadata" aria-label="Surgical footage from the VID01 demo case"></video><span class="preview-unavailable" hidden>Video preview unavailable. You can still open the case.</span></div>
+      <button type="button" id="sample-event" class="find-result"><span class="find-query">${searchGlyph}When is the cystic duct clipped?</span><span class="find-time">11:38 <span aria-hidden="true">↗</span></span></button><div class="console-caption"><span>Annotated: clipper clips the cystic duct</span><span>Jump to this moment</span></div></div>
+    </section>
+    ${feature({id: 'feature-steps', title: 'Follow the operation, step by step.', body: 'Each case is split into its surgical phases. Select a step to jump straight to it.', action: 'Open the case timeline', horizon: .62, preview: stepsPreview(showcase.steps)})}
+    ${feature({id: 'feature-chart', title: 'See which instruments appear, and for how long.', body: 'Time on screen for each instrument, totalled from the dataset annotations.', action: 'Show the instrument chart', command: '/chart instruments', horizon: .62, flip: true, preview: instrumentsPreview(showcase.timeline)})}
+    ${feature({id: 'feature-quiz', title: 'Test yourself on the procedure.', body: 'Five questions on step order and instruments, each with an explanation and example clips.', action: 'Start the quiz', command: '/quiz', horizon: .62, preview: quizPreview(showcase.quiz)})}
+    <section class="local-section" aria-labelledby="local-heading"><div><h2 id="local-heading">Open your own video.</h2><p>MP4 and MOV files open for local playback. Indexed search covers the demo cases.</p></div><button type="button" id="drop-zone" class="btn-secondary local-open" aria-label="Open a local MP4 or MOV for playback only">Open a video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>${error ? `<p class="home-error" role="alert">${error}</p>` : ''}</section>
+    <footer class="site-footer" aria-label="About surg+f">
+      <div class="footer-sticky">
+        <div class="footer-top">
+          <div class="footer-identity">${wordmark()}<p>Search surgical video.</p></div>
+          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#feature-steps">Features</a><a href="#top">Back to top</a><button type="button" class="btn-primary" data-open-sample>Open a case</button></nav>
+        </div>
+        <canvas class="footer-word" aria-hidden="true"></canvas>
+        <div class="footer-legal"><span>Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>
+      </div>
+    </footer>
+  </main>`;
+}
+
+export function mountHome(root) {
+  if (!root) return () => {};
+  const intro = root.querySelector('.landing-intro');
+  const canvases = [...root.querySelectorAll('.sky-dither')];
+  const footer = root.querySelector('.site-footer');
+  const footerWord = root.querySelector('.footer-word');
+  const footerCache = {};
+  const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let frame = 0;
+  const update = () => {
+    frame = 0;
+    const progress = media.matches ? 0 : Math.max(0, Math.min(1, -intro.getBoundingClientRect().top / Math.max(1, intro.offsetHeight - window.innerHeight)));
+    root.style.setProperty('--journey', progress.toFixed(4));
+    /* Footer word widens and gains weight across the footer's extra scroll length, like Hangar's. */
+    if (footer) {
+      const span = Math.max(1, footer.offsetHeight - window.innerHeight);
+      const fp = media.matches ? 1 : Math.max(0, Math.min(1, -footer.getBoundingClientRect().top / span));
+      footer.style.setProperty('--footer-progress', fp.toFixed(4));
+      if (footerWord) paintFooterWord(footerWord, fp, footerCache);
+    }
+    canvases.forEach(paintDither);
+  };
+  const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+  /* In-page links scroll the window only. scrollIntoView would also scroll the clipped hero layers
+     (the old logo-click glitch). "#top" returns to the start, where the frame is fully inset. */
+  const jump = event => {
+    const link = event.target.closest?.('a[href^="#"]');
+    if (!link) return;
+    const id = link.getAttribute('href').slice(1);
+    const target = id === 'top' ? null : document.getElementById(id);
+    if (id !== 'top' && !target) return;
+    event.preventDefault();
+    const top = target ? target.getBoundingClientRect().top + window.scrollY : 0;
+    window.scrollTo({top, behavior: media.matches ? 'auto' : 'smooth'});
+  };
+  window.addEventListener('scroll', schedule, {passive:true});
+  window.addEventListener('resize', schedule);
+  media.addEventListener('change', schedule);
+  root.addEventListener('click', jump);
+  const video = root.querySelector('video');
+  const unavailable = () => { root.querySelector('.preview-unavailable').hidden = false; };
+  video.addEventListener('error', unavailable);
+  update();
+  root.ownerDocument?.fonts?.ready?.then(() => { footerCache.size = null; schedule(); });
+  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); video.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
+}
