@@ -6,8 +6,9 @@
   "title": "Clipping and cutting the cystic duct",
   "content_revision": "0.1.0",
   "eligible_video": {
-    "kind": "uploaded_demo",
+    "kind": "demo_asset",
     "asset_id": "VID01-cholec80-25fps-v1",
+    "hosted": true,
     "case_id": "VID01",
     "timebase": "player_seconds",
     "duration_sec": 1733.04,

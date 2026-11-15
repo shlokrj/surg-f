@@ -6,6 +6,7 @@ import { EXERCISES, parsePracticeIntent, findExercise, validateExercise } from '
 import { sampleRanges, digestFile, checkEligibility, FINGERPRINT_ALGORITHM } from '../src/practice/eligibility.js';
 import { createSession, reduce, evaluate, checklist, currentStage } from '../src/practice/controller.js';
 import { STEP_SCENES } from '../src/model/steps.js';
+import { videoAssetForCase } from '../src/cases.js';
 
 const read = path => JSON.parse(fs.readFileSync(new URL(path, import.meta.url)));
 const manifest = read('../src/model/manifest.json');
@@ -21,6 +22,9 @@ test('the exercise definition is complete and every reference resolves', () => {
   assert.equal(exercise.schema_version, 1);
   assert.ok(STEP_SCENES[exercise.step_key], 'bound to a known step');
   assert.equal(new Set(exercise.stages.map(stage => stage.id)).size, exercise.stages.length);
+  // The hosted demo case and the exercise binding must name the same asset.
+  assert.equal(exercise.eligible_video.hosted, true);
+  assert.equal(videoAssetForCase(exercise.eligible_video.case_id), exercise.eligible_video.asset_id);
 });
 
 test('the exercise records the exact model revision it was authored on', () => {
@@ -89,8 +93,14 @@ test('only the exact uploaded demo asset is eligible', () => {
   const upload = { localVideo: true, caseId: 'Local video', fingerprint: good, duration: 1733.04, videoError: false, fingerprintError: false };
   assert.deepEqual(checkEligibility(exercise, upload), { ok: true });
   const reason = video => checkEligibility(exercise, { ...upload, ...video }).reason;
-  assert.equal(reason({ localVideo: false, caseId: 'VID01' }), 'not_uploaded'); // hosted copy
-  assert.equal(reason({ localVideo: false, caseId: 'VID02' }), 'not_uploaded');
+  // The hosted demo case is the same asset: accepted by its asset id once its length checks out.
+  const hosted = { localVideo: false, caseId: 'VID01', assetId: 'VID01-cholec80-25fps-v1', fingerprint: null, duration: 1733.04 };
+  assert.deepEqual(checkEligibility(exercise, { ...upload, ...hosted }), { ok: true });
+  assert.equal(reason({ ...hosted, duration: NaN }), 'unknown_duration');
+  assert.equal(reason({ ...hosted, duration: 1500 }), 'duration_mismatch');
+  assert.equal(reason({ ...hosted, videoError: true }), 'video_error');
+  assert.equal(reason({ localVideo: false, caseId: 'VID02', assetId: 'VID02-cholec80-25fps-v1' }), 'wrong_case');
+  assert.equal(reason({ localVideo: false, caseId: 'VID01', assetId: null }), 'wrong_case');
   assert.equal(reason({ fingerprint: null }), 'pending');
   assert.equal(reason({ fingerprint: null, fingerprintError: true }), 'fingerprint_error');
   assert.equal(reason({ fingerprint: { ...good, sample_sha256: '0'.repeat(64) } }), 'mismatch');

@@ -26,6 +26,12 @@ The earlier integrated `frontend/dev` work reached `main` through `6d468dd`. Fur
   - The model and chart close buttons work.
 - One earlier run hit a single 30 s Playwright timeout that did not recur in four later full runs; cause unknown.
 
+**Update for the judged demo (2026-11-15, Rohan):**
+- Practice now also runs on the **hosted VID01** case, bound by asset id `VID01-cholec80-25fps-v1` plus duration. Uploads of the same file still work; VID02 is refused.
+- A **`/practice`** chip sits with the other chat commands. It fills in the prompt like they do, so entry is still through Lil Doc.
+- To fit five chips on one row of the chat, `frontend/src/case.css` chip side padding went from 10 to 6 px and the gap from 6 to 4 px. **Shlok:** adjust if you prefer.
+- Checks: `node --test frontend/test/*.test.js` 49 passed; build passed. The headless Chrome walkthrough passed 40 checks with no page errors: VID02 refused; the chip inserts and highlights `/practice`; the chip alone gets the offer; the full four-stage loop on hosted VID01; and the upload path still starts. Chips stay on one row at 1440, 1280, 1024 and 390 px.
+
 **Blockers / next:**
 - (1) **Clinical review**: a surgeon or educator must check the stage order, tools, clip positions, feedback and reference intervals, then set `review.status` (delivery stage 4). Until then the UI says "draft, not yet medically reviewed".
 - (2) A first-time-resident usability walkthrough.
