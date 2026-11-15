@@ -157,6 +157,9 @@ def main():
     model = fasterrcnn_mobilenet_v3_large_320_fpn(weights=weights)
     weight_file = Path(torch.hub.get_dir()) / 'checkpoints' / Path(urlparse(weights.url).path).name
     weights_sha256 = sha(weight_file)
+    expected_prefix = weight_file.stem.rsplit('-', 1)[-1]
+    if not weights_sha256.startswith(expected_prefix):
+        raise ValueError('cached pretrained weights fail published hash prefix')
     model.roi_heads.box_predictor = FastRCNNPredictor(model.roi_heads.box_predictor.cls_score.in_features, 3)
     model.to(args.device)
     optimizer = torch.optim.SGD([p for p in model.parameters() if p.requires_grad], lr=args.learning_rate, momentum=.9)
