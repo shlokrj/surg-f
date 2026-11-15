@@ -2,7 +2,7 @@
 
 ## Frontend merge to spatial owner (2026-11-14)
 
-Mihir merged the stage-3 player UI into `frontend/dev`, keeping the custom controls, content filter, chat, and home clipper seek. Local Chrome reached `11:14 / 28:53` on VID01 and showed the overlay toggle. **Shlok:** the downloaded VID01 MP4 reports `854×484` in Chrome, but `frontend/public/overlays/VID01.json` declares `854×480`. Enabling boxes reports “Overlay dimensions do not match this video,” so no box appears. Verify the source-frame to playable-video pixel mapping before changing the artifact dimensions or relaxing the guard. The DOM tests use simulated `854×480` video dimensions and do not catch this.
+Mihir merged the stage-3 player UI and the newer steps/Lil Doc layout into `frontend/dev`, keeping the custom controls, content filter, clickable prior questions, and home clipper seek. Local Chrome against the running backend reached `11:14 / 28:53` on VID01, showed five clipper moments across seven operation steps and only six tools in `/chart instruments`, and showed the overlay toggle. **Shlok:** the downloaded VID01 MP4 reports `854×484` in Chrome, but `frontend/public/overlays/VID01.json` declares `854×480`. Enabling boxes reports “Overlay dimensions do not match this video,” so no box appears. Verify the source-frame to playable-video pixel mapping before changing the artifact dimensions or relaxing the guard. The DOM tests use simulated `854×480` video dimensions and do not catch this.
 
 ## Spatial work published to main (2026-11-14)
 

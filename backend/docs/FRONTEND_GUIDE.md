@@ -334,6 +334,34 @@ type InterpretResponse = {
 
 Errors: 422 for a blank or too-long `q`, or a bad `case_id`.
 
+## 6. Steps (default timeline)
+
+**Purpose:** the steps of the operation in one video, in time order, for the default timeline.
+**Request:** `GET /cases/{case_id}/steps`
+**Data:** real phase annotations from the Cholec80 dataset, saved in `backend/fixtures/steps.VID01.json` and `steps.VID02.json`. The response is the same with or without Databricks. Only VID01 and VID02 have steps; other cases return 404 `{"detail": "No steps for case_id: VID99"}`.
+
+```powershell
+curl.exe -s "http://localhost:8000/cases/VID01/steps"
+```
+
+Response (real, 2 of 7 steps shown):
+
+```json
+{
+  "case_id": "VID01",
+  "source": "cholec80_phase",
+  "steps": [
+    {"order": 1, "key": "Preparation", "label": "Preparation", "start_sec": 0.0, "end_sec": 21.0},
+    {"order": 3, "key": "ClippingCutting", "label": "Clipping and cutting", "start_sec": 673.0, "end_sec": 887.0}
+  ]
+}
+```
+
+```ts
+type Step = { order: number; key: string; label: string; start_sec: number; end_sec: number };
+type StepsResponse = { case_id: string; source: string; steps: Step[] };
+```
+
 ## Planned stage 3: video localization
 
 Future overlay integration should expose frame timestamps, source dimensions, normalized boxes and provenance. The player must map into the actual video content rectangle and discard stale detections. The stage-3 payload is still proposed; existing endpoint documentation does not promise box or verb predictions.
