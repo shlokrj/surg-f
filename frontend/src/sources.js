@@ -128,7 +128,7 @@ const item = (it, k) => `<li class="src-item" style="--k:${k}">
 
 export function sourcesSection() {
   return `<section class="sources" id="sources" aria-labelledby="sources-heading">
-    <div class="src-head"><h2 id="sources-heading">Sources.</h2><p>The datasets and pretrained models Surg+F is built on. If you build on this work, please cite them.</p></div>
+    <div class="src-head"><h2 id="sources-heading">Sources.</h2><p>The datasets and pretrained models Surg+F is built on.</p></div>
     <div class="src-groups">${GROUPS.map((g, gi) => `<section class="src-group" id="sources-${g.id}" aria-labelledby="sources-${g.id}-title" style="--in:0;--g:${gi}">
       <div class="src-group-head"><span class="src-num">${String(gi + 1).padStart(2, '0')}</span><div><h3 id="sources-${g.id}-title">${g.title}</h3><p>${g.use}</p></div></div>
       <ol class="src-list">${g.items.map(item).join('')}</ol>
