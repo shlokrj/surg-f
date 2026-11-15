@@ -1,17 +1,21 @@
 /* "Dig into the stack": the homepage architecture section (MadHacks 2026 theme: let's dig in).
-   An isometric block pulls apart into six layers, then each layer gets its own scroll-driven scene,
-   from the surface (the player) down to the bedrock (surgery video). All facts come from the repo:
-   README.md, agent-kit/SPEC.md, agent-kit/DATABRICKS.md, backend/README.md, ml/README.md and
-   frontend/public/model-evals.md. Every link below was checked on 2026-11-14. */
+   One pinned stage. A block pulls apart into six layers, shrinks into a clickable layer map, and the
+   stage digs down through it one layer at a time, from the surface (the player) to bedrock (the
+   surgery video). Each layer plays its own scroll-driven 3D scene.
+
+   Every fact comes from the repo: README.md, agent-kit/SPEC.md, backend/app/repository.py,
+   frontend/public/model-evals.md, frontend/public/overlays/VID01.json and shared/triplets.annotation.csv.
+   Every link was checked on 2026-11-14. */
+import { videoForCase } from './cases.js';
 
 const link = (href, text) => `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
 
 export const LAYERS = [
   {
     id: 'player', name: 'The player',
-    body: 'A Vite app in plain JavaScript. Choosing a result seeks the video to the clip’s first second, and experimental anatomy boxes (gallbladder, cystic duct) from a Faster R-CNN trained on Endoscapes can be drawn over VID01.',
-    stack: [['Vite', 'https://vite.dev/'], ['Inclusive Sans', 'https://www.oliviaking.com/inclusivesans'], ['Faster R-CNN (torchvision)', 'https://docs.pytorch.org/vision/0.21/models/generated/torchvision.models.detection.fasterrcnn_mobilenet_v3_large_320_fpn.html'], ['Endoscapes', 'https://github.com/CAMMA-public/Endoscapes']],
-    sources: [['Ren et al., Faster R-CNN, 2015', 'https://arxiv.org/abs/1506.01497']],
+    body: 'A Vite app in plain JavaScript. Choosing a result seeks the video to the clip’s first second. An experimental Faster R-CNN, trained on Endoscapes, looks for anatomy every 0.24 s and draws its box over the video.',
+    stack: [['Vite', 'https://vite.dev/'], ['Inclusive Sans', 'https://www.oliviaking.com/inclusivesans'], ['torchvision Faster R-CNN', 'https://docs.pytorch.org/vision/stable/models/faster_rcnn.html'], ['Endoscapes', 'https://github.com/CAMMA-public/Endoscapes']],
+    sources: [['Ren et al., Faster R-CNN, 2015', 'https://arxiv.org/abs/1506.01497'], ['Murali et al., Endoscapes, 2023', 'https://arxiv.org/abs/2312.12429']],
   },
   {
     id: 'search', name: 'Search and chat',
@@ -35,7 +39,7 @@ export const LAYERS = [
     id: 'features', name: 'Frame features',
     body: 'SurgVLP, pretrained on hundreds of surgical video lectures, stays frozen. Its ResNet-50 image branch turns each one-second frame into 768 numbers, extracted on Databricks serverless and stored in a Unity Catalog Volume.',
     stack: [['SurgVLP', 'https://github.com/CAMMA-public/SurgVLP'], ['PyTorch', 'https://pytorch.org/'], ['Unity Catalog Volumes', 'https://docs.databricks.com/aws/en/volumes/']],
-    sources: [['Yuan et al., Learning multi-modal representations by watching hundreds of surgical video lectures, 2023', 'https://arxiv.org/abs/2307.15220']],
+    sources: [['Yuan et al., Learning multi-modal representations by watching hundreds of surgical video lectures, 2023', 'https://arxiv.org/abs/2307.15220'], ['He et al., Deep residual learning, 2015', 'https://arxiv.org/abs/1512.03385']],
   },
   {
     id: 'video', name: 'Surgery video',
@@ -47,97 +51,264 @@ export const LAYERS = [
 
 /* A slab is a real CSS-3D cuboid: a top face plus the two side faces that face the viewer. */
 const slab = (cls = '', top = '') => `<div class="slab ${cls}"><div class="face top">${top}</div><div class="face front"></div><div class="face side"></div></div>`;
+/* A real VID01 frame, painted from the video at time t (seconds) once the section is near. */
+const frame = (t, w = 256, h = 144) => `<canvas class="vf" data-t="${t}" width="${w}" height="${h}" aria-hidden="true"></canvas>`;
 
-/* Mini stack beside each layer title: shows how deep this layer sits (1 = surface). */
-const depth = i => `<span class="depth" role="img" aria-label="Layer ${i + 1} of ${LAYERS.length}">${LAYERS.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</span>`;
-
-const clipRows = [['VID01', 674, 690, 'clipper'], ['VID01', 698, 747, 'clipper'], ['VID01', 749, 753, 'clipper'], ['VID01', 860, 877, 'scissors'], ['VID02', 1255, 1268, 'clipper']];
-/* VID01 seconds 855–864 from shared/triplets.annotation.csv: grasper throughout, scissors from 860 s. */
-const VIDEO_SECONDS = Array.from({length: 10}, (_, i) => [`14:${String(15 + i).padStart(2, '0')}`, 855 + i >= 860 ? ['grasper', 'scissors'] : ['grasper']]);
+/* ---- Real data ---- */
+/* frontend/public/overlays/VID01.json at 860.16 s: experimental anatomy prediction (not ground truth). */
+const BOX = {t: 860.16, label: 'gallbladder', score: '0.997', xyxy: [0.3167, 0.0069, 0.692, 0.4689]};
+/* Proposals the detector "considers" before settling (illustration of the search, not model output). */
+const CANDS = [[4, 46, 30, 40], [58, 50, 34, 44], [18, 20, 44, 52], [46, 4, 46, 30], [8, 6, 28, 34], [62, 14, 30, 36]];
+/* shared/triplets.annotation.csv, VID01, in time order. */
+const ROWS = [['VID01', 561, 658, 'hook'], ['VID01', 674, 690, 'clipper'], ['VID01', 698, 747, 'clipper'], ['VID01', 815, 844, 'clipper'], ['VID01', 860, 877, 'scissors'], ['VID01', 894, 921, 'hook'], ['VID01', 1010, 1026, 'bipolar']];
+/* VID01 instrument time line, merged per instrument from the same CSV (1,728 s long). */
+const VID01_LEN = 1728;
+const TRACKS = {
+  grasper: [[0, 5], [10, 108], [136, 172], [177, 190], [276, 298], [302, 312], [324, 363], [367, 387], [391, 395], [397, 401], [403, 406], [415, 471], [477, 484], [493, 496], [524, 530], [536, 621], [651, 746], [750, 751], [754, 758], [763, 771], [774, 796], [812, 883], [935, 936], [1037, 1039], [1100, 1111], [1116, 1118], [1158, 1437], [1439, 1440], [1443, 1460], [1478, 1565], [1567, 1655], [1658, 1678], [1689, 1690], [1697, 1709], [1711, 1718], [1721, 1728]],
+  hook: [[20, 272], [484, 505], [561, 658], [894, 921], [1039, 1378], [1381, 1434], [1438, 1439]],
+  bipolar: [[325, 391], [433, 476], [1010, 1026]],
+  irrigator: [[291, 315], [402, 425], [936, 978], [981, 988], [990, 996], [1606, 1640]],
+  clipper: [[674, 690], [698, 747], [749, 758], [815, 844]],
+  scissors: [[860, 877]],
+};
+/* VID01 seconds 856–863: grasper throughout, scissors from 860 s. */
+const SECONDS = Array.from({length: 8}, (_, i) => ({t: 856 + i, label: `14:${String(16 + i).padStart(2, '0')}`, tools: 856 + i >= 860 ? ['grasper', 'scissors'] : ['grasper']}));
 const OUT = ['grasper', 'hook', 'bipolar', 'clipper', 'irrigator', 'scissors', 'grasp', 'retract', 'dissect', 'coagulate', 'clip', 'cut', 'aspirate', 'irrigate', 'pack', 'gallbladder', 'cystic plate', 'cystic duct', 'cystic artery', 'cystic pedicle', 'blood vessel', 'fluid', 'abdominal wall', 'liver', 'adhesion', 'omentum', 'peritoneum', 'gut', 'specimen bag'];
-const RELIABLE = new Set(['grasper', 'hook', 'retract', 'dissect', 'gallbladder', 'specimen bag']); // model-evals.md
-const bars = Array.from({length: 32}, (_, i) => (Math.sin(i * 12.9898) * 43758.5453) % 1).map(v => Math.abs(v));
+/* model-evals.md: the reliable labels and their F1 on 4 unseen surgeries. */
+const RELIABLE = {grasper: '0.89', hook: '0.83', retract: '0.86', dissect: '0.78', gallbladder: '0.88', 'specimen bag': '0.75'};
+const bars = Array.from({length: 28}, (_, i) => Math.abs((Math.sin(i * 12.9898) * 43758.5453) % 1));
+const pct = v => `${(v * 100).toFixed(2)}%`;
 
-function visual(id) {
+/* Caption under each scene, kept at a readable size outside the scaled drawing. */
+const NOTES = {
+  player: 'VID01 at 14:20. The box is the detector’s real output, an experimental prediction.',
+  search: '“Cut” searches the scissors. Chat questions go to Llama 3.3 70B, which can hand them to Genie.',
+  index: 'Real VID01 rows from the surgeon labels. The scan is the search’s WHERE clause.',
+  model: 'Lit labels are reliable on unseen surgeries, shown with their F1 score.',
+  features: 'ResNet-50 stages, by channel count. The 768 bars are illustrative values.',
+  video: 'Real VID01 frames, one per second. Labels and time line are the surgeons’ annotations.',
+};
+
+function scene(id) {
   switch (id) {
-    case 'player': return `<div class="v-player">
-        <div class="win"><div class="win-bar"><i></i><i></i><i></i><span>surg+f</span></div>
-          <div class="win-video"><span class="bbox"><b>Experimental box</b></span></div>
+    case 'player': {
+      const [x1, y1, x2, y2] = BOX.xyxy;
+      return `<div class="sc sc-player" style="--bx:${pct(x1)};--by:${pct(y1)};--bw:${pct(x2 - x1)};--bh:${pct(y2 - y1)}">
+        <div class="win"><div class="win-bar"><i></i><i></i><i></i><span>surg+f, VID01</span></div>
+          <div class="win-video">${frame(BOX.t, 854, 480)}
+            <span class="anchors"></span><span class="scanline"></span>
+            ${CANDS.map(([x, y, w, h], i) => `<span class="cand" style="--i:${i};--x0:${x}%;--y0:${y}%;--w0:${w}%;--h0:${h}%"></span>`).join('')}
+            <span class="lock"><i></i><i></i><i></i><i></i><b>${BOX.label} ${BOX.score}</b></span>
+          </div>
           <div class="win-scrub"><span class="fill"></span><span class="knob"></span></div>
-          <div class="win-meta"><span class="t">14:20</span><span>Cystic duct cut, VID01</span></div></div></div>`;
-    case 'search': return `<div class="v-search"><div class="plane">
-        <div class="node n-q"><span>Your question</span></div>
-        <div class="node n-api">${slab('', 'FastAPI')}</div>
-        <div class="node n-sql">${slab('', 'SQL')}</div>
-        <div class="node n-genie">${slab('', 'Genie')}</div>
-        <svg class="wires" viewBox="0 0 600 360" preserveAspectRatio="none" aria-hidden="true"><path d="M90 180H300"/><path d="M300 180L510 80"/><path d="M300 180L510 280"/></svg>
-        <span class="pkt p1"></span><span class="pkt p2"></span><span class="pkt p3"></span><span class="pkt p4"></span>
-      </div><div class="answer">860–877 s</div></div>`;
-    case 'index': return `<div class="v-index"><div class="iso">
-        ${clipRows.map(([c, s, e, l], k) => `<div class="row" style="--k:${k}">${slab('', `<span>${c}</span><span>${s}</span><span>${e}</span><span>${l}</span>`)}</div>`).join('')}
-        <div class="base">${slab('', '')}</div></div><code class="tbl">workspace.default.surgf_clips</code></div>`;
-    case 'model': return `<div class="v-model"><div class="rig">
-        <div class="layer l-in"><b>Input</b><div class="grid">${'<i></i>'.repeat(60)}</div><small>5 s × 768 features</small></div>
-        <div class="layer l-hid"><b>Hidden</b><div class="dots">${'<i></i>'.repeat(32)}</div></div>
-        <div class="layer l-out"><b>29 labels</b><div class="outs">${OUT.map(o => `<i class="${RELIABLE.has(o) ? 'hot' : ''}">${o}</i>`).join('')}</div></div>
+          <div class="win-meta"><span class="t">14:20</span><span>Experimental prediction, not ground truth</span></div>
+        </div></div>`;
+    }
+    case 'search': return `<div class="sc sc-search">
+        <div class="ask"><span class="ask-icon" aria-hidden="true"></span><span class="ask-text" data-type="When is the cystic duct cut?"></span><span class="caret"></span></div>
+        <div class="plane">
+          <svg class="wires" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="w-hot" d="M14 50H50L86 22"/><path class="w-cold" d="M50 50L86 80"/></svg>
+          <div class="node n-app">${slab('', 'App')}</div>
+          <div class="node n-api">${slab('', 'FastAPI')}</div>
+          <div class="node n-sql">${slab('', 'SQL')}</div>
+          <div class="node n-genie">${slab('', 'Genie')}</div>
+          <span class="pkt go"></span><span class="pkt back"></span>
+        </div>
+        <code class="route">GET /search?q=scissors</code>
+        <pre class="query"><code>SELECT case_id, start_sec, end_sec
+FROM surgf_clips
+WHERE lower(label) = 'scissors'</code></pre>
+        <div class="hit"><b>VID01, 860–877 s</b><span>scissors, surgeon label</span></div>
+      </div>`;
+    case 'index': return `<div class="sc sc-index"><div class="iso">
+        ${ROWS.map(([c, s, e, l], k) => `<div class="row${l === 'scissors' ? ' is-hit' : ''}" style="--k:${k}">${slab('', `<span>${c}</span><span>${s}</span><span>${e}</span><span>${l}</span>`)}</div>`).join('')}
+        <div class="beam"></div>
+        <div class="base">${slab('', '')}</div></div>
+        <code class="tbl">workspace.default.surgf_clips</code>
+      </div>`;
+    case 'model': return `<div class="sc sc-model"><div class="rig">
+        <div class="mplane l-in"><b>Input</b>${['−2 s', '−1 s', '0 s', '+1 s', '+2 s'].map((t, r) => `<div class="row-in" style="--r:${r}"><span>${t}</span><span class="cells">${'<i></i>'.repeat(16)}</span></div>`).join('')}<small>5 seconds × 768 features</small></div>
+        <div class="mplane l-hid"><b>Hidden</b><div class="dots">${Array.from({length: 24}, (_, i) => `<i style="--j:${i}"></i>`).join('')}</div></div>
+        <div class="mplane l-out"><b>29 labels at once</b><div class="outs">${OUT.map(o => RELIABLE[o] ? `<i class="hot">${o}<em>${RELIABLE[o]}</em></i>` : `<i>${o}</i>`).join('')}</div></div>
+        ${Array.from({length: 7}, (_, i) => `<span class="spark" style="--i:${i};--y:${22 + (i * 37) % 52}%"></span>`).join('')}
       </div></div>`;
-    case 'features': return `<div class="v-features"><div class="lane">
-        <div class="frame"><span>1 frame</span></div>
-        <div class="enc-wrap"><div class="enc">${slab()}</div><span class="enc-label">SurgVLP<small>ResNet-50, frozen</small></span></div>
-        <div class="vec">${bars.map((h, i) => `<i style="--h:${(.2 + h * .8).toFixed(2)};--j:${i}"></i>`).join('')}</div>
-      </div><p class="v-cap">Illustration of one 768-number feature vector, 32 values shown.</p></div>`;
-    case 'video': return `<div class="v-video"><div class="deck">
-        ${VIDEO_SECONDS.map(([t, tools], i) => `<div class="fr${tools.includes('scissors') ? ' is-cut' : ''}" style="--i:${i}"><span>${t}</span><span class="tags">${tools.map(x => `<em>${x}</em>`).join('')}</span></div>`).join('')}
-      </div><p class="v-cap">VID01, 14:15 to 14:24, one frame per second. Labels are the surgeons’ annotations.</p></div>`;
+    case 'features': return `<div class="sc sc-features">
+        <div class="in-frame">${frame(BOX.t)}<span>VID01, 14:20</span></div>
+        <div class="tower">${[['256', 150], ['512', 116], ['1024', 86], ['2048', 60]].map(([c, w], i) => `<div class="stage" style="--i:${i};--sw:${w}px">${slab()}<span>${c}</span></div>`).join('')}</div>
+        <div class="proj"><span>2048 → 768</span></div>
+        <div class="vec">${bars.map((h, i) => `<i style="--h:${(.18 + h * .82).toFixed(2)};--j:${i}"></i>`).join('')}</div>
+      </div>`;
+    case 'video': return `<div class="sc sc-video">
+        <div class="arc">${SECONDS.map(({t, label, tools}, i) => `<div class="fr${tools.includes('scissors') ? ' is-cut' : ''}" style="--i:${i}">${frame(t, 192, 108)}<span class="ts">${label}</span><span class="tags">${tools.map(x => `<em>${x}</em>`).join('')}</span></div>`).join('')}</div>
+        <div class="tl"><div class="tl-plane">
+          ${Object.entries(TRACKS).map(([name, segs]) => `<div class="lane${name === 'scissors' ? ' is-cut' : ''}"><span>${name}</span><span class="track">${segs.map(([s, e]) => `<i style="left:${pct(s / VID01_LEN)};width:${pct(Math.max(2, e - s) / VID01_LEN)}"></i>`).join('')}</span></div>`).join('')}
+          <span class="here" style="left:calc(100px + (100% - 132px) * ${(856 / VID01_LEN).toFixed(4)})"></span>
+        </div></div>
+      </div>`;
     default: return '';
   }
 }
 
 export function architectureSection() {
-  return `<section class="dig" id="architecture" aria-labelledby="dig-heading">
-    <div class="dig-intro">
-      <div class="dig-sticky">
-        <div class="dig-copy"><h2 id="dig-heading">Dig into the stack.</h2><p>Surg+F is six layers, from the player you use down to the surgery video underneath. Scroll to pull them apart.</p></div>
-        <div class="dig-stage" aria-hidden="true">
-          <div class="block">${LAYERS.map((l, i) => slab(`s${i}`)).join('')}</div>
+  return `<section class="dig" id="architecture" aria-labelledby="dig-heading" style="--e:0;--nav:0;--depth:0">
+    <div class="dig-pin">
+      <div class="dig-copy dig-intro-copy" data-copy="-1"><h2 id="dig-heading">Dig into the stack.</h2><p>Surg+F is six layers, from the player you use down to the surgery video underneath. Scroll to dig through them, or pick a layer.</p></div>
+      <div class="dig-map">
+        <div class="dig-stage" aria-hidden="true"><div class="block">${LAYERS.map((l, i) => slab(`s${i}`)).join('')}</div></div>
+        <ol class="dig-labels" aria-label="Layers">${LAYERS.map((l, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${l.name}</button></li>`).join('')}</ol>
+      </div>
+      ${LAYERS.map((l, i) => `<div class="layer" id="layer-${l.id}" data-layer="${i}" style="--p:0;--s:1">
+        <div class="dig-copy layer-copy">
+          <h3 id="layer-${l.id}-title">${l.name}</h3>
+          <p>${l.body}</p>
+          <div class="lv-stack"><span>Built with</span><ul>${l.stack.map(([t, h]) => `<li>${link(h, t)}</li>`).join('')}</ul></div>
+          ${l.sources.length ? `<div class="lv-sources"><span>Sources</span><ul>${l.sources.map(([t, h]) => `<li>${link(h, t)}</li>`).join('')}</ul></div>` : ''}
         </div>
-        <ol class="dig-labels">${LAYERS.map((l, i) => `<li data-label="${i}"><span>${i + 1}</span>${l.name}</li>`).join('')}</ol>
-      </div>
+        <div class="pit" style="--k:${i}" role="img" aria-label="${l.name} animation"><canvas class="sky-dither" data-horizon=".72" data-ceiling="4.6" aria-hidden="true"></canvas><div class="fit">${scene(l.id)}</div><p class="v-cap">${NOTES[l.id]}</p></div>
+      </div>`).join('')}
     </div>
-    ${LAYERS.map((l, i) => `<article class="lv" id="layer-${l.id}" aria-labelledby="layer-${l.id}-title" style="--p:0">
-      <div class="lv-copy">
-        ${depth(i)}
-        <h3 id="layer-${l.id}-title">${l.name}</h3>
-        <p>${l.body}</p>
-        <div class="lv-stack"><span>Built with</span><ul>${l.stack.map(([t, h]) => `<li>${link(h, t)}</li>`).join('')}</ul></div>
-        ${l.sources.length ? `<div class="lv-sources"><span>Sources</span><ul>${l.sources.map(([t, h]) => `<li>${link(h, t)}</li>`).join('')}</ul></div>` : ''}
-      </div>
-      <div class="lv-stage"><canvas class="sky-dither" data-horizon=".7" data-ceiling="4.6" aria-hidden="true"></canvas>${visual(l.id)}</div>
-    </article>`).join('')}
   </section>`;
 }
 
-/* Scroll wiring: --e (0–1) explodes the block while the intro is pinned; each layer scene gets --p
-   (0–1) as it passes through the viewport. Called from mountHome's rAF-throttled update. */
+/* ---- Scroll mapping. The pinned stage travels INTRO viewport heights for the block, then PER for each
+   layer. Inside a layer, the scene plays over the first PLAY of its span; the rest digs to the next. ---- */
+const INTRO = 1.6, PER = 1.3, PLAY = .72, DIG = .2;
+const TRAVEL = INTRO + LAYERS.length * PER;
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const smooth = v => v * v * (3 - 2 * v);
+
+function digState(t) {
+  const e = smooth(clamp((t - .05) / 1.05));
+  if (t < INTRO) return {e, d: -1 + smooth(clamp((t - (INTRO - .5)) / .5)), k: -1, u: 0};
+  const L = (t - INTRO) / PER, k = Math.min(LAYERS.length - 1, Math.floor(L)), u = clamp(L - k);
+  const d = k + (k < LAYERS.length - 1 ? smooth(clamp((u - (1 - DIG)) / DIG)) : 0);
+  return {e, d, k, u};
+}
+
+const isStacked = () => window.matchMedia?.('(max-width: 860px)').matches;
+
+/* Scroll position that shows layer i with its scene mostly played. */
+export function digScrollTop(root, i) {
+  const section = root.querySelector('.dig');
+  if (!section) return null;
+  if (isStacked()) {
+    const el = section.querySelector(`[data-layer="${i}"]`);
+    return el.getBoundingClientRect().top + window.scrollY - 72;
+  }
+  const span = Math.max(1, section.offsetHeight - window.innerHeight);
+  const t = INTRO + (i + (PLAY * .82)) * PER;
+  return section.getBoundingClientRect().top + window.scrollY + t / TRAVEL * span;
+}
+
+let typed = '';
 export function updateArchitecture(root, reduced) {
   const section = root.querySelector('.dig');
   if (!section) return;
   const vh = window.innerHeight;
-  const intro = section.querySelector('.dig-intro');
-  const span = Math.max(1, intro.offsetHeight - vh);
-  const raw = reduced ? 1 : Math.max(0, Math.min(1, -intro.getBoundingClientRect().top / span));
-  const e = Math.max(0, Math.min(1, (raw - .08) / .7));
-  intro.style.setProperty('--e', (e * e * (3 - 2 * e)).toFixed(4));
-  /* Labels track their slab's top face on screen. */
-  const stage = section.querySelector('.dig-sticky').getBoundingClientRect();
-  section.querySelectorAll('.block .slab').forEach((s, i) => {
-    const r = s.querySelector('.top').getBoundingClientRect();
-    const label = section.querySelector(`[data-label="${i}"]`);
-    if (label) { label.style.top = `${(r.top + r.height / 2 - stage.top).toFixed(1)}px`; label.style.left = `${(r.right - stage.left + 24).toFixed(1)}px`; }
+  const layers = [...section.querySelectorAll('.layer')];
+  const slabs = [...section.querySelectorAll('.block .slab')];
+  const rect = section.getBoundingClientRect();
+  if (rect.bottom < -vh || rect.top > vh * 2) return;
+  paintFrames(section);
+  let e, d, ps, nav;
+  if (isStacked()) {
+    /* Phones: no pin. The block opens as it passes; each scene plays as it crosses the viewport. */
+    const map = section.querySelector('.dig-map').getBoundingClientRect();
+    e = reduced ? 1 : smooth(clamp((vh * .85 - map.top) / (vh * .6)));
+    d = -1; nav = 0;
+    ps = layers.map(l => { const r = l.querySelector('.pit').getBoundingClientRect(); return reduced ? 1 : clamp((vh * .92 - r.top) / (r.height * 1.1)); });
+    layers.forEach(l => { l.style.setProperty('--s', 0); l.style.setProperty('--sa', 0); });
+  } else {
+    const t = clamp(-rect.top / Math.max(1, section.offsetHeight - vh)) * TRAVEL;
+    let k, u;
+    ({e, d, k, u} = digState(t));
+    if (reduced) { e = 1; d = Math.round(d); }
+    nav = clamp(d + 1);
+    ps = layers.map((_, j) => reduced || j < k ? 1 : j > k ? 0 : clamp(u / PLAY));
+    layers.forEach((l, j) => { l.style.setProperty('--s', (j - d).toFixed(4)); l.style.setProperty('--sa', Math.abs(j - d).toFixed(4)); });
+    const introCopy = section.querySelector('.dig-intro-copy');
+    introCopy.style.setProperty('--s', (-1 - d).toFixed(4));
+    introCopy.style.setProperty('--sa', Math.abs(-1 - d).toFixed(4));
+  }
+  section.style.setProperty('--e', e.toFixed(4));
+  section.style.setProperty('--nav', nav.toFixed(4));
+  section.classList.toggle('is-open', e > .35);
+  section.classList.toggle('is-dug', d > -.5);
+  section.style.setProperty('--depth', clamp(d / (LAYERS.length - 1)).toFixed(4));
+  layers.forEach((l, j) => {
+    l.style.setProperty('--p', ps[j].toFixed(4));
+    const s = Math.abs(j - d);
+    l.classList.toggle('is-on', s < .5);
   });
-  section.querySelectorAll('.lv').forEach(scene => {
-    const r = scene.getBoundingClientRect();
-    const p = reduced ? 1 : Math.max(0, Math.min(1, (vh * .9 - r.top) / (r.height * .9)));
-    scene.style.setProperty('--p', p.toFixed(4));
+  /* The active slab slides out of the map toward the scene; the rest dim. */
+  const active = d < -.5 ? -1 : Math.round(d);
+  slabs.forEach((s, i) => {
+    const out = nav * clamp(1 - Math.abs(i - d));
+    s.style.setProperty('--out', out.toFixed(4));
+    s.style.setProperty('--dim', (nav * (1 - out)).toFixed(4));
   });
+  section.querySelectorAll('[data-dig]').forEach((b, i) => { b.classList.toggle('is-on', i === active); b.toggleAttribute('aria-current', i === active); });
+  /* Labels track their slab's top face; all share one column right of the widest slab. */
+  if (!isStacked()) {
+    const map = section.querySelector('.dig-map').getBoundingClientRect();
+    const tops = slabs.map(s => s.querySelector('.top').getBoundingClientRect());
+    const right = Math.max(...tops.map(r => r.right)) - map.left + 22;
+    section.querySelectorAll('.dig-labels li').forEach((li, i) => {
+      const r = tops[i];
+      li.style.top = `${(r.top + r.height / 2 - map.top).toFixed(1)}px`;
+      li.style.left = `${right.toFixed(1)}px`;
+    });
+  }
+  /* Scenes are drawn in a fixed 560×540 box and scaled to fit their card. */
+  layers.forEach(l => {
+    const pit = l.querySelector('.pit');
+    const fit = Math.min(1.25, pit.clientWidth / 560, pit.clientHeight / 540) || 1;
+    pit.style.setProperty('--fit', fit.toFixed(4));
+  });
+  /* Search scene: the question types itself as the scene plays. */
+  const ask = section.querySelector('.ask-text');
+  if (ask) {
+    const full = ask.dataset.type, p = ps[1];
+    const next = full.slice(0, Math.round(full.length * clamp(p / .22)));
+    if (next !== typed || ask.textContent !== next) { typed = next; ask.textContent = next; }
+  }
+}
+
+/* ---- Real VID01 frames. One hidden video seeks to each needed second and copies the picture into a
+   cache, then every canvas for that second is painted. Without the video, cards keep their fallback. ---- */
+const frameCache = new Map();
+let framesStarted = false;
+function paintFrames(section) {
+  const canvases = [...section.querySelectorAll('canvas.vf')];
+  const draw = () => canvases.forEach(c => {
+    const src = frameCache.get(c.dataset.t);
+    if (!src || c.dataset.painted) return;
+    try { c.getContext('2d')?.drawImage(src, 0, 0, c.width, c.height); c.dataset.painted = '1'; c.classList.add('is-painted'); } catch { /* no canvas */ }
+  });
+  draw();
+  if (framesStarted) return;
+  framesStarted = true;
+  const url = videoForCase('VID01');
+  if (!url || typeof document === 'undefined' || /jsdom/i.test(navigator.userAgent)) return;
+  const times = [...new Set(canvases.map(c => c.dataset.t))].map(Number).sort((a, b) => a - b);
+  const video = document.createElement('video');
+  video.muted = true; video.preload = 'auto'; video.playsInline = true;
+  const next = () => {
+    const t = times.shift();
+    if (t === undefined) { video.removeAttribute('src'); video.load(); return; }
+    video.addEventListener('seeked', () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = 854; c.height = 480;
+        c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+        frameCache.set(String(t), c);
+      } catch { /* decode failed: keep the fallback */ }
+      document.querySelectorAll('.dig canvas.vf').forEach(el => { if (el.dataset.t === String(t) && !el.dataset.painted) { const src = frameCache.get(String(t)); if (src) { el.getContext('2d')?.drawImage(src, 0, 0, el.width, el.height); el.dataset.painted = '1'; el.classList.add('is-painted'); } } });
+      next();
+    }, {once: true});
+    video.currentTime = t;
+  };
+  video.addEventListener('loadedmetadata', next, {once: true});
+  video.addEventListener('error', () => { framesStarted = true; }, {once: true});
+  video.src = url;
 }
