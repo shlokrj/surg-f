@@ -1,5 +1,9 @@
 # Team handoffs
 
+## VID01 review is now one click away (2026-11-15, Mihir)
+
+`ml/localization/review_session.py` automates the VID01 accuracy review except for drawing boxes: `start` (local Label Studio, project, 60 frames), `status`, `finish` (export → convert → score v2 and v3 on identical frames → `review-results.json`) and `stop`. The session is running on Mihir's machine at http://127.0.0.1:8080 (0/60 frames submitted). Whoever reviews: box every visible cystic duct and gallbladder, press Submit on every frame including empty ones, then run `finish` with your name. Steps: [runner README](../ml/localization/README.md#automated-review-session-recommended). No labels were generated automatically; a model labeling its own test set would measure agreement, not accuracy.
+
 ## For Aadhitya: Databricks usage and a stale line in architecture.md (2026-11-15, Mihir)
 
 - **Your token ran spatial jobs.** The repo-root `.env` token (yours) was used for serverless CPU jobs on 2026-11-14/15, all with hard timeouts and none still running: 1 probe (`1071673074744713`), 4 VID01 export chunks of about 13–14 min each (`957519259085718`, `919130938453288`, `489212282518799`, `899023133189397`), and 7 runs that were cancelled within a few minutes because of a launcher argument bug. Data was uploaded to `/Volumes/workspace/default/surgf/localization/` (anatomy images, the v3 checkpoint, exports). Launcher: `scripts/run_databricks_anatomy.py`. If you would rather spatial jobs use a different token or budget, say so here.

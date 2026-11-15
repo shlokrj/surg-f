@@ -152,7 +152,22 @@ python ml/localization/evaluate_anatomy_coco.py /path/to/review-VID01/reference.
 
 The seeded sample (default seed 11) takes half its frames from intervals where `shared/triplets.annotation.csv` names `cystic_duct` as a target and half spread across the video, so it tests both misses and false alarms. `reference.json` is COCO with only cystic duct and gallbladder, **blank by default** (`--prefill SCORE` copies model boxes in but can anchor the reviewer), and every image starts with `is_det_keyframe: false`; the evaluator refuses until a reviewer has boxed every visible instance in a frame and set it to `true`. `predictions.json` holds raw, unthresholded predictions so AP is defined. The manifest binds video, checkpoint (architecture, epoch, data signature), triplets file and frame PNG hashes. The same seed and count reproduce the same frames, so a later checkpoint can be scored on identical frames. Pack built 2026-11-14 from the v2 checkpoint: `~/madhacks2026/localization/review-VID01-v1/`, 60 frames (32 inside cystic duct intervals). It contains Cholec80 imagery (CC BY-NC-SA 4.0); keep it out of Git. **Not yet reviewed; no VID01 accuracy exists yet.**
 
-### Labeling the pack with Label Studio (local, nothing leaves the machine)
+### Automated review session (recommended)
+
+`review_session.py` automates everything except drawing boxes. It needs Label Studio in its own environment (`python3 -m venv ~/madhacks2026/label-studio-env && ~/madhacks2026/label-studio-env/bin/pip install label-studio`; tested with 1.23.2).
+
+```sh
+python ml/localization/review_session.py start ~/madhacks2026/localization/review-VID01-v1    # prints URL, login, password
+python ml/localization/review_session.py status ~/madhacks2026/localization/review-VID01-v1   # submitted / 60
+python ml/localization/review_session.py finish ~/madhacks2026/localization/review-VID01-v1 --reviewer "Name" \
+  --predictions v2=~/madhacks2026/localization/review-VID01-v1/predictions.json \
+  --predictions v3=~/madhacks2026/localization/review-VID01-v3preds/predictions.json
+python ml/localization/review_session.py stop ~/madhacks2026/localization/review-VID01-v1
+```
+
+`start` launches Label Studio on 127.0.0.1 with its data in the pack's `label-studio/` folder, creates a local account and API token (saved in `label-studio/session.json`, mode 600), enables that token for the local organization (Label Studio 1.23 disables legacy tokens by default), creates the project with the two labels and instructions, and uploads every pack frame that is not already a task, so rerunning it is safe. `finish` exports COCO through the API, converts it with `import_review_labels.py` into `reference.reviewed.json`, scores every `--predictions` file on exactly the reviewed frames, and writes `review-results.json` (records reviewer, frames, boxes per class, whether boxes were prefilled, and per-model AP/AP50/recall). Pipeline test on a scratch copy of the pack: 60 tasks created, one test box and one empty submission exported, converted (percent → pixel boxes correct) and scored for v2 and v3. The real VID01 session was started on 2026-11-15 at http://127.0.0.1:8080 (0/60 submitted).
+
+### Labeling the pack with Label Studio by hand (local, nothing leaves the machine)
 
 1. `pip install label-studio` in any separate environment, then `label-studio start` and open http://localhost:8080 (create a local account).
 2. **Create project** → *Labeling Setup* → *Custom template* → paste `label-studio-config.xml` from the pack folder (two labels: Cystic duct, Gallbladder).
