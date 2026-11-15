@@ -47,6 +47,13 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
   2. Instruments and 3. Actions and targets: dark panels tilt into place. Bars and their numbers follow the scroll, reliable labels glow, and a dashed line marks the 0.34 average.
   4. From seconds to clips: per-second calls scan in, gaps of 2 s or less fill, lone seconds drop, and clips form above surgeon labels. The pattern is an illustration; the rule is the real one.
   5. v1 to v2: v1 stays as a dashed outline while v2 grows past it (12 → 42 surgeries, 0.30 → 0.34, scissors 0.07 → 0.29).
+- **Built on Databricks** (`src/databricks.js`, `src/databricks.css`; for the Databricks track): the same pinned stage, with the Databricks mark (simple-icons path, #FF3621) in the heading and as the accent for the chapter rail and highlights. Five chapters, all from the team logs (agent-kit/DATABRICKS.md, PROGRESS.md, ml/PROGRESS.md):
+  1. Unity Catalog Volume: the surgf Volume's folders open and the features folder fills with 50 bundles.
+  2. Serverless jobs: extract, train, sweep, final test and export flip from Queued to Succeeded as a run travels down.
+  3. MLflow: v1 (3ce73d86, 0.304) against v2 (9d18d20a, 0.343), then the six-setting smoothing sweep with 2:2 selected.
+  4. Lakeflow and Delta: clips_all.csv rides through stage and MERGE into surgf_clips (11,264 labels, 1,658 predictions), and a rerun inserts 0.
+  5. SQL, Genie and Llama: three logged chat checks with their route and time, and the Genie space's view, table and function.
+  Numbers follow the scroll (`data-scrub`). Class names are scoped per section; check for collisions with `architecture.css` before adding generic names.
 - **Pinned nav:** the logo and "Open a case" stay fixed at the top of the homepage. Over the hero they are white; past it they switch to a frosted logo and a teal button. The footer no longer repeats them.
 
 ## Case page
