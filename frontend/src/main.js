@@ -26,6 +26,7 @@ let boxesEnabled = false;
 
 const app = document.querySelector('#app');
 const state = {
+  minimized: new Set(), // ids of case-page panels the user collapsed; kept across redraws
   page: 'home', caseId: 'VID01', title: 'VID01 · Cholecystectomy', videoUrl: videoForCase('VID01'),
   localVideo: false, localUrl: null, filterOn: true, videoError: false, pendingSeek: null, duration: 0,
   draft: '', loading: false, messages: [],
@@ -322,7 +323,35 @@ document.addEventListener('fullscreenchange', syncFullscreenButton);
 
 // --- events ------------------------------------------------------------------
 
+// Minimize buttons on the case-page panels (timeline, 3D model, quiz, charts). Toggling
+// only flips a class, so the video and the 3D viewer keep running underneath.
+function wirePanels() {
+  document.querySelectorAll('.dash .panel[id]').forEach(panel => {
+    const head = panel.querySelector('.panel-head');
+    if (!head) return;
+    const title = panel.querySelector('h2')?.textContent ?? 'section';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'panel-min';
+    const sync = () => {
+      const min = state.minimized.has(panel.id);
+      panel.classList.toggle('is-min', min);
+      button.textContent = min ? '+' : '−';
+      button.setAttribute('aria-expanded', String(!min));
+      button.setAttribute('aria-label', `${min ? 'Expand' : 'Minimize'} ${title}`);
+      button.title = min ? 'Expand' : 'Minimize';
+    };
+    button.addEventListener('click', () => {
+      if (!state.minimized.delete(panel.id)) state.minimized.add(panel.id);
+      sync();
+    });
+    head.append(button);
+    sync();
+  });
+}
+
 function wire() {
+  wirePanels();
   const goHome = () => { state.page = 'home'; state.error = ''; render(); };
   document.querySelector('#home-link')?.addEventListener('click', goHome);
   document.querySelector('#open-local')?.addEventListener('click', () => document.querySelector('#file-input')?.click());
@@ -554,6 +583,7 @@ async function runSearch(raw, { keepOutputs = false } = {}) {
     if (state.caseId === caseId) {
       state.loading = false;
       state.messages.push({ role: 'doc', text: answer });
+      if (target) state.minimized.delete(target.slice(1)); // a new result opens its panel
       render();
       // Bring the new section into view; the chat stays docked on the right.
       if (target) scrollToSection(target);

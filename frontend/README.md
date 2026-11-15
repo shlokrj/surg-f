@@ -54,6 +54,8 @@ The four buttons are multi-select controls: clicking an unselected button insert
 
 ## 3D model (`/model`)
 
+Every case-page panel (Timeline, 3D model, Quiz, Charts) has a minimize button at the right of its header. Minimized panels stay minimized across redraws; a new chat result for a panel opens it again. Minimizing only hides the panel body, so the 3D viewer keeps its state (Aadhitya, 2026-11-14, checked in headless Chrome).
+
 `/model`, or a chat message such as "show the clipping step in 3D", opens a 3D view of the gallbladder and the organs around it below the video. Drag rotates, scrolling over the model zooms, and selecting an organ (on the model or in the "See through" list) fades it; selecting it again brings it back, and **Reset view** restores the camera and every faded organ (Aadhitya, 2026-11-14: checked in headless Chrome by clicking the liver twice, fading the gallbladder from the list, then Reset view). A faded organ in front catches the click, so use the list to reach organs behind it. The view follows the video: when playback enters a new step, the model changes to that step's picture. The arrows in the Timeline panel and in the model panel move the video, and so the model, one step back or forward.
 
 - **It is an illustration.** The anatomy is a generic adult body from BodyParts3D, not the patient in the video. The cystic artery, ports, clips, cut, triangle, attachment marker and retrieval bag are schematic drawings. The step pictures are **not yet medically reviewed**; the panel says so until `REVIEWED` in `src/model/steps.js` is set to `true`.
