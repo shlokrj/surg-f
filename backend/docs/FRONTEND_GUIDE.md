@@ -26,7 +26,9 @@ Then open:
 | `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_TOKEN` | repo-root `.env` (git-ignored) | When all three are set, the backend uses live Databricks data |
 | `SURGF_CORS_ORIGINS` | backend environment | Optional comma-separated origins. Default `http://localhost:5173,http://127.0.0.1:5173` |
 | `SURGF_WARMUP` | backend environment | `0` turns off the startup query that wakes the SQL warehouse |
-| `DATABRICKS_GENIE_SPACE_ID` | repo-root `.env` | Optional. Turns on Genie for free-form questions in `/interpret` |
+| `DATABRICKS_GENIE_SPACE_ID` | repo-root `.env` | Optional. Turns on Genie for free-form questions in `/interpret` and `/chat` |
+| `DATABRICKS_CHAT_ENDPOINT` | repo-root `.env` | Optional. Name of the Databricks serving endpoint that routes `/chat` messages, for example `databricks-meta-llama-3-3-70b-instruct`. Without it, keyword rules route |
+| `SURGF_CHAT_TIMEOUT_SEC` | backend environment | Optional. Time limit for the chat model before the rules take over. Default `8` |
 
 **Which mode am I in?** `GET /health` returns `{"status":"ok","mode":"databricks"}` or `{"status":"ok","mode":"fixture"}`.
 
@@ -35,6 +37,7 @@ Then open:
 | `/search` | Only `q=clipper` matches, and it returns the test row `fixture_01` (no video) | All dataset and model rows |
 | `/cases/{id}/timeline` | Real saved data for `VID01` and `VID02` from [fixtures/](../fixtures/) | Live data for every case |
 | `/quiz` | Identical in both modes | Identical in both modes |
+| `/chat` | Keyword rules; search and timeline use the saved `VID01` and `VID02` data | Chat model if configured, otherwise keyword rules; live data |
 
 If you use the frontend's own fixture mode (`VITE_USE_FIXTURE=true`), import [fixtures/timeline.VID01.json](../fixtures/timeline.VID01.json) and [fixtures/quiz.seed-1.json](../fixtures/quiz.seed-1.json). They match the response shapes exactly.
 
@@ -48,6 +51,7 @@ If you use the frontend's own fixture mode (`VITE_USE_FIXTURE=true`), import [fi
 | Quiz card (`/quiz`) | `GET /quiz` (optionally `?seed=`) | `questions[]`, `reviewed` |
 | Quiz "Watch examples" button | `GET /search?q=<search_q>` | Hide the button when `search_q` is `null` |
 | Search bar submit (any typed text or slash command) | `GET /interpret?q=<text>&case_id=<id>` | `actions[]`, `message`, `suggestions` |
+| Chat box (one call that returns the reply and the data) | `POST /chat` | `reply`, `action`, `data`. See section 7 |
 | "Live data / demo data" badge | `GET /health` | `mode` |
 
 **Changes from the current frontend:**
@@ -361,6 +365,235 @@ Response (real, 2 of 7 steps shown):
 type Step = { order: number; key: string; label: string; start_sec: number; end_sec: number };
 type StepsResponse = { case_id: string; source: string; steps: Step[] };
 ```
+
+## 7. Chat (one message in, one thing to render out)
+
+**Purpose:** the chat box. Send what the user typed; the backend decides which feature to run and returns the reply text plus the data to render. This is the simplest way to wire the chat: one call, no follow-up request.
+
+**Request:** `POST /chat` with a JSON body.
+
+| Field | Required | Meaning |
+|---|---|---|
+| `message` | yes | What the user typed, 1 to 300 characters |
+| `case_id` | no | The open video. Default `VID01`. A message that names a video ("video 2") overrides it |
+
+```powershell
+curl.exe -s -X POST "http://localhost:8000/chat" -H "Content-Type: application/json" -d '{\"message\": \"show me when the clipper is used\", \"case_id\": \"VID01\"}'
+```
+
+```js
+const response = await fetch(`${backendUrl}/chat`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ message, case_id: caseId }),
+});
+const { reply, action, data, router } = await response.json();
+```
+
+**Response type:** `SearchResponse`, `QuizResponse` and `TimelineResponse` are the types from sections 1 to 3.
+
+```ts
+type ChatResponse =
+  | { reply: string; action: "search";   data: SearchResponse;   router: Router }
+  | { reply: string; action: "quiz";     data: QuizResponse;     router: Router }
+  | { reply: string; action: "timeline"; data: TimelineResponse; router: Router }
+  | { reply: string; action: "answer";   data: AnswerTable | null; router: "genie" }
+  | { reply: string; action: "none";     data: null;             router: Router };
+
+type Router = "llm" | "rules" | "genie";   // which path decided; for debugging and the demo
+type AnswerTable = { columns: string[]; rows: unknown[][]; sql: string | null };
+```
+
+**What to render for each action:** always show `reply` as the assistant's chat message, then:
+
+| `action` | `data` | UI component to render |
+|---|---|---|
+| `search` | Same shape as `GET /search`, already limited to the open video and to annotation rows | The "Matching moments" list. Clicking a result seeks the player to `start_sec`. An empty `results` list is possible; `reply` then says nothing was found |
+| `quiz` | Same as `GET /quiz` | The quiz card |
+| `timeline` | Same as `GET /cases/{case_id}/timeline` | The instrument chart (`summary`) and timeline track (`segments`) |
+| `answer` | A small table from Databricks Genie, or `null` | The reply text, plus an optional plain table of `columns` and `rows`. Only appears once a Genie space exists |
+| `none` | `null` | Only the reply. Used for medical-advice and off-topic messages, an unknown video, and a data outage |
+
+**How the backend decides (you don't need to handle any of this):**
+1. A Databricks chat model picks one of the features, with a hard 8-second limit. It never writes the reply and never answers from its own knowledge; the backend writes every reply.
+2. Keyword rules answer when the model is not configured, is slow, fails, or picks something invalid. In fixture mode (no credentials) the rules always answer.
+3. `/chat` returns 200 for every valid request, including when routing or the data store fails. The only error is 422 for a blank or too-long `message` or a bad `case_id`.
+
+**Latency (measured 2026-11-14, live Databricks):** 0.6 to 1.7 s through the model, 0.3 to 1.0 s through the rules. The first data request after the SQL warehouse has slept can take much longer, so keep a loading state.
+
+**Real example per action** (also in [fixtures/chat.examples.json](../fixtures/chat.examples.json), with full lists):
+
+`search`: `{"message": "show me when the clipper is used"}`
+```json
+{
+  "reply": "Found 5 moments with the clipper in VID01. The first starts at 11:14.",
+  "action": "search",
+  "data": {
+    "results": [
+      {
+        "case_id": "VID01",
+        "start_sec": 674.0,
+        "end_sec": 690.0,
+        "label": "clipper",
+        "source": "annotation"
+      },
+      {
+        "case_id": "VID01",
+        "start_sec": 698.0,
+        "end_sec": 747.0,
+        "label": "clipper",
+        "source": "annotation"
+      },
+      {
+        "case_id": "VID01",
+        "start_sec": 749.0,
+        "end_sec": 753.0,
+        "label": "clipper",
+        "source": "annotation"
+      },
+      {
+        "case_id": "VID01",
+        "start_sec": 754.0,
+        "end_sec": 758.0,
+        "label": "clipper",
+        "source": "annotation"
+      },
+      {
+        "case_id": "VID01",
+        "start_sec": 815.0,
+        "end_sec": 844.0,
+        "label": "clipper",
+        "source": "annotation"
+      }
+    ]
+  },
+  "router": "rules"
+}
+```
+
+`quiz`: `{"message": "quiz me"}` (first of 5 questions shown)
+```json
+{
+  "reply": "Here is a five-question quiz on the operation.",
+  "action": "quiz",
+  "data": {
+    "seed": 1861098177,
+    "reviewed": false,
+    "questions": [
+      {
+        "id": "after-cleaning",
+        "type": "next_step",
+        "prompt": "What comes after this step: cleaning and coagulating the operative field?",
+        "options": [
+          {
+            "id": "a",
+            "text": "Remove the gallbladder through a port site"
+          },
+          {
+            "id": "b",
+            "text": "Cut the cystic duct and cystic artery between the clips"
+          },
+          {
+            "id": "c",
+            "text": "Place the ports and insufflate the abdomen"
+          },
+          {
+            "id": "d",
+            "text": "Dissect Calot's triangle to expose the cystic duct and cystic artery"
+          }
+        ],
+        "correct_option_id": "a",
+        "explanation": "In the standard phase order, the bagged gallbladder is then removed from the abdomen through one of the port sites. The order of the last steps can vary in practice.",
+        "search_q": null
+      }
+    ]
+  },
+  "router": "rules"
+}
+```
+
+`timeline`: `{"message": "chart the tools used in this case"}` (first 2 of 70 segments and 2 of 6 summary rows shown)
+```json
+{
+  "reply": "Here is the instrument timeline for VID01: 70 segments across 6 instruments.",
+  "action": "timeline",
+  "data": {
+    "case_id": "VID01",
+    "source": "annotation",
+    "segments": [
+      {
+        "label": "grasper",
+        "start_sec": 0.0,
+        "end_sec": 5.0
+      },
+      {
+        "label": "grasper",
+        "start_sec": 10.0,
+        "end_sec": 108.0
+      }
+    ],
+    "summary": [
+      {
+        "label": "grasper",
+        "count": 42,
+        "total_sec": 1141.0,
+        "first_sec": 0.0
+      },
+      {
+        "label": "hook",
+        "count": 9,
+        "total_sec": 788.0,
+        "first_sec": 20.0
+      }
+    ]
+  },
+  "router": "rules"
+}
+```
+
+`none`: `{"message": "what dose of antibiotics should I give"}`
+```json
+{
+  "reply": "I'm a study aid for this operation, so I can't give medical advice or answer that. Try an instrument name such as \"clipper\", ask for a quiz, or ask for a chart of the tools used.",
+  "action": "none",
+  "data": null,
+  "router": "rules"
+}
+```
+
+`answer`: `{"message": "which instrument was used the longest?"}`. **Illustrative, not a real response:** this action needs a Surg+F Genie space, which doesn't exist yet.
+```json
+{
+  "reply": "The grasper was used the longest in VID01.",
+  "action": "answer",
+  "data": {
+    "columns": [
+      "label",
+      "count",
+      "total_sec",
+      "first_sec"
+    ],
+    "rows": [
+      [
+        "grasper",
+        42,
+        1141.0,
+        0.0
+      ]
+    ],
+    "sql": "SELECT label, count(*) AS count, sum(end_sec - start_sec) AS total_sec, min(start_sec) AS first_sec FROM workspace.default.surgf_clips WHERE case_id = 'VID01' AND source = 'annotation' GROUP BY label ORDER BY total_sec DESC LIMIT 1"
+  },
+  "router": "genie"
+}
+```
+
+**Things to know:**
+- **The timeline returns the six instruments only.** The live clip table also holds verb and target labels such as `grasp` and `gallbladder`. Since 2026-11-14 `GET /cases/{case_id}/timeline` and the chat `timeline` action leave them out, so live VID01 matches the saved fixture again (70 segments, 6 labels). Your existing filter to the six labels in `main.js` is harmless and can stay.
+- **Which endpoint for which input (decided 2026-11-14, Rohan):** use `POST /chat` for free-typed chat messages. Keep `GET /interpret` for the search bar's slash commands, because it can return several actions at once (`/quiz /chart`) and `/chat` returns exactly one. `/interpret` is not being retired.
+- **Chat search is narrower than `GET /search`:** it returns annotation rows for the open video only, which is what the matching-moments list shows. Call `GET /search` directly when you need every video or model predictions.
+- **`/interpret` is unchanged.** `/chat` reuses its keyword rules. `/interpret` returns a list of actions and the requests to make; `/chat` returns one action with the data attached.
+- **Slash commands work as messages:** `/quiz`, `/chart`, `/timestamp clipper`. `/model` returns `none` with a "no 3D model yet" reply.
+- **CORS** now allows `POST` from the default dev origins.
 
 ## Planned stage 3: video localization
 

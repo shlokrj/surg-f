@@ -1,6 +1,6 @@
 # Genie plan: from typed text to an action
 
-Status: **backend built and tested; Genie space not created yet (2026-11-14, Rohan).** The backend works without Genie today and starts using it as soon as a space ID is in `.env`.
+Status: **backend built and tested; a Genie space exists but points at the wrong table (2026-11-14, Rohan).** The space `Surgical Workspace Clip Manager` (ID `01f1e08655eb17c1931c9dbb6cd4750b`) is attached to `workspace.surgf.clips`. Asked when the clipper was first used in VID01, it answered that there is no recorded use. Replace its table with `workspace.default.surgf_clips` and apply steps 4 to 6 below before adding the ID to `.env`. Because the table now also holds verb and target labels, add this rule to the instructions: for questions about instruments in general, filter `label IN ('grasper','hook','irrigator','bipolar','clipper','scissors')`, and match labels with exact equality. The backend works without Genie today and starts using it as soon as a space ID is in `.env`.
 
 ## What Genie is, and what it is not
 
@@ -144,5 +144,7 @@ The grasper total comes from the verified VID01 timeline (`backend/fixtures/time
 - **No follow-ups yet:** each question starts a new Genie conversation. Follow-up questions would need the frontend to send back `genie.conversation_id`.
 
 ## Not chosen
+
+**Update 2026-11-14:** a language-model router now exists as `POST /chat` (frontend guide, section 7). It uses a Databricks Foundation Model endpoint to pick a feature, and offers Genie to the model as an `ask_data` tool only when `DATABRICKS_GENIE_SPACE_ID` is set. `/interpret` is unchanged. The original note follows.
 
 If the team wants a language model to classify intent for every message, Databricks Foundation Model APIs fit that job better than Genie. The rules cover the four commands today, so that isn't needed for the demo.

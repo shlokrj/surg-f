@@ -9,6 +9,7 @@ FastAPI service for the Surg+F study tool. **Frontend developers: start with [do
 | `GET /cases/{case_id}/steps` | Timeline: the steps (surgical phases) of one video, from saved Cholec80 phase annotations. Same with or without Databricks |
 | `GET /quiz?seed=<int>` | Quiz: 5 general questions about the operation |
 | `GET /interpret?q=<text>&case_id=<id>` | Turns typed text into actions (`timestamp`, `chart`, `quiz`, `model`). Rules first; Databricks Genie for free-form questions when `DATABRICKS_GENIE_SPACE_ID` is set. See [docs/GENIE_PLAN.md](docs/GENIE_PLAN.md) |
+| `POST /chat` | Chat box: body `{message, case_id}`; returns `{reply, action, data, router}`. A Databricks chat model picks the feature when `DATABRICKS_CHAT_ENDPOINT` is set; keyword rules answer otherwise or on any failure. See [docs/FRONTEND_GUIDE.md](docs/FRONTEND_GUIDE.md), section 7 |
 | `GET /health` | Shows `mode`: `databricks` or `fixture` |
 
 The timeline and quiz endpoints are proposals until the team agrees: see [docs/CONTRACT_PROPOSAL.md](docs/CONTRACT_PROPOSAL.md).
@@ -29,11 +30,13 @@ Interactive docs: http://localhost:8000/docs.
 - **Fixture:** used when any credential is missing. Search serves `shared/search.fixture.json` (only `clipper` matches). Timelines serve `fixtures/timeline.VID01.json` and `fixtures/timeline.VID02.json`, which are real data saved from Databricks.
 - **Quiz:** identical in both modes. It reads [data/quiz_bank.json](data/quiz_bank.json), which is **not yet medically reviewed** (`"reviewed": false`).
 
+- **Chat:** works in both modes. Set `DATABRICKS_CHAT_ENDPOINT` in the repo-root `.env` to the name of a Databricks serving endpoint that supports tool calling (verified 2026-11-14: `databricks-meta-llama-3-3-70b-instruct`) to route with a model. `SURGF_CHAT_TIMEOUT_SEC` (default 8) is the hard limit before the keyword rules take over. `/chat` never returns a 500 for a routing failure.
+
 **Errors:** every error is `{"detail": "..."}`. They are 404 for an unknown case, 422 for invalid input (FastAPI validation errors return a list), and 503 for a Databricks failure.
 
 **CORS** allows `http://localhost:5173` and `http://127.0.0.1:5173`. Override it with a comma-separated `SURGF_CORS_ORIGINS`.
 
-**Logging:** each request writes one JSON log line to stdout with `request_id` (taken from `X-Request-ID` or generated, and echoed back), `status`, `duration_ms`, and `mode`.
+**Logging:** each request writes one JSON log line to stdout with `request_id` (taken from `X-Request-ID` or generated, and echoed back), `status`, `duration_ms`, and `mode`. `/chat` lines also carry `router` and `action`, plus `error` (for example `llm: timeout`) when a router fell back. The token is never logged.
 
 ## Check
 
