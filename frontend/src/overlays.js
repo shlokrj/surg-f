@@ -36,6 +36,13 @@ export function contentRect(w,h,sw,sh) {
   const scale = Math.min(w/sw,h/sh);
   return { width: sw*scale, height: sh*scale, left: (w-sw*scale)/2, top: (h-sh*scale)/2 };
 }
+// Dense artifacts would flood the jump list, so list detection frames at least 10 s apart.
+export function jumpFrames(frames, limit = 200, spacing = 10) {
+  if (frames.length <= limit) return frames;
+  const listed = []; let last = -Infinity;
+  for (const f of frames) if (f.detections.length && f.timestamp_sec - last >= spacing) { listed.push(f); last = f.timestamp_sec; }
+  return listed;
+}
 const cache = new Map();
 async function load(caseId, assetId) {
   const key = `${caseId}:${assetId}`;
@@ -92,7 +99,12 @@ export function mountOverlays({ video, host, controls, caseId, assetId, enabled 
     if (data || pending || !assetId || disposed) return; pending = true; error = '';
     try {
       const loaded = await load(caseId,assetId); if (disposed) return; data = loaded;
-      for (const f of data.frames) { const o = document.createElement('option'); o.value = String(f.timestamp_sec); o.textContent = `${Math.floor(f.timestamp_sec/60)}:${String(Math.floor(f.timestamp_sec%60)).padStart(2,'0')} · frame ${f.frame_id}`; select.append(o); }
+      for (const f of jumpFrames(data.frames)) { const o = document.createElement('option'); o.value = String(f.timestamp_sec); o.textContent = `${Math.floor(f.timestamp_sec/60)}:${String(Math.floor(f.timestamp_sec%60)).padStart(2,'0')} · frame ${f.frame_id}`; select.append(o); }
+      for (const input of controls.querySelectorAll('[data-category]')) {
+        if (data.frames.some(f => f.detections.some(d => d.category === input.dataset.category))) continue;
+        input.checked = false; input.disabled = true; categories.delete(input.dataset.category);
+        input.parentElement.append(' (none in this file)');
+      }
     } catch (reason) { if (!disposed) error = reason.message; }
     finally { pending = false; }
     draw();

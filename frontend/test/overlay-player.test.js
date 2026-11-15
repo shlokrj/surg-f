@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {JSDOM} from 'jsdom';
 import {mountOverlays} from '../src/overlays.js';
-const artifact = JSON.parse(fs.readFileSync(new URL('../public/overlays/VID01.json',import.meta.url)));
+const artifact = JSON.parse(fs.readFileSync(new URL('./fixtures/VID01-grounding-dino.json',import.meta.url)));
 const settle = () => new Promise(resolve => setImmediate(resolve));
 function setup(assetId = artifact.video_asset_id) {
  const dom = new JSDOM('<div id="host"><video></video></div><div id="controls"></div>');
@@ -31,6 +31,18 @@ test('player loads real artifact, filters scores/categories, seeks and clears st
  const select=p.controls.querySelector('select');select.value='688.96';p.event(select,'change');assert.equal(p.video.currentTime,688.96);p.event(p.video,'seeked');assert.equal(p.boxes().length,2);
  p.toggle.checked=false;p.event(p.toggle,'change');assert.equal(p.boxes().length,0);
  p.dispose();assert.equal(p.host.querySelector('.spatial-layer'),null);
+});
+test('categories absent from the file are disabled, not shown as empty filters',async()=>{
+ const anatomyOnly=structuredClone(artifact);anatomyOnly.video_asset_id='anatomy-only-test-asset';
+ for (const f of anatomyOnly.frames) f.detections=f.detections.filter(d=>d.category==='anatomy');
+ globalThis.fetch=async()=>({ok:true,text:async()=>JSON.stringify(anatomyOnly)});
+ const p=setup('anatomy-only-test-asset');p.enable();await settle();
+ const instruments=p.controls.querySelector('[data-category="instrument"]');
+ assert.equal(instruments.disabled,true);assert.equal(instruments.checked,false);
+ assert.match(instruments.parentElement.textContent,/none in this file/);
+ assert.equal(p.controls.querySelector('[data-category="anatomy"]').disabled,false);
+ assert.equal(p.boxes().length,1);
+ p.dispose();
 });
 test('local uploads disable boxes and mismatched dimensions clear detections',async()=>{
  const local=setup(null);assert.equal(local.toggle.disabled,true);assert.match(local.controls.textContent,/unavailable/);local.dispose();
