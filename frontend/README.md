@@ -1,6 +1,8 @@
 # Surg+F frontend
 
-The dashboard lets users switch between the hosted VID01 and VID02 cases. It keeps the video and timeline on the left and the chat, recent questions, and search field on the right. Search output appears below both as one or more stacked sections. It is scoped to the open case, using the shared `GET /search?q=...` clip contract.
+Current ownership: **Shlok — general frontend design; Aadhi — spatial data/models/evaluation/export; Mihir — spatial player/browser verification.** The integrated frontend is on `main` through `6d468dd`; new spatial work stays on `feat/spatial-overlays` until explicitly published. Shlok and Mihir coordinate shared frontend markup/styles. See [tasks and handoffs](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). Earlier owner notes below are historical.
+
+The dashboard lets users switch between hosted VID01 and VID02. The video, operation steps, and requested outputs are on the left; Lil Doc and the chat input are on the right. Earlier user questions remain clickable in the conversation and rerun their query. Search results are scoped to the open case using the shared `GET /search?q=...` clip contract.
 
 ## Run
 
@@ -16,7 +18,7 @@ Put playable assets at `frontend/public/videos/VID01.mp4`, etc., or set `VITE_VI
 
 ## Videos and data (from Data/ML, 2026-11-14)
 
-**Get the videos.** VID01 and VID02 are hosted as 25 fps 854x480 H.264 MP4s with faststart in the Databricks Volume `/Volumes/workspace/default/surgf/videos/`. From the repo root, with the team `.env` (get it privately from Aadhitya), run:
+**Get the videos.** VID01 and VID02 are hosted as 25 fps H.264 MP4s with faststart in the Databricks Volume `/Volumes/workspace/default/surgf/videos/`. From the repo root, with the team `.env` (get it privately from Aadhitya), run:
 
 ```sh
 pip install databricks-sdk python-dotenv
@@ -33,13 +35,13 @@ This writes `frontend/public/videos/VID01.mp4` (692,593,324 bytes, 28:53) and `V
 
 ## Content filter
 
-The home preview and dashboard player start with a modest 9 px blur over the surgical footage for demos. The dashboard overlay covers the full video image. A separate control bar sits above it, keeping play/pause, seek and time, volume, speed, and fullscreen clear and usable. The fullscreen control toggles back to the normal player size and updates its label when fullscreen is exited with Escape. The **Content filter: On/Off** button is beside “Available demo case” on the home page and above the dashboard video. Turning it off reveals the footage; selecting a new video turns it back on. The filter is a visual overlay and does not change video data or analysis.
+The home preview and dashboard player start with a modest 10 px blur over the surgical footage for demos. The dashboard overlay covers the full video image. A separate control bar sits above it, keeping play/pause, seek and time, volume, speed, and fullscreen clear and usable. The fullscreen control toggles back to the normal player size and updates its label when fullscreen is exited with Escape. The **Content filter: On/Off** button is beside “Demo case” on the home page and above the dashboard video. Turning it off reveals the footage; selecting a new video turns it back on. The filter is a visual overlay and does not change video data or analysis.
 
 ## Search features
 
 - `/timestamp clipper` calls `GET /search?q=clipper`, keeps only hits for the open case, and lets users seek to a result. Annotation and prediction sources are labeled separately.
-- The event timeline calls `GET /cases/{case_id}/timeline` and shows annotation intervals in separate instrument rows.
-- `/chart` shows instrument, verb, and target charts. `/chart instruments` shows only instruments; “what was grasper doing?” selects grasper verbs. Instrument counts come from the timeline `summary`. Verb and target interval counts come from Data/ML's verified `shared/triplets.annotation.csv` for VID01/VID02 (269 instrument–verb–target intervals, copied from `ml-dev` commit `c0ae595`). `null_verb` and `null_target` mean the tool is visible without an annotated action and display as idle. Intervals can overlap, so counts are not a partition of video time. Prompt routing is local keyword logic; `/interpret` from the backend can supply the high-level action, but no Surg+F Genie space is verified. Rohan's proposed video-scoped action endpoint is still pending; the CSV keeps these two demo cases working meanwhile.
+- The timeline calls `GET /cases/{case_id}/steps` for operation steps. Timestamp searches add matching instrument moments to that timeline. The instrument chart calls `GET /cases/{case_id}/timeline` for counts.
+- `/chart` shows instrument, verb, and target charts. `/chart instruments` shows only instruments; “what was grasper doing?” selects grasper verbs. Instrument counts come from the timeline `summary`, restricted to the six supported instrument labels so verbs and anatomy labels in a mixed response do not appear as tools. Verb and target interval counts come from Data/ML's verified `shared/triplets.annotation.csv` for VID01/VID02 (269 instrument–verb–target intervals, copied from `ml-dev` commit `c0ae595`). `null_verb` and `null_target` mean the tool is visible without an annotated action and display as idle. Intervals can overlap, so counts are not a partition of video time. Prompt routing is local keyword logic; `/interpret` from the backend can supply the high-level action, but no Surg+F Genie space is verified. Rohan's proposed video-scoped action endpoint is still pending; the CSV keeps these two demo cases working meanwhile.
 - `/quiz` calls `GET /quiz` for five operation-wide study questions. If the backend is unreachable or has no quiz route, it displays the saved seed-1 quiz with a sample-data notice. It is **not specific to the open video**. Answers are graded locally, explanations appear after selection, and “Watch examples” searches the given `search_q` in the open case. Unreviewed content is labeled.
 - `/model` explains that a linked 3D model is unavailable.
 
@@ -49,16 +51,18 @@ The four buttons are multi-select controls: clicking an unselected button insert
 
 Run `npm run build`. With the Databricks backend and VID01 video available, enter `/timestamp clipper`; the first known interval is `674–690` seconds. Select it and confirm the video seeks to 11:14. `/chart` and `/quiz` require the six instrument-label queries to succeed. A cold warehouse may take time to respond.
 
+On the home page, **View clipper event at 11:14** opens VID01 at 674 seconds. The requested seek stays pending while the dashboard reloads for timeline and search results, and the player clears it only after the `seeked` event. Check that the time control reads 11:14 after the clip loads.
+
 With the backend returning real rows and `VID01.mp4` available, search `clipper`. Click the first result and confirm `VID01` seeks to `11:14` (674 s). Repeat with VID02: the first `clipper` annotation is `VID02 1255–1268` (20:55). Also check a result from a case without video (for example any `clipper` hit outside VID01/VID02), a `prediction` result, and a no-match query. Run `npm run build` for a production build.
 
 ## Experimental bounding boxes
 
-Stage 3 is owned by Shlok on `feat/spatial-overlays`; stage 2 continues independently on `ml-dev`. Enable **Bounding boxes**, then choose a **Sampled frame**. Instrument/anatomy filters hide categories; the minimum-score slider hides lower-scoring detections (scores are not calibrated probabilities). Use **Fullscreen with overlays** to expand the video container; the native video fullscreen button may omit HTML overlays.
+Spatial data/model/export is owned by Aadhi and player integration/browser verification by Mihir on `feat/spatial-overlays`; Shlok owns the overall frontend design. Enable **Bounding boxes**, then choose a **Sampled frame**. Instrument/anatomy filters hide categories; the minimum-score slider hides lower-scoring detections (scores are not calibrated probabilities). Use **Fullscreen with overlays** to expand the video container; the native video fullscreen button may omit HTML overlays.
 
 The included VID01 artifact contains real Grounding DINO predictions for frames 674, 680 and 689 only. Boxes expire after 120 ms, so ordinary playback mostly has no boxes. Some predictions are visibly incorrect (including scissors/irrigator in the clipper example); scores are not calibrated accuracy. This is a pipeline prototype, not reviewed annotations or continuous tracking. VID02 has no artifact, and local uploads are deliberately unsupported.
 
-The player checks case, versioned asset ID, dimensions, timestamps, labels and coordinates before rendering. Keep the existing 854×480 25 fps VID01 asset; replacement videos need a new asset ID and timebase verification. See [runner setup and provenance](../ml/localization/README.md).
+The player checks case, versioned asset ID, dimensions, timestamps, labels and coordinates before rendering. The current VID01 asset and overlay artifact disagree on decoded dimensions; verify their pixel mapping before changing either. Replacement videos need a new asset ID and timebase verification. See [runner setup and provenance](../ml/localization/README.md).
 
-Checks: `node --test frontend/test/overlays.test.js` from the repository root and `npm --prefix frontend run build`. Browser verification is outstanding because the browser access host was unavailable. Manual acceptance: enable boxes, choose all three frames, filter categories, play/seek beyond 120 ms and confirm clearing, resize/fullscreen, then switch to VID02 and a local upload and confirm unavailable states.
+Checks: `node --test frontend/test/*.test.js` from the repository root and `npm --prefix frontend run build`. After merging the new steps and Lil Doc layout, local Chrome against the running backend confirmed that the home clipper link seeks to 11:14, five clipper moments appear on seven steps, `/chart instruments` shows only six tools, prior question bubbles rerun their query, and the custom controls, content filter, and overlay toggle appear together. The current VID01 MP4 reports `videoWidth=854` and `videoHeight=484` in Chrome, while `public/overlays/VID01.json` declares `854×480`; the overlay's dimension guard correctly hides all boxes. Aadhi should verify the source-to-video pixel mapping and hand Mihir the correct transform or asset binding for browser box acceptance. Then enable boxes, choose all three frames, filter categories, play/seek beyond 120 ms and confirm clearing, resize/fullscreen, and switch to VID02 and a local upload to confirm unavailable states.
 
 Player DOM integration checks: `node --test frontend/test/*.test.js`. These simulate media state and do not replace real-browser playback/fullscreen verification.

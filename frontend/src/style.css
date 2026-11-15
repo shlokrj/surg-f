@@ -116,6 +116,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
 .preview-details { padding: 24px; background: var(--brand-tint); color: var(--ink); border-radius: 0 0 var(--radius) var(--radius); }
 .preview-details h2 { font-size: var(--text-xl); letter-spacing: -.02em; }
 .preview-details p { margin: 8px 0 20px; color: var(--ink-muted); max-width: 60ch; }
+.preview-event-link { display: flex; justify-content: space-between; gap: 12px; width: 100%; margin-top: 14px; padding: 8px 0; border: 0; background: transparent; color: var(--brand); text-align: left; font-weight: 600; }
+.preview-event-link:hover { text-decoration: underline; }
 
 /* --- footage filter and player --------------------------------------------- */
 .surgical-media { position: relative; }
@@ -215,7 +217,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
 .msg p { padding: 9px 12px; font-size: var(--text-md); line-height: 1.5; overflow-wrap: anywhere; }
 .msg-doc p { max-width: calc(100% - 44px); border: 1px solid var(--line); border-radius: 12px 12px 12px 3px; background: var(--surface); }
 .msg-user { justify-content: flex-end; }
-.msg-user p { max-width: 85%; border-radius: 12px 12px 3px 12px; background: var(--brand); color: #fff; }
+.msg-user button { max-width: 85%; padding: 9px 12px; border: 0; border-radius: 12px 12px 3px 12px; background: var(--brand); color: #fff; text-align: left; font-size: var(--text-md); line-height: 1.5; overflow-wrap: anywhere; }
+.msg-user button:hover { background: var(--brand-strong); }
 .typing { display: inline-flex; gap: 4px; padding: 5px 2px; }
 .typing i { width: 6px; height: 6px; border-radius: 50%; background: #8aa59a; animation: typing 1s infinite ease-in-out; }
 .typing i:nth-child(2) { animation-delay: .15s; }

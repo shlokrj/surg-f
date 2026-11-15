@@ -1,6 +1,37 @@
 # Stage 3: localized video overlays
 
-Status: **experimental offline runner and player integration implemented; browser acceptance pending; started 2026-11-14 at Shlok's explicit request; owner Shlok, branch `feat/spatial-overlays`**. Aadhitya independently continues stage 2 on `ml-dev`. This adds spatial localization to the current search and tool-presence pipeline. The initial deliverable is an offline detector-to-player prototype. Verification results will be recorded as work completes; this is not a production-accuracy claim.
+Status: **Aadhi (Aadhitya) and Mihir own spatial implementation; Shlok has moved to frontend design.** This supersedes all earlier three-person spatial assignments. The earlier integrated frontend was published to `main` through `6d468dd` at Mihir's request. New spatial work stays on `feat/spatial-overlays` until explicitly published; that main publication does not include unfinished feature-branch work.
+
+## Current assignments and shared workflow
+
+| Owner | Current scope | Owned paths / handoff |
+|---|---|---|
+| Shlok | General frontend design: layout, typography, styling, responsiveness and overall presentation | General frontend components and styles. Coordinate shared `main.js`, `style.css` and player markup with Mihir before either edits the same sections. Preserve working search, quiz, chart, steps and overlay behavior. No remaining spatial ML assignment. |
+| Aadhi (Aadhitya) | Spatial data **and** model/evaluation: downloads, splits, annotation audit, full anatomy trainer, metrics, checkpoints, inference and overlay exports | `ml/localization/` Python, requirements, data/run manifests and related tests. Takes over Shlok's unfinished model tasks. Hand Mihir schema-valid artifacts, asset/timebase binding, class map and measured quality limitations. |
+| Mihir | Spatial player integration, overlay interaction and real-browser acceptance | `frontend/src/overlays.js`, overlay tests and `frontend/public/overlays/`; minimal integration changes in shared frontend files coordinated with Shlok. General frontend redesign now belongs to Shlok. |
+
+Aadhi and Mihir fetch/pull and push spatial work on `feat/spatial-overlays`, using separate checkouts. Preserve concurrent commits; reconcile rejected pushes without force-push or resets. Commit completed changes with lowercase Conventional Commit subjects and no co-author trailers. Shlok's design work is a separate lane; no new design branch is created by this documentation update.
+
+### Aadhi — data, models and evaluation
+
+1. Pull the latest spatial branch before starting. It includes Shlok's scoped COCO evaluator in `78dfef0`, beyond the earlier main snapshot. Retain that work; do not rebuild it from scratch. The real two-image smoke result is pipeline evidence only, not representative accuracy.
+2. Complete resume-safe train/validation image downloads, hashes, decode checks, overlap protection and readiness manifests. Keep images/checkpoints outside Git. Audit genuine six-instrument box supervision; Endoscapes generic tool labels cannot provide instrument subtypes.
+3. Continue the configurable full anatomy trainer from the smoke runner: seed/device/epochs, checkpoint and resume handling, provenance, finite-loss checks and validation-only selection. Use scoped anatomy metrics and a declared baseline; do not tune on final-test surgeries.
+4. Export predictions with exact model/class mapping, source dimensions, asset IDs, timestamps and hashes. Validate against `artifact.py` and give Mihir a reproducible sample. Document unsupported classes and failure cases honestly.
+5. Preserve existing stage-2 jobs; do not restart jobs accidentally while taking over spatial training. Update the tracker with actual commands, results, blockers and next handoff.
+
+### Mihir — spatial player and acceptance
+
+1. Verify actual VID01 playback with the current sparse artifact; record browser/version and screenshots or a short recording. DOM media simulations do not establish playback/fullscreen correctness.
+2. Finish toggle/category/score controls, loading/error/retry, keyboard interaction, seek/play expiry, resize/letterboxing/fullscreen, missing data and local-upload behavior. Ensure case switches and late responses never leak stale boxes.
+3. Coordinate incoming artifacts with Aadhi and presentation/shared files with Shlok. Keep predictions experimental until evidence supports otherwise; never substitute fabricated boxes for real results.
+4. Add regression coverage, run the build, and hand off browser evidence and remaining defects. Avoid broad layout/style redesign in Shlok's lane.
+
+## Handoffs and final completion gate
+
+Aadhi → Mihir: validated artifact, model/class map, data and checkpoint provenance, measured validation quality, matching video asset and example timestamps. Mihir → Shlok: integration points, visual constraints and browser acceptance evidence. Shlok → Mihir: design changes affecting player layout or shared DOM/CSS. Agree schema changes in `agent-kit/CONTRACTS.md` before changing producers/consumers.
+
+Before spatial publication: reproducible training/evaluation, explicitly supported classes, correct video alignment, passing automated/browser checks and documented limitations. Tracking, action recognition, six validated instrument types and all anatomy targets are not implied by the two-class smoke. Main publication still requires Shlok's request; the current request publishes ownership docs only.
 
 ## Intended experience
 
@@ -54,19 +85,8 @@ Spatial detections remain separate from `surgf_clips`. The static artifact v1 is
 
 Source boxes in xywh or model coordinates must be converted, undoing crop/resize transforms. Do not use classifier center-crop coordinates as full-frame boxes. Map into the rendered video content rectangle, accounting for letterboxing. The dataset's 1 fps frame ID is not a 25 fps encoded-video frame index. Carry timestamps and verified per-asset offsets explicitly. Define a maximum overlay age; do not hold a one-second sampled box over arbitrary motion or invent intermediate tracking results.
 
-## Later implementation sequence and handoffs
-
-These are proposed responsibilities consistent with existing lanes, not work started now:
-
-1. **Shlok / ML:** audit taxonomy and localization labels, define held-out evaluation, benchmark the detector on a small representative subset; only then decide on fine-tuning or tracking.
-2. **Aadhitya / ML-data:** obtain/version available spatial annotations, verify image/video coordinates and timebase, package overlay artifacts with provenance. Review tracking/mask export if added.
-3. **Rohan / backend-data:** agree with ML on separate storage and a bounded frame/time-range response; validate coordinates, taxonomy, source and asset version. No route/table name is committed by this document.
-4. **Mihir / frontend:** build toggle and overlay layer against an explicitly labeled fixture after the schema is agreed; verify pause, seek, resizing, fullscreen and stale-data removal.
-
-Acceptance later: per-class box AP/recall and localization IoU on held-out surgeries, separate tool versus anatomy results, false-positive review, missing-label accounting, latency and memory measurements. If masks/tracks are used, add mask quality and identity/jitter checks. If verbs/triplets are shown, evaluate those predictions and instance associations separately. Record demo-only or unsupported categories honestly; do not derive correctness from attractive overlays.
-
 ## Current stopping point
 
-Shlok is implementing a versioned artifact, bounded offline Grounding DINO inference and a player toggle. No stage-2 jobs or shared clip-table schemas are changed. Initial labels use the six existing instrument names plus explicitly experimental anatomy prompts; no seventh instrument or verb detector is invented. Separate masks/tracking and action relations remain deferred.
+The versioned artifact, bounded Grounding DINO runner, player prototype and supervised anatomy smoke test are implemented. The assignments above cover the remaining full training, data and browser work. No stage-2 jobs or shared clip-table schemas are changed. Initial labels use the six existing instrument names plus explicitly experimental anatomy prompts; no seventh instrument or verb detector is invented. Separate masks/tracking and action relations remain deferred.
 
 Anatomy preparation now uses Endoscapes cystic duct/gallbladder boxes with published cross-dataset overlap checks; see [localization setup](localization/README.md). This is label preparation, not a trained or validated replacement model.
