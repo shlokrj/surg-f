@@ -1,8 +1,14 @@
 # Team handoffs
 
+## Mihir spatial implementation status (2026-11-14)
+
+On `feat/spatial-overlays`, Mihir verified the real VID01 MP4 in visible Chrome 157: sampled frame 674 at 673.96 s showed four experimental boxes, the layer stayed inside the resized player, and fullscreen kept the boxes over the displayed image. Local screenshots `/tmp/surgf-overlay-check.png` and `/tmp/surgf-overlay-fullscreen.png` were inspected and are not committed. Frontend tests/build and the localization suite pass. Existing Grounding DINO labels are visibly inaccurate; this confirms player geometry, **not** detector accuracy.
+
+Mihir added `fetch_anatomy_data.py` (resume-safe, hashed and decoded Endoscapes train/validation keyframes), `train_anatomy.py` (two-class configurable/resumable training with validation-only COCO AP selection), and `export_anatomy_video.py` (exact-frame video binding, model/video hashes and schema validation). The local download under `~/madhacks2026/localization/anatomy-data/` was **in progress** at the last check: 995 of 1,621 prepared images. A 2-train/2-validation-image CPU run completed two epochs with finite losses; AP is undefined on that tiny slice. A one-frame VID01 export from that bounded checkpoint validated but stays outside the frontend. Next: finish the full download, run representative training/validation, review predictions, then consider replacing the demo artifact. Six-instrument subtype boxes still require verified official or reviewed annotations; the current CholecT50 mirror has zero boxes and Endoscapes uses generic `tool`.
+
 ## Mihir takes over remaining spatial work (2026-11-14)
 
-Aadhi has moved to other work. Mihir now owns spatial data, model training, evaluation, inference/export, player integration and browser acceptance on `feat/spatial-overlays`. Shlok continues to own general frontend design. Earlier Aadhi-to-Mihir requests below are historical; Mihir will resolve their remaining work. The VID01 dimension mismatch was traced to the MP4's 854×480 decoded frame and 253:255 pixel aspect ratio: Chrome 157 exposes 854×484 display dimensions. The artifact now binds both sizes, and automated player and producer checks pass. A headless Chrome check with the real MP4 displayed four boxes at sampled frame 674 and kept the layer within a resized player; `/tmp/surgf-overlay-check.png` was inspected locally. Fullscreen remains unverified because headless Chrome denied the fullscreen request.
+Aadhi has moved to other work. Mihir now owns spatial data, model training, evaluation, inference/export, player integration and browser acceptance on `feat/spatial-overlays`. Shlok continues to own general frontend design. Earlier Aadhi-to-Mihir requests below are historical. The VID01 dimension mismatch was traced to the MP4's 854×480 decoded frame and 253:255 pixel aspect ratio: Chrome 157 exposes 854×484 display dimensions. The artifact binds both sizes, and automated player and producer checks pass. The newer status above records the subsequent visible Chrome fullscreen check.
 
 ## Spatial player browser check and retry handoff (2026-11-14)
 

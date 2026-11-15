@@ -97,4 +97,29 @@ python ml/localization/evaluate_anatomy_coco.py /path/to/val/annotations.json /p
 
 Input references must explicitly contain only class 1 cystic duct and class 2 gallbladder, with reviewed detection-keyframe flags. Predictions use the smoke runner format: image_id, pixel xyxy boxes, integer labels and scores. The evaluator includes every reference image, counts missing prediction images, reports ignored out-of-scope detections, rejects invalid geometry/IDs, and leaves undefined metrics null. Uses pycocotools COCO bbox AP at IoU .50:.05:.95 and AP50, plus per-class recall at maxDets 100; bbox areas are computed from geometry. Do not use this category map with a different model without explicit conversion.
 
-`anatomy_smoke_metrics.json` records AP 0.05047 / AP50 0.09926 on only two validation images (three reference boxes) after three optimizer steps. This verifies metrics plumbing, not generalizable performance. No threshold/model was selected from this tiny result. Full training and representative validation remain unfinished; coordinate complete inputs with Aadhi.
+`anatomy_smoke_metrics.json` records AP 0.05047 / AP50 0.09926 on only two validation images (three reference boxes) after three optimizer steps. This verifies metrics plumbing, not generalizable performance. No threshold/model was selected from this tiny result. Full training and representative validation remain unfinished; Mihir owns the remaining inputs and experiments.
+
+## Full anatomy data, training and export (Mihir)
+
+Use a separate Python environment with `requirements.txt` (including `remotezip==0.12.6` and pycocotools); keep images, checkpoints and derived video frames outside Git. `fetch_anatomy_data.py` reads the official train/validation detection-keyframe annotations through bounded remote ZIP reads, applies the existing surgery-overlap guard, checks each downloaded image's decode size and SHA-256, and resumes without replacing verified files. Its manifest binds source annotations, prepared labels, the CholecT50 split and every image hash. `--limit 2` is a bounded pipeline check only; rerun without it to finish all images. The local full download under `~/madhacks2026/localization/anatomy-data/` was still running at the last check (995 of 1,621 images); do not treat it as complete until `ready_data` accepts the full set.
+
+```sh
+python ml/localization/fetch_anatomy_data.py --output-dir /path/to/anatomy-data --limit 2
+python ml/localization/fetch_anatomy_data.py --output-dir /path/to/anatomy-data
+python ml/localization/train_anatomy.py --data-dir /path/to/anatomy-data \
+  --output-dir /path/to/new/anatomy-run --epochs 5 --batch-size 2 --device cpu
+```
+
+The trainer refuses missing or changed images, unexpected categories, changed prepared labels and overlapping train/validation surgeries. It loads images lazily, trains the two-class Faster R-CNN MobileNetV3 320 model, checks finite losses and predictions, measures the initial-head validation baseline, and selects `best.pt` by validation COCO AP. `last.pt` and `--resume` retain optimizer and random-generator state; `report.json` includes split/data signature, seed, versions and per-epoch metrics. Use a new output directory for a new run. `--max-train-images` and `--max-val-images` permit bounded pipeline checks; their reports are explicitly marked as such and cannot establish accuracy. A real two-image/two-image run completed one epoch with finite mean loss 1.1615 and undefined AP because that tiny validation slice contains no supported reference object.
+
+After a representative validation run, export sampled-frame predictions to a **new file outside Git** before considering player deployment:
+
+```sh
+python ml/localization/export_anatomy_video.py \
+  --checkpoint /path/to/anatomy-run/best.pt --video frontend/public/videos/VID01.mp4 \
+  --case-id VID01 --video-asset-id VID01-cholec80-25fps-v1 \
+  --frame-ids 674 680 689 --display-width 854 --display-height 484 \
+  --ffmpeg /path/to/ffmpeg --output /path/to/new/VID01-anatomy.json
+```
+
+The exporter decodes the exact frame numbers, normalizes boxes to their source dimensions, binds the video's SHA-256 and model/checkpoint/data signature, records class mapping and frame hashes, and validates the artifact schema. It uses FFmpeg 5+ (`-fps_mode passthrough`). A one-frame export from the bounded model succeeded for VID01 frame 674, but that checkpoint has no defined validation AP and its 15 detections are **not** suitable for replacing the current demo artifact. The model supports only cystic duct and gallbladder anatomy; it does not validate six instrument subtypes or liver. The currently available CholecT50 mirror lacks subtype box annotations, and Endoscapes has only a generic tool box category. Official subtype-box data or independently reviewed labels remain necessary for instrument accuracy claims.

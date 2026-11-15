@@ -1,8 +1,12 @@
 # ML team progress
 
-## Current ownership: Shlok moves to frontend design (2026-11-14)
+## Current spatial assignment and run status (2026-11-14)
 
-Shlok now owns **general frontend design and presentation**, and is no longer assigned spatial ML work. **Aadhi owns spatial data, model training, evaluation, inference and artifact export**, including Shlok's unfinished trainer tasks. **Mihir owns spatial player integration and browser verification**. This supersedes earlier assignment tables and historical ownership notes below.
+Mihir alone owns the remaining spatial data/model/evaluation/export and player work on `feat/spatial-overlays`; Aadhi moved to other work. Shlok owns general frontend design. The prior spatial assignment sections below are historical. Mihir verified VID01 overlays in visible Chrome, including sampled-frame seeking, resize and fullscreen. Full Endoscapes preparation is running locally via `python3 ml/localization/fetch_anatomy_data.py --output-dir ~/madhacks2026/localization/anatomy-data`; at the latest documented check it had verified 995/1,621 prepared images. The resumable trainer and exact-frame exporter exist, and bounded CPU training/export checks passed, but representative validation AP and an accuracy-qualified demo artifact are **not complete**. The current CholecT50 mirror has zero spatial boxes; Endoscapes generic `tool` does not establish six instrument subtype labels. See [localization runner and limits](localization/README.md#full-anatomy-data-training-and-export-mihir) and [current handoff](../agent-kit/HANDOFFS.md#mihir-spatial-implementation-status-2026-11-14).
+
+## Previous spatial ownership (superseded 2026-11-14)
+
+Shlok moved to **general frontend design and presentation**. At that point Aadhi owned spatial data/model/export and Mihir owned player integration. The newer Mihir-only assignment above supersedes this historical note.
 
 Spatial teammates continue on `feat/spatial-overlays`; Aadhi should retain the scoped evaluator already pushed in `78dfef0`. Shlok and Mihir must coordinate shared `frontend/src/main.js`, `style.css` and player markup: Shlok owns overall design, Mihir owns overlay behavior. Do not overwrite each other's edits. Full tasks and handoffs are in [the localization plan](LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow).
 

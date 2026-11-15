@@ -2,6 +2,8 @@
 
 Status: **Mihir owns the remaining spatial implementation alone; Aadhi has moved to other work and Shlok owns general frontend design.** This supersedes earlier spatial assignments. The earlier integrated frontend was published to `main` through `6d468dd` at Mihir's request. New spatial work stays on `feat/spatial-overlays` until explicitly published.
 
+Current checkpoint (2026-11-14): visible Chrome verified VID01 sampled-frame seeking, resize and fullscreen overlay geometry. Resume-safe full Endoscapes preparation, a configurable two-class trainer and an exact-frame exporter are implemented. The local full download was still running at the last check (995/1,621 images); bounded training/export checks are pipeline evidence only. Representative anatomy validation and six-instrument subtype supervision remain open. See [runner instructions](localization/README.md#full-anatomy-data-training-and-export-mihir) and the [handoff](../agent-kit/HANDOFFS.md#mihir-spatial-implementation-status-2026-11-14).
+
 ## Current assignments and shared workflow
 
 | Owner | Current scope | Owned paths / handoff |
