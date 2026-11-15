@@ -57,7 +57,7 @@ test('logo and back-to-top scroll only the window, never the clipped hero layers
  globalThis.requestAnimationFrame=()=>1;globalThis.cancelAnimationFrame=()=>{};
  const root=document.querySelector('.landing');
  assert.equal(root.querySelector('.small-brand').getAttribute('href'),'#top');
- assert.match(root.querySelector('.hero-search').textContent,/When is the clipper used\?/);
+ assert.match(root.querySelector('.hero-search').textContent,/When is the cystic duct clipped\?/);
  const calls=[];window.scrollTo=o=>calls.push(o);
  let intoView=0;window.HTMLElement.prototype.scrollIntoView=()=>intoView++;
  const dispose=mountHome(root);

@@ -94,3 +94,14 @@
   .chart-row { grid-template-columns: 110px 1fr 34px; }
 }
 .overlay-controls { margin-top: 12px; }
+
+/* Content filter: an eye over the footage (home preview and case player). */
+.eye-toggle {
+  position: absolute; z-index: 5; top: 14px; right: 14px; width: 44px; height: 44px; display: grid; place-items: center; padding: 0;
+  border: 1px solid #ffffff4d; border-radius: 12px; background: #0b2b28a6; color: #fff; backdrop-filter: blur(10px);
+  transition: background-color .15s, transform .1s;
+}
+.eye-toggle svg { width: 22px; height: 22px; }
+.eye-toggle:hover { background: #0b2b28d9; }
+.eye-toggle:active { transform: scale(.96); }
+.eye-toggle:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
