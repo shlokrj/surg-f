@@ -32,3 +32,13 @@ test('dense artifacts list detection frames at least ten seconds apart',()=>{
  assert.ok(listed.every(f=>f.detections.length));
  for (let i=1;i<listed.length;i++) assert.ok(listed[i].timestamp_sec-listed[i-1].timestamp_sec>=10);
 });
+test('deployed VID01 artifact is the validated anatomy export with continuous coverage',()=>{
+ const text=fs.readFileSync(new URL('../public/overlays/VID01.json',import.meta.url),'utf8');
+ assert.ok(text.length<2000000);
+ const deployed=validateOverlay(JSON.parse(text),'VID01','VID01-cholec80-25fps-v1');
+ assert.deepEqual([deployed.display_width,deployed.display_height],[854,484]);
+ assert.ok(deployed.frames.every(f=>f.detections.every(d=>d.category==='anatomy')));
+ for (let i=1;i<deployed.frames.length;i++) assert.ok(deployed.frames[i].timestamp_sec-deployed.frames[i-1].timestamp_sec<=deployed.max_age_sec);
+ assert.equal(frameAt(deployed,673.95).frame_id,16848);
+ assert.equal(deployed.provenance.validation_status,'full validation run');
+});
