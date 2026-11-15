@@ -1,0 +1,107 @@
+/* Case page presentation, matched to the homepage: off-white page, rounded product cards with a soft
+   teal shadow, one plus-dithered sky band for the case title, and the shared buttons and toggles.
+   Behavior and player/overlay markup are unchanged (spatial markup is Mihir's). */
+
+.dash { background: var(--page); }
+.dash-main { gap: 24px; padding-top: 28px; }
+
+/* Topbar: frosted, like the homepage nav sitting over content. */
+.topbar { background: #fbfdfcee; backdrop-filter: blur(14px) saturate(110%); }
+.top-action { min-height: 40px; padding: 0 16px; border-radius: var(--radius); font-weight: 600; }
+
+/* Case band: the one dithered surface on this page. */
+.case-head {
+  position: relative; isolation: isolate; overflow: clip; margin-bottom: 16px; padding: 26px 26px 26px 30px; min-height: 112px;
+  border-radius: 20px; background: linear-gradient(#1a8a81, #52b4a8); color: #fff;
+}
+.case-head h1 { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; font-size: clamp(28px, 2.6vw, 38px); font-weight: 400; letter-spacing: -.035em; line-height: 1.1; text-shadow: 0 2px 22px #0a4a4433; }
+.case-head .case-id { font-size: .55em; font-weight: 600; letter-spacing: 0; padding: 5px 10px; border-radius: var(--radius-sm); background: #ffffff2e; }
+.case-head .video-actions { padding: 6px; gap: 6px; border-radius: 12px; background: #fdfefef0; box-shadow: 0 14px 34px #0a4a4426; }
+
+/* Product cards: video, overlays, timeline, charts, quiz and model share one surface. */
+.video-frame { border-radius: 20px; box-shadow: 0 0 0 1px var(--line), 0 30px 80px #0b4d461c; }
+.panel { border: 1px solid #fff; border-radius: 20px; background: linear-gradient(160deg, #fdfefe, #f3f8f6); box-shadow: inset 0 1px #fff, 0 0 0 1px var(--line), 0 24px 64px #0b4d4614; }
+.panel-head { padding: 22px 26px 18px; }
+.panel-head h2 { font-size: 24px; font-weight: 400; letter-spacing: -.03em; }
+.panel-head p { margin-top: 4px; }
+.panel-body { padding: 22px 26px 26px; }
+
+/* Player controls: readable sizes, shared hover. */
+.video-controls { padding: 12px 16px; gap: 14px; }
+.video-controls span { font-size: 13px; }
+.video-controls button { min-width: 36px; min-height: 36px; border-radius: var(--radius-sm); transition: background-color .15s; }
+.video-controls button:hover { color: #fff; background: #ffffff24; }
+.video-controls select { min-height: 32px; padding: 4px 8px; border-radius: var(--radius-sm); font-size: 13px; }
+
+/* Experimental overlay strip, restyled only (logic lives in overlays.js). */
+.overlay-controls { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 14px 16px; }
+.overlay-toggle { font-size: 15px; }
+.overlay-toggle span { font-size: 13px; padding: 3px 8px; border-radius: var(--radius-sm); }
+.overlay-toolbar button { min-height: 36px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); font-size: 14px; color: var(--ink); transition: background-color .15s, border-color .15s; }
+.overlay-toolbar button:hover { background: var(--surface-tint); border-color: #9db5aa; }
+.overlay-options { font-size: 14px; }
+.overlay-options select { border-radius: var(--radius-sm); font-size: 14px; }
+.overlay-status { font-size: 14px; }
+
+/* Timeline: rounded phase segments with small gaps, like the homepage preview. */
+.tl-track { height: 44px; }
+.tl-seg { border-right: 3px solid #f6faf8; border-radius: 6px; background: #d3e6df; font-size: 13px; }
+.tl-seg:hover { background: #bfdcd1; }
+.tl-axis { font-size: 13px; }
+.tl-step-main { padding: 11px 10px; border-radius: 10px; }
+.tl-step-time { font-size: 14px; }
+
+/* Charts: the homepage bar style. */
+.chart-row { grid-template-columns: 170px 1fr 44px; font-size: 15px; }
+.chart-track { height: 10px; border-radius: 5px; background: #e1ece8; }
+.chart-track div { border-radius: 5px; background: var(--brand); }
+.chart-row strong { font-size: 14px; }
+
+/* Lil Doc. */
+.chat { background: #fbfdfc; }
+.chat-head { padding: 16px 20px; }
+.chat-thread { background: transparent; gap: 14px; padding: 18px 16px; }
+.msg p { font-size: 15px; }
+.msg-doc p { border-radius: 14px 14px 14px 4px; box-shadow: 0 1px 0 #e3ece8; }
+.msg-user button { border-radius: 14px 14px 4px 14px; font-size: 15px; transition: background-color .15s; }
+.suggestions button { min-height: 32px; padding: 0 10px; font-size: 13px; border-radius: var(--radius-sm); }
+.chat-compose form { min-height: 50px; border-radius: 12px; }
+.chat-compose form button { width: 40px; height: 40px; border-radius: var(--radius); transition: background-color .15s; }
+
+/* Motion. One orchestrated entrance when the case opens; afterwards only new messages and new
+   panels move, and chart bars grow once when their panel first appears. Reduced motion removes all
+   of it (global rule in style.css). Easing follows Hangar's soft drop. */
+@keyframes case-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes case-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bar-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.dash.is-entering .case-head { animation: case-rise .6s cubic-bezier(.16, 1, .3, 1) both; }
+.dash.is-entering .video-frame { animation: case-rise .6s .08s cubic-bezier(.16, 1, .3, 1) both; }
+.dash.is-entering .overlay-controls, .dash.is-entering #sec-timeline { animation: case-rise .6s .16s cubic-bezier(.16, 1, .3, 1) both; }
+.dash.is-entering .chat { animation: case-fade .5s .12s ease-out both; }
+.msg.is-new { animation: case-rise .35s cubic-bezier(.16, 1, .3, 1) both; }
+.msg-user.is-new { transform-origin: right bottom; }
+.panel.is-new { animation: case-rise .5s cubic-bezier(.16, 1, .3, 1) both; }
+.panel.is-new .chart-track div { transform-origin: left; animation: bar-grow .7s .15s cubic-bezier(.16, 1, .3, 1) both; }
+
+@media (max-width: 900px) { .chat { background: var(--surface); } }
+@media (max-width: 600px) {
+  .case-head { padding: 20px; border-radius: 16px; }
+  .case-head .video-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .case-head .video-actions .filter-toggle { grid-column: 1 / -1; }
+  .case-head .case-switch { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; }
+  .video-controls { gap: 6px; padding: 8px; }
+  .panel-head, .panel-body { padding-left: 18px; padding-right: 18px; }
+  .chart-row { grid-template-columns: 110px 1fr 34px; }
+}
+.overlay-controls { margin-top: 12px; }
+
+/* Content filter: an eye over the footage (home preview and case player). */
+.eye-toggle {
+  position: absolute; z-index: 5; top: 14px; right: 14px; width: 44px; height: 44px; display: grid; place-items: center; padding: 0;
+  border: 1px solid #ffffff4d; border-radius: 12px; background: #0b2b28a6; color: #fff; backdrop-filter: blur(10px);
+  transition: background-color .15s, transform .1s;
+}
+.eye-toggle svg { width: 22px; height: 22px; }
+.eye-toggle:hover { background: #0b2b28d9; }
+.eye-toggle:active { transform: scale(.96); }
+.eye-toggle:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
