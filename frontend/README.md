@@ -1,5 +1,7 @@
 # Surg+F frontend
 
+Current ownership: **Shlok — general frontend design; Aadhi — spatial data/models/evaluation/export; Mihir — spatial player/browser verification.** Spatial work stays on `feat/spatial-overlays`. Shlok and Mihir coordinate shared frontend markup/styles. See [tasks and handoffs](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). Earlier owner notes below are historical.
+
 The dashboard lets users switch between hosted VID01 and VID02. The video, operation steps, and requested outputs are on the left; Lil Doc and the chat input are on the right. Earlier user questions remain clickable in the conversation and rerun their query. Search results are scoped to the open case using the shared `GET /search?q=...` clip contract.
 
 ## Run
@@ -16,7 +18,7 @@ Put playable assets at `frontend/public/videos/VID01.mp4`, etc., or set `VITE_VI
 
 ## Videos and data (from Data/ML, 2026-11-14)
 
-**Get the videos.** VID01 and VID02 are hosted as 25 fps 854x480 H.264 MP4s with faststart in the Databricks Volume `/Volumes/workspace/default/surgf/videos/`. From the repo root, with the team `.env` (get it privately from Aadhitya), run:
+**Get the videos.** VID01 and VID02 are hosted as 25 fps H.264 MP4s with faststart in the Databricks Volume `/Volumes/workspace/default/surgf/videos/`. From the repo root, with the team `.env` (get it privately from Aadhitya), run:
 
 ```sh
 pip install databricks-sdk python-dotenv
@@ -55,12 +57,12 @@ With the backend returning real rows and `VID01.mp4` available, search `clipper`
 
 ## Experimental bounding boxes
 
-Stage 3 is owned by Shlok on `feat/spatial-overlays`; stage 2 continues independently on `ml-dev`. Enable **Bounding boxes**, then choose a **Sampled frame**. Instrument/anatomy filters hide categories; the minimum-score slider hides lower-scoring detections (scores are not calibrated probabilities). Use **Fullscreen with overlays** to expand the video container; the native video fullscreen button may omit HTML overlays.
+Spatial data/model/export is owned by Aadhi and player integration/browser verification by Mihir on `feat/spatial-overlays`; Shlok owns the overall frontend design. Enable **Bounding boxes**, then choose a **Sampled frame**. Instrument/anatomy filters hide categories; the minimum-score slider hides lower-scoring detections (scores are not calibrated probabilities). Use **Fullscreen with overlays** to expand the video container; the native video fullscreen button may omit HTML overlays.
 
 The included VID01 artifact contains real Grounding DINO predictions for frames 674, 680 and 689 only. Boxes expire after 120 ms, so ordinary playback mostly has no boxes. Some predictions are visibly incorrect (including scissors/irrigator in the clipper example); scores are not calibrated accuracy. This is a pipeline prototype, not reviewed annotations or continuous tracking. VID02 has no artifact, and local uploads are deliberately unsupported.
 
-The player checks case, versioned asset ID, dimensions, timestamps, labels and coordinates before rendering. Keep the existing 854×480 25 fps VID01 asset; replacement videos need a new asset ID and timebase verification. See [runner setup and provenance](../ml/localization/README.md).
+The player checks case, versioned asset ID, dimensions, timestamps, labels and coordinates before rendering. The current VID01 asset and overlay artifact disagree on decoded dimensions; verify their pixel mapping before changing either. Replacement videos need a new asset ID and timebase verification. See [runner setup and provenance](../ml/localization/README.md).
 
-Checks: `node --test frontend/test/*.test.js` from the repository root and `npm --prefix frontend run build`. After merging the new steps and Lil Doc layout, local Chrome against the running backend confirmed that the home clipper link seeks to 11:14, five clipper moments appear on seven steps, `/chart instruments` shows only six tools, prior question bubbles rerun their query, and the custom controls, content filter, and overlay toggle appear together. The current VID01 MP4 reports `videoWidth=854` and `videoHeight=484` in Chrome, while `public/overlays/VID01.json` declares `854×480`; the overlay's dimension guard correctly hides all boxes. Shlok needs to verify the source-to-video pixel mapping and update the artifact or video binding before browser box acceptance. Then enable boxes, choose all three frames, filter categories, play/seek beyond 120 ms and confirm clearing, resize/fullscreen, and switch to VID02 and a local upload to confirm unavailable states.
+Checks: `node --test frontend/test/*.test.js` from the repository root and `npm --prefix frontend run build`. After merging the new steps and Lil Doc layout, local Chrome against the running backend confirmed that the home clipper link seeks to 11:14, five clipper moments appear on seven steps, `/chart instruments` shows only six tools, prior question bubbles rerun their query, and the custom controls, content filter, and overlay toggle appear together. The current VID01 MP4 reports `videoWidth=854` and `videoHeight=484` in Chrome, while `public/overlays/VID01.json` declares `854×480`; the overlay's dimension guard correctly hides all boxes. Aadhi should verify the source-to-video pixel mapping and hand Mihir the correct transform or asset binding for browser box acceptance. Then enable boxes, choose all three frames, filter categories, play/seek beyond 120 ms and confirm clearing, resize/fullscreen, and switch to VID02 and a local upload to confirm unavailable states.
 
 Player DOM integration checks: `node --test frontend/test/*.test.js`. These simulate media state and do not replace real-browser playback/fullscreen verification.

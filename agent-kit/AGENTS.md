@@ -14,8 +14,8 @@
 3. Fetch again before pushing. Check for new upstream commits and relevant changes on `origin/main`. Reconcile them safely and rerun affected checks if the base changed. Push normally, then verify the intended commits and Markdown updates are on GitHub. If a push is rejected, resync and inspect the incoming changes before retrying.
 4. In the handoff, link the commit or PR and report the checks that ran, any remaining blocker, and who takes the next step.
 
-## Planned stage 3: video localization
+## Active ownership and branch boundaries
 
-Project context only: future localization/overlay work is described in the stage-3 plan. Keep proposed detector capabilities separate from verified progress, and agree the new spatial interface with its owners before implementation. The sync, verification and publication rules above still apply.
+Shlok owns general frontend design. Aadhi owns spatial data/model/evaluation/export; Mihir owns spatial player integration and browser verification. Follow [the current plan](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow); earlier Shlok spatial assignments are superseded. Shlok and Mihir must coordinate shared frontend files and preserve each other's work.
 
-See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.
+Aadhi and Mihir push spatial changes to `feat/spatial-overlays`, not main, until Shlok explicitly requests publication. The current ownership-documentation request authorizes a docs-only main update. Use separate checkouts, preserve concurrent commits and never force-push.

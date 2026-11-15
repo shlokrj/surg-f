@@ -1,5 +1,27 @@
 # ML team progress
 
+## Current ownership: Shlok moves to frontend design (2026-11-14)
+
+Shlok now owns **general frontend design and presentation**, and is no longer assigned spatial ML work. **Aadhi owns spatial data, model training, evaluation, inference and artifact export**, including Shlok's unfinished trainer tasks. **Mihir owns spatial player integration and browser verification**. This supersedes earlier assignment tables and historical ownership notes below.
+
+Spatial teammates continue on `feat/spatial-overlays`; Aadhi should retain the scoped evaluator already pushed in `78dfef0`. Shlok and Mihir must coordinate shared `frontend/src/main.js`, `style.css` and player markup: Shlok owns overall design, Mihir owns overlay behavior. Do not overwrite each other's edits. Full tasks and handoffs are in [the localization plan](LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow).
+
+This request authorizes pushing these ownership docs to main only. Unfinished spatial code remains on its branch until a later explicit publication request. Documentation-only update; Markdown links and diff checked, no application changes or new training runs.
+
+
+## Active spatial team assignments (2026-11-14)
+
+**Shlok, Aadhi (Aadhitya), and Mihir now share `feat/spatial-overlays`. Push all new feature work there; do not merge or push to main until Shlok explicitly requests it.** This supersedes older Shlok-only stage-3 ownership, Aadhi-only-stage-2 notes and the previous main publication instruction. Main already has the earlier prototype; it is not the target for this work round.
+
+| Owner | Current task | Status / next handoff |
+|---|---|---|
+| Shlok | Anatomy trainer, category-scoped metrics, checkpoint selection and inference | Assigned, not yet complete. Start with scoped evaluation and configurable training; use Aadhi's data manifests. Hand off checkpoint/class map/metrics. |
+| Aadhi | Complete image downloads/manifests, overlap guards, instrument annotation audit and model-to-overlay export | Assigned, not yet complete. Start full train/validation data preparation. Hand Shlok verified inputs, then Mihir versioned artifacts. |
+| Mihir | Real-browser overlay integration, UX and regression verification | Assigned, not yet complete. Start actual VID01 playback checks using the existing artifact. Hand off screenshots/recording and acceptance results. |
+
+Read [the complete assignments](LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow) for owned paths, ordered tasks, dependencies and completion criteria. Use separate checkouts and preserve concurrent branch commits. Existing prototype limitations remain: inaccurate Grounding DINO labels, no full anatomy training/accuracy result, no verified six-instrument box dataset, and outstanding real-browser acceptance. Prior checks: 6 frontend tests, 11 localization tests and frontend build passed; this assignment change is documentation-only.
+
+
 ## Spatial work published to main (2026-11-14)
 
 Shlok requested publication for teammate handoff. All stage-3 work through `1f49b33` is now integrated into `main`, including detector/overlay prototype, annotation preparation, evaluation utilities and the real-image training smoke runner. Start from `main`; older branch references below describe historical work. Task reassignment will be discussed separately, so existing owners remain unchanged.
