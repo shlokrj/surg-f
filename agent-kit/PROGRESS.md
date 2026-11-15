@@ -39,6 +39,11 @@ The earlier integrated `frontend/dev` work reached `main` through `6d468dd`. Fur
 - The draft status is still stated in Lil Doc's offer.
 - Checks: 49 unit tests and the build passed; the headless walkthrough passed 47 checks with no page errors, including a check for each removal, the marker's position and the scroll.
 
+**Practice left column (2026-11-15, Rohan's request):**
+- During Practice the bounding-box panel and the box overlay are removed. The stage checklist and the video reference moved from under the model to under the video, in their place. Exit brings the bounding-box panel back.
+- **Mihir:** this means no overlay runs inside Practice.
+- Checks: 49 unit tests and the build passed; the headless walkthrough passed 51 checks with no page errors. New checks: no box panel in Practice; checklist and reference below the video and not under the model; Go to moment works from there; the box panel returns after Exit; the page scrolls to the Accepted message when it starts off-screen (600 px window).
+
 **Blockers / next:**
 - (1) **Clinical review**: a surgeon or educator must check the stage order, tools, clip positions, feedback and reference intervals, then set `review.status` (delivery stage 4). Until then the UI says "draft, not yet medically reviewed".
 - (2) A first-time-resident usability walkthrough.
