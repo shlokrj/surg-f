@@ -53,6 +53,25 @@ export const localVideoNote =
 
 export const errorReply = 'Oops, I couldn’t reach the backend. Is it running? Give it a nudge and ask me again.';
 
+// --- Practice ------------------------------------------------------------------
+
+export const localDemoRecognized = caseId =>
+  `I recognise this file: it’s the ${caseId} demonstration video. I still can’t search it, but you can ask me to practice a step on it, like “Let me practice clipping and cutting.”`;
+
+export const localOnlyPractice =
+  'I can’t search an uploaded video. If it’s the demo video, you can ask me to practice a step, like “Let me practice clipping and cutting.”';
+
+export const practiceOffer = exercise =>
+  `Let’s practice ${exercise.title.toLowerCase()} on this upload of ${exercise.eligible_video.case_id}. You’ll get ${exercise.stages.length} stages: pick an instrument from a 3D tray, place it on the model and use it, then compare with the matching moment in the video. Before you start: the model is a generic body, not this patient, and this is a schematic draft exercise that hasn’t been medically reviewed. It doesn’t teach real instrument handling or measure skill. Starting closes the other panels; your video stays where it is.`;
+
+export const practiceStarted = 'Practice is open. Stage 1 is on the left, and the video is at its reference moment. Exit (×) brings your normal page back.';
+
+export const practiceCancelled = 'No problem, nothing changed. Ask me again whenever you want to practice.';
+
+export const practiceNotAuthored = (stepLabel, available) =>
+  `I don’t have a practice exercise for ${stepLabel} yet. Every exercise needs a reviewed set of steps first. Right now I can do ${available}. Ask me to practice that instead!`;
+
+export const practiceBusy = 'While Practice is open I keep the other panels closed so the model has room. Exit practice (×) and ask me again, or ask me to practice a step to start over.';
 const TOOLS = 'the grasper, hook, clipper, scissors, bipolar and irrigator';
 
 // Build Lil Doc's reply to one request.

@@ -6,6 +6,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import manifest from './manifest.json';
 import { STEP_SCENES, FREE_SCENE, VIEWS } from './steps.js';
+import { installPractice } from './interaction.js';
 
 const MODEL_URL = `${import.meta.env.BASE_URL}${manifest.file}`;
 const GHOST = 0.1; // opacity of an organ the user made see-through
@@ -56,7 +57,20 @@ export async function createViewer({ onChange = () => {}, onHover = () => {} } =
   let frame = 0;
   let disposed = false;
   let facing = null; // a marker kept turned toward the viewer
-  const draw = () => { frame = 0; if (disposed) return; facing?.quaternion.copy(camera.quaternion); renderer.render(scene, camera); };
+  const beforeDraw = new Set(); // practice hooks: face markers toward the camera, etc.
+  const overlays = new Set(); // practice: extra scenes drawn on top (the tool tray)
+  const draw = () => {
+    frame = 0;
+    if (disposed) return;
+    facing?.quaternion.copy(camera.quaternion);
+    beforeDraw.forEach(hook => hook());
+    renderer.render(scene, camera);
+    if (overlays.size) {
+      renderer.autoClear = false;
+      overlays.forEach(([overlayScene, overlayCamera]) => { renderer.clearDepth(); renderer.render(overlayScene, overlayCamera); });
+      renderer.autoClear = true;
+    }
+  };
   const requestDraw = () => { if (!frame && !disposed) frame = requestAnimationFrame(draw); };
   controls.addEventListener('change', requestDraw);
 
@@ -201,10 +215,12 @@ export async function createViewer({ onChange = () => {}, onHover = () => {} } =
   let sceneKey = null; // the step being shown, or null for the free view
   let state = null; // numbers currently on screen
   let move = null; // { from, to, start, duration }
+  let customScene = null; // Practice draws its own fixed scene instead of a study step
+  const cutOverride = {}; // Practice: organ name -> 0..1 cut amount, on top of the step's cut
 
   function target(key) {
-    const step = STEP_SCENES[key] ?? FREE_SCENE;
-    const view = VIEWS[step.view];
+    const step = customScene ?? STEP_SCENES[key] ?? FREE_SCENE;
+    const view = typeof step.view === 'object' ? step.view : VIEWS[step.view];
     const position = vec(view.target).addScaledVector(vec(view.from).normalize(), view.distance);
     const numbers = {
       outline: step.outline, ports: step.ports, triangle: step.triangle, clips: step.clips, cut: step.cut,
@@ -239,8 +255,8 @@ export async function createViewer({ onChange = () => {}, onHover = () => {} } =
     specimen.position.copy(lifted).lerp(navelPort, numbers.toPort);
     specimen.updateMatrixWorld(true);
     // The cut opens a small gap in the duct and the artery.
-    for (const cut of Object.values(cuts)) {
-      const gap = 0.2 * numbers.cut;
+    for (const [name, cut] of Object.entries(cuts)) {
+      const gap = 0.2 * Math.max(numbers.cut, cutOverride[name] ?? 0);
       cut.stay.setFromNormalAndCoplanarPoint(cut.normal.clone().negate(), cut.point.clone().addScaledVector(cut.normal, -gap));
       cut.leave.setFromNormalAndCoplanarPoint(cut.normal, cut.point.clone().addScaledVector(cut.normal, gap)).applyMatrix4(specimen.matrixWorld);
     }
@@ -306,14 +322,18 @@ export async function createViewer({ onChange = () => {}, onHover = () => {} } =
   canvas.addEventListener('pointerup', event => {
     if (!pressed || Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) > 5) { pressed = null; return; }
     pressed = null;
+    if (practice) return; // in Practice a click is a tool action, never a fade
     const name = organAt(event);
     if (name) api.toggleGhost(name);
   });
   let hoverFrame = 0;
+  let hoverHook = null; // Practice: tool names and cursors take priority over organ labels
   canvas.addEventListener('pointermove', event => {
     if (hoverFrame || event.buttons) return;
     hoverFrame = requestAnimationFrame(() => {
       hoverFrame = 0;
+      const custom = hoverHook?.(event);
+      if (custom) { canvas.style.cursor = custom.cursor; onHover(custom.label); return; }
       const name = organAt(event);
       canvas.style.cursor = name ? 'pointer' : 'grab';
       onHover(name ? organs.get(name).part.label : '');
@@ -345,6 +365,7 @@ export async function createViewer({ onChange = () => {}, onHover = () => {} } =
   });
   observer.observe(element);
 
+  let practice = null;
   const api = {
     element,
     parts: manifest.parts.filter(part => part.group !== 'outline').map(({ name, label, group, color }) => ({ name, label, group, color })),
@@ -361,9 +382,29 @@ export async function createViewer({ onChange = () => {}, onHover = () => {} } =
     resetView() { userGhost.clear(); show(sceneKey); onChange(); }, // camera and faded organs
     zoom(factor) { zoom(factor); },
     // For tests and debugging: what is on screen right now.
-    snapshot: () => ({ step: sceneKey, ghosted: [...userGhost], state: { ...state }, camera: camera.position.toArray(), specimen: specimen.position.toArray() }),
+    snapshot: () => ({ step: sceneKey, ghosted: [...userGhost], state: { ...state }, camera: camera.position.toArray(), specimen: specimen.position.toArray(), practice: practice?.snapshot() ?? null }),
+    // Practice mode: draw the exercise's fixed scene and attach the tool interaction layer.
+    // Returns a narrow interface; three.js objects stay inside this file and interaction.js.
+    enablePractice({ exercise, onEvent }) {
+      if (practice) return practice;
+      customScene = { ...FREE_SCENE, view: exercise.scene.view, ghost: exercise.scene.ghost ?? {}, highlight: [] };
+      userGhost.clear();
+      show(null, { animate: false });
+      practice = installPractice({
+        THREE, scene, camera, controls, canvas, element, root, organs, manifest, requestDraw,
+        reducedMotion: () => Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches),
+        addBeforeDraw: hook => beforeDraw.add(hook),
+        addOverlay: pair => overlays.add(pair),
+        setHoverHook: hook => { hoverHook = hook; },
+        setCut: (name, amount) => { cutOverride[name] = amount; if (state) apply(state, { camera: false }); },
+        resetCamera: () => show(null, { animate: true }),
+        viewTarget: () => controls.target.clone(),
+      }, { exercise, onEvent });
+      return practice;
+    },
     dispose() {
       disposed = true;
+      practice?.dispose();
       cancelAnimationFrame(frame);
       observer.disconnect();
       controls.dispose();

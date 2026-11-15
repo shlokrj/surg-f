@@ -157,7 +157,7 @@ test('presentation and video demos: their own sections and chapters; the origina
  assert.deepEqual(chapters(pres).filter(id=>/^(problem|solution|model)-/.test(id)),['problem-needle','problem-docs','problem-uses','solution-label','solution-ask','solution-jump','solution-record','solution-practice','model-test','model-instruments','model-versions','model-boxes']);
  assert.deepEqual(order(video),['landing-intro','problem','solution','databricks','sources']);
  assert.deepEqual(chapters(video),['problem-needle','problem-docs','solution-ask','solution-jump','solution-practice','db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai']);
- assert.equal(video.querySelector('main').dataset.playMs,'2300','the video demo plays faster');
+ assert.equal(video.querySelector('main').dataset.playMs,'3800','the video demo plays faster');
  assert.equal(video.querySelector('#problem').dataset.per,'1.6');
  assert.equal(pres.querySelectorAll('#problem-docs .pb-form-row').length,7,'the seven VID01 steps');
  assert.match(pres.querySelector('#solution-record').textContent,/does not write clinical notes yet/);
@@ -174,10 +174,12 @@ test('sources: right before the footer on every version, with the citations the 
   assert.ok(d.querySelector('.footer-links a[href="#sources"]'),mode);
  }
  const src=new JSDOM(markup('public')).window.document.querySelector('#sources');
- assert.deepEqual([...src.querySelectorAll('.src-group h3')].map(h=>h.textContent),['Surgical video and labels','Models and methods','3D anatomy','Platform and software']);
+ assert.deepEqual([...src.querySelectorAll('.src-group h3')].map(h=>h.textContent),['Datasets','Pretrained models']);
  const hrefs=[...src.querySelectorAll('a')].map(a=>a.href);
- for(const u of ['https://doi.org/10.1016/j.media.2022.102433','https://arxiv.org/abs/2109.03223','https://doi.org/10.1109/TMI.2016.2593957','https://huggingface.co/datasets/Voxel51/cholect50','https://arxiv.org/abs/2307.15220','https://doi.org/10.1038/s41597-025-04642-4','https://doi.org/10.1093/nar/gkn613','https://creativecommons.org/licenses/by-nc-sa/4.0/'])assert.ok(hrefs.includes(u),u);
+ for(const u of ['https://doi.org/10.1016/j.media.2022.102433','https://arxiv.org/abs/2109.03223','https://doi.org/10.1109/TMI.2016.2593957','https://arxiv.org/abs/2307.15220','https://doi.org/10.1038/s41597-025-04642-4','https://doi.org/10.1093/nar/gkn613','https://creativecommons.org/licenses/by-nc-sa/4.0/'])assert.ok(hrefs.includes(u),u);
  assert.ok([...src.querySelectorAll('a')].every(a=>a.target==='_blank'&&a.rel.includes('noopener')));
  assert.doesNotMatch(src.textContent,/2202\.05324/,'the Hugging Face card\'s arXiv ID is an unrelated paper');
  assert.match(src.textContent,/@article\{nwoye2022rendezvous/);
+ assert.deepEqual([...src.querySelectorAll('#sources-models .src-cite b')].map(b=>b.textContent.split(':')[0]),['Learning multi-modal representations by watching hundreds of surgical video lectures.','Faster R-CNN','The Llama 3 herd of models.'],'only the pretrained models we used');
+ assert.equal(src.querySelectorAll('#sources-data .src-item').length,4,'CholecT50, Cholec80, Endoscapes, BodyParts3D');
 });
