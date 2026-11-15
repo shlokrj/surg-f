@@ -18,6 +18,12 @@ Status: **proposal, 2026-11-14 (Rohan).** The backend serves these endpoints on 
 >
 > Errors on every endpoint use `{"detail": "..."}`. FastAPI validation errors (422) may return `detail` as a list. A failed Databricks query returns 503.
 
+> Chat API: `POST /chat` with JSON body `{"message": "<text>", "case_id": "VID01"}` (`case_id` optional, default `VID01`). Return `reply` (one or two sentences for the chat), `action` (`search`, `quiz`, `timeline`, `answer` or `none`), `data` and `router` (`llm`, `rules` or `genie`). For `search`, `quiz` and `timeline`, `data` has the shape of the matching GET endpoint; search results are limited to the requested case and to annotation rows. For `answer`, `data` is `{"columns": [], "rows": [], "sql": null}` or null. For `none`, `data` is null. A valid request always returns 200, including when routing or the data store fails; only invalid input returns 422. The backend writes every reply; the language model only chooses a feature.
+>
+> ```json
+> {"reply":"Found 5 moments with the clipper in VID01. The first starts at 11:14.","action":"search","data":{"results":[{"case_id":"VID01","start_sec":674,"end_sec":690,"label":"clipper","source":"annotation"}]},"router":"rules"}
+> ```
+
 ## Row to append to agent-kit/DECISIONS.md
 
 > | 2026-11-14: Add `GET /cases/{case_id}/timeline` (chart) and `GET /quiz` (general, seeded, 5 questions) beside `/search`. The quiz uses a static bank in `backend/data/quiz_bank.json`, marked `reviewed: false` until medically verified | The frontend chart and quiz were built from six `/search` calls and per-video questions. One timeline call is cheaper and keeps predictions out of annotation counts. A curated bank keeps quiz content accurate and identical with or without Databricks. |
@@ -33,6 +39,8 @@ Status: **proposal, 2026-11-14 (Rohan).** The backend serves these endpoints on 
 
 ## Open points for agreement
 
+- **Chat (added 2026-11-14):** should the chat box move from `GET /interpret` to `POST /chat`, and should `/interpret` then be retired? Is the `answer` table shape acceptable, given that it has no matching GET endpoint? Examples: `backend/fixtures/chat.examples.json`.
+- **Timeline labels (added 2026-11-14):** the live table now holds verb and target labels as `annotation` rows (VID01: 24 labels, 226 segments), with no column that separates them from instruments. Should `/cases/{case_id}/timeline` return only the six instruments, or should the table gain a category column?
 - Should `/search` keep mixing `annotation` and `prediction` rows (current behavior), or take the same `source` filter as the timeline? Changing it would be a contract change.
 - Is `case_id` case-sensitive (current behavior, `VID01` only), or should `vid01` also work?
 - Should the frontend's `VITE_USE_FIXTURE` mode use these fixtures, or call the backend's fixture mode instead?
