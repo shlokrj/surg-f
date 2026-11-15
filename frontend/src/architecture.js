@@ -270,6 +270,8 @@ function updateStage(section, reduced) {
     const fit = Math.min(1.25, pit.clientWidth / 560, pit.clientHeight / 540) || 1;
     pit.style.setProperty('--fit', fit.toFixed(4));
   });
+  const head = section.querySelector('.mn-heading');
+  if (head) section.style.setProperty('--head-h', `${head.offsetHeight}px`);
   hooks.forEach(fn => fn(section, ps, reduced));
 }
 

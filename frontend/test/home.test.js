@@ -99,6 +99,9 @@ test('databricks section covers the real Databricks work, with the mark and chec
  const doc=new JSDOM(markup()).window.document;
  const db=doc.querySelector('#databricks');
  assert.ok(db.querySelector('h2 .db-mark'),'Databricks mark in the heading');
+ const logo=db.querySelector('h2 a.db-logo');
+ assert.equal(logo.href,'https://www.databricks.com/','the logo links to Databricks');
+ assert.ok(logo.querySelector('.db-word path')&&logo.rel.includes('noopener'));
  assert.deepEqual([...db.querySelectorAll('.layer')].map(l=>l.id),['db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai']);
  assert.equal(db.querySelectorAll('.bundles i').length,50,'one bundle per surgery');
  assert.match(db.textContent,/9d18d20a/);assert.match(db.textContent,/surgf-import-clips/);assert.match(db.textContent,/surgf_quiz_facts/);
