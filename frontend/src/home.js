@@ -1,4 +1,4 @@
-import { architectureSection, updateArchitecture, digScrollTop } from './architecture.js';
+import { architectureSection, updateArchitecture, digScrollTop, digStops } from './architecture.js';
 import { modelSection } from './modelnotes.js';
 import { databricksSection } from './databricks.js';
 import { problemSection } from './problem.js';
@@ -205,7 +205,7 @@ const VERSIONS = {
   ]},
   'presentation-demo': {sections: [
     ['problem', {only: ['needle', 'docs', 'learning', 'uses']}], ['solution', {only: ['label', 'ask', 'jump', 'record', 'practice']}],
-    ['features'], ['architecture'], ['model', {only: ['test', 'instruments', 'versions', 'boxes']}], ['databricks'], ['future'], ['sources'],
+    ['architecture', {reverse: true}], ['model', {only: ['test', 'instruments', 'versions', 'boxes']}], ['databricks'], ['future'], ['sources'],
   ]},
   'video-demo': {sections: [
     ['problem', {only: ['needle', 'learning'], per: 1.6}], ['solution', {only: ['ask', 'jump', 'practice'], per: 1.6}],
@@ -327,6 +327,66 @@ export function mountHome(root) {
     const top = target ? target.getBoundingClientRect().top + window.scrollY : 0;
     window.scrollTo({top, behavior: media.matches ? 'auto' : 'smooth'});
   };
+  /* Left and right arrows step to the previous or next scene. Each step scrolls at an even, slow pace so
+     the scene plays out as it would under a steady scroll. Not advertised on the page. */
+  const stops = () => {
+    const all = [0];
+    const docTop = el => el.getBoundingClientRect().top + window.scrollY;
+    root.querySelectorAll('.dig').forEach(section => all.push(...digStops(section)));
+    root.querySelectorAll('.stack-card').forEach(card => {
+      const was = card.style.position; card.style.position = 'relative';
+      const natural = docTop(card); card.style.position = was;
+      all.push(natural - (parseFloat(getComputedStyle(card).top) || 0));
+    });
+    root.querySelectorAll('#case-preview, .local-section, #sources, .src-group').forEach(el => all.push(docTop(el) - 88));
+    all.push(document.documentElement.scrollHeight - window.innerHeight);
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    return [...new Set(all.map(v => Math.round(Math.max(0, Math.min(max, v)))))].sort((a, b) => a - b)
+      .filter((v, i, list) => i === 0 || v - list[i - 1] > 40);
+  };
+  let tween = null, lastWheel = 0;
+  const stopTween = () => { if (tween) { cancelAnimationFrame(tween.raf); tween = null; } };
+  const ease = x => .5 - Math.cos(Math.PI * x) / 2;
+  const glide = target => {
+    const from = window.scrollY, dist = Math.abs(target - from);
+    if (media.matches || dist < 2) { stopTween(); window.scrollTo({top: target, behavior: 'instant'}); return; }
+    // About two thirds of a screen height per second: a full chapter takes roughly three seconds.
+    const ms = Math.max(700, Math.min(9000, dist / (window.innerHeight * .65) * 1000));
+    stopTween();
+    const t0 = performance.now();
+    tween = {target};
+    const step = now => {
+      const x = Math.min(1, (now - t0) / ms);
+      window.scrollTo({top: from + (target - from) * ease(x), behavior: 'instant'});
+      if (x < 1) tween.raf = requestAnimationFrame(step); else tween = null;
+    };
+    tween.raf = requestAnimationFrame(step);
+  };
+  const onKey = event => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    if (event.target.closest?.('input, textarea, select, [contenteditable], details')) return;
+    event.preventDefault();
+    if (event.repeat) return;
+    // A press during a glide moves on from where that glide was heading, so presses never get lost.
+    const base = tween ? tween.target : window.scrollY;
+    const list = stops();
+    const target = event.key === 'ArrowRight' ? list.find(v => v > base + 8) : [...list].reverse().find(v => v < base - 8);
+    if (target !== undefined) glide(target);
+  };
+  /* A new wheel or touch gesture takes over from a glide. Trackpad momentum from an earlier scroll
+     (wheel events arriving back to back) is swallowed instead, so it cannot cancel the glide. */
+  const onWheel = event => {
+    const now = performance.now(), fresh = now - lastWheel > 160;
+    lastWheel = now;
+    if (!tween) return;
+    if (fresh) stopTween(); else event.preventDefault();
+  };
+  const onTouch = () => stopTween();
+  window.addEventListener('keydown', onKey);
+  window.addEventListener('wheel', onWheel, {passive: false});
+  window.addEventListener('touchstart', onTouch, {passive: true});
+  window.addEventListener('pointerdown', onTouch, {passive: true});
   window.addEventListener('scroll', schedule, {passive:true});
   window.addEventListener('resize', schedule);
   media.addEventListener('change', schedule);
@@ -355,5 +415,5 @@ export function mountHome(root) {
   video?.addEventListener('error', unavailable); // the demo version has no preview video
   update();
   root.ownerDocument?.fonts?.ready?.then(() => { footerCache.size = null; schedule(); });
-  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video?.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
+  return () => { stopTween(); window.removeEventListener('keydown', onKey); window.removeEventListener('wheel', onWheel); window.removeEventListener('touchstart', onTouch); window.removeEventListener('pointerdown', onTouch); window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video?.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
 }

@@ -17,11 +17,10 @@ Locally, add the path to the dev server URL, for example `http://localhost:5173/
 
 1. Problem, 4 scenes: 17 seconds in a half-hour video; writing it all down; learning is costly (cited: ACGME 2024, Shin 2021, Ashrafi 2026, van der Leun 2024); who needs it.
 2. Solution, 5 scenes: label every second; ask in plain words; jump to the moment; the labels are the record; practice in 3D.
-3. Features, 3 cards: step timeline, instrument chart, quiz.
-4. The stack: the block, then 6 layers.
-5. Model, 4 scenes: held-out test; instruments; label model: v1 to v2; box detectors.
-6. Databricks, 6 scenes: Volume; serverless jobs; MLflow; Lakeflow and Delta; SQL, Genie and Llama; Databricks Apps.
-7. What's next, 4 scenes: Lil Counsel, Lil Ledger, Lil Watch, Lil Pal.
+3. The stack: the block, then 6 layers, built up from the surgery video to the player.
+4. Model, 4 scenes: held-out test; instruments; label model: v1 to v2; box detectors.
+5. Databricks, 6 scenes: Volume; serverless jobs; MLflow; Lakeflow and Delta; SQL, Genie and Llama; Databricks Apps.
+6. What's next, 4 scenes: Lil Counsel, Lil Ledger, Lil Watch, Lil Pal.
 
 **Video demo** (faster pace):
 
@@ -33,6 +32,7 @@ Locally, add the path to the dev server URL, for example `http://localhost:5173/
 
 - **Scroll** at an easy pace. Each scene plays as you scroll through it and holds once it has played, so pause where you want to talk. Scrolling back plays it in reverse.
 - **Chapter names** on the right jump straight to a chapter.
+- **Left and right arrow keys** step to the previous or next scene, scrolling slowly so each animation plays out. A press during a step queues the next one. Scrolling or clicking takes back control. The page does not mention this.
 - **Eye button** (top right): blurs or shows every surgery frame on the page. It starts blurred. Click it once before you present if the room is fine with surgical footage.
 
 ## Before you present or record

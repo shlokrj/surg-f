@@ -7,7 +7,7 @@ Speaker assignments follow who built each part (see `agent-kit/PROGRESS.md`). Sw
 | # | Segment | Speaker | Time | Scenes |
 |---|---|---|---|---|
 | 1 | Hook and problem | Shlok | 0:00–1:15 | hero, 4 problem scenes |
-| 2 | Solution and features | Mihir | 1:05–2:25 | 5 solution scenes, 3 feature cards |
+| 2 | Solution | Mihir | 1:15–2:25 | 5 solution scenes |
 | 3 | How it works | Rohan | 2:25–3:20 | the block, 6 stack layers |
 | 4 | Model and Databricks | Aadhitya | 3:20–4:40 | 4 model scenes, 6 Databricks scenes |
 | 5 | What's next and close | Shlok | 4:40–5:00 | 4 future scenes |
@@ -40,7 +40,7 @@ About 690 spoken words at roughly 140 words a minute. If you run long, cut the l
 
 ---
 
-## 2. Solution and features: Mihir (1:05–2:25)
+## 2. Solution: Mihir (1:15–2:25)
 
 **→ Label every second** (a read head sweeps the video and label lanes fill in)
 
@@ -60,43 +60,43 @@ About 690 spoken words at roughly 140 words a minute. If you run long, cut the l
 
 **→ Practice in 3D** (the 3D model moves through three steps)
 
-> Practice on cadavers is expensive and hard to get. So each case has a 3D model of the gallbladder region that follows the video step by step. Residents can rotate it and fade organs away to see what the surgeon is working around.
+> Practice on cadavers is expensive and hard to get. So each case has a 3D model of the gallbladder region that follows the video step by step. Residents can rotate it and fade organs away to see what the surgeon is working around. *(optional)* Each case also has a step timeline, an instrument chart, a quiz, and Lil Doc, our assistant, for questions about the video.
 
-**→ → → the three feature cards** (step timeline, instrument chart, quiz)
 
-> For studying, every case is split into its surgical steps, with a chart of how long each instrument is on screen, and a quiz on step order and instruments. Our assistant, Lil Doc, answers questions about the video in plain words. *(optional)* Students can also open their own recordings for playback.
 
 ---
 
 ## 3. How it works: Rohan (2:25–3:20)
 
+The stack builds up from the bottom: the first layer is the surgery video, the last is the player.
+
 **→ The block** (it splits into six layers)
 
-> Here's what's underneath. Surg+F is six layers, from the player down to the surgery video.
+> Here's what's underneath. Surg+F is six layers, and we'll build it up from the bottom.
 
-**→ The player**
+**→ Surgery video**
 
-> The player is a plain JavaScript app. An experimental detector draws boxes over the video.
+> At the bottom, the CholecT50 surgeries themselves, labeled second by second by surgeons.
+
+**→ Frame features**
+
+> SurgVLP, a model pretrained on surgical video lectures, turns each second into 768 numbers.
+
+**→ Label model**
+
+> A scikit-learn neural network reads five seconds of those features and predicts all 29 labels at once.
+
+**→ Clip index**
+
+> Every surgeon label and model prediction becomes one row in a Delta table: case, start, end, label and source.
 
 **→ Search and chat**
 
 > Questions go to our FastAPI backend. Search runs on Databricks SQL, a Llama 3.3 70B model routes chat messages, and Databricks Genie answers free-form questions.
 
-**→ Clip index**
+**→ The player**
 
-> Every surgeon label and model prediction is one row in a Delta table: case, start, end, label and source.
-
-**→ Label model**
-
-> A scikit-learn neural network predicts all 29 labels at once from five seconds of features.
-
-**→ Frame features**
-
-> Those features come from SurgVLP, a model pretrained on surgical video lectures, which turns each second into 768 numbers.
-
-**→ Surgery video**
-
-> And at the bottom, the CholecT50 surgeries themselves, labeled second by second by surgeons.
+> And on top, the player: a plain JavaScript app that jumps to each result, with an experimental detector drawing boxes.
 
 ---
 

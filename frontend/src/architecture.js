@@ -150,15 +150,22 @@ WHERE lower(label) = 'scissors'</code></pre>
   }
 }
 
-export function architectureSection({per = 2.1} = {}) {
-  return `<section class="dig" id="architecture" aria-labelledby="dig-heading" data-intro="1.6" data-per="${per}" style="--e:0;--nav:0;--depth:0;--travel:${1.6 + LAYERS.length * per}">
+/* reverse: the chapters run bottom-up, from the surgery video to the player. The block keeps its shape
+   (player on top); only the order of the chapters and their numbers flip. */
+export function architectureSection({per = 2.1, reverse = false} = {}) {
+  const order = reverse ? [...LAYERS].reverse() : LAYERS;
+  const chapter = l => order.indexOf(l);
+  const intro = reverse
+    ? 'Surg+F is six layers, from the surgery video at the bottom up to the player you use. Scroll to build up through them, or pick a layer.'
+    : 'Surg+F is six layers, from the player you use down to the surgery video underneath. Scroll to dig through them, or pick a layer.';
+  return `<section class="dig" id="architecture" aria-labelledby="dig-heading" data-intro="1.6" data-per="${per}"${reverse ? ' data-reverse' : ''} style="--e:0;--nav:0;--depth:0;--travel:${1.6 + LAYERS.length * per}">
     <div class="dig-pin">
-      <div class="dig-copy dig-intro-copy" data-copy="-1"><h2 id="dig-heading">Dig into the stack.</h2><p>Surg+F is six layers, from the player you use down to the surgery video underneath. Scroll to dig through them, or pick a layer.</p></div>
+      <div class="dig-copy dig-intro-copy" data-copy="-1"><h2 id="dig-heading">Dig into the stack.</h2><p>${intro}</p></div>
       <div class="dig-map">
         <div class="dig-stage" aria-hidden="true"><div class="block">${LAYERS.map((l, i) => slab(`s${i}`)).join('')}</div></div>
-        <ol class="dig-labels" aria-label="Layers">${LAYERS.map((l, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${l.name}</button></li>`).join('')}</ol>
+        <ol class="dig-labels" aria-label="Layers"${reverse ? ' reversed' : ''}>${LAYERS.map(l => `<li><button type="button" data-dig="${chapter(l)}"><span>${chapter(l) + 1}</span>${l.name}</button></li>`).join('')}</ol>
       </div>
-      ${LAYERS.map((l, i) => `<div class="layer" id="layer-${l.id}" data-layer="${i}" style="--p:0;--s:1">
+      ${order.map((l, i) => `<div class="layer" id="layer-${l.id}" data-layer="${i}" style="--p:0;--s:1">
         <div class="dig-copy layer-copy">
           <h3 id="layer-${l.id}-title">${l.name}</h3>
           <p>${l.body}</p>
@@ -206,6 +213,19 @@ export function digScrollTop(section, i) {
   return section.getBoundingClientRect().top + window.scrollY + t / cfg.travel * span;
 }
 
+/* Arrow-key stops for one pinned stage: the opened block (stages with an intro), then each chapter
+   just after its scene has finished playing and before it digs on to the next. */
+export function digStops(section) {
+  const layers = [...section.querySelectorAll('.layer')];
+  if (isStacked()) return layers.map(l => l.getBoundingClientRect().top + window.scrollY - 72);
+  const cfg = config(section);
+  const span = Math.max(1, section.offsetHeight - window.innerHeight);
+  const top = section.getBoundingClientRect().top + window.scrollY;
+  const ts = cfg.intro > 0 ? [cfg.intro - .5] : [];
+  for (let i = 0; i < cfg.n; i++) ts.push(cfg.intro + (i + PLAY + .06) * cfg.per);
+  return ts.map(t => top + t / cfg.travel * span);
+}
+
 /* A chapter's progress by its layer id (null when this page version leaves the chapter out). */
 export const layerP = (section, ps, id) => { const i = [...section.querySelectorAll('.layer')].findIndex(l => l.id === id); return i < 0 ? null : ps[i]; };
 /* Page versions can show a subset of a stage's chapters (only) and set its pace (per). */
@@ -251,15 +271,18 @@ function updateStage(section, reduced) {
   section.style.setProperty('--nav', nav.toFixed(4));
   section.classList.toggle('is-open', e > .35);
   section.classList.toggle('is-dug', d > -.5);
-  section.style.setProperty('--depth', clamp(d / Math.max(1, cfg.n - 1)).toFixed(4));
+  const down = clamp(d / Math.max(1, cfg.n - 1));
+  section.style.setProperty('--depth', (section.hasAttribute('data-reverse') ? 1 - down : down).toFixed(4));
   layers.forEach((l, j) => {
     l.style.setProperty('--p', ps[j].toFixed(4));
     l.classList.toggle('is-on', Math.abs(j - d) < .5);
   });
   /* The map keeps its shape; only the current layer's slab stays in full color. */
   const active = d < -.5 ? -1 : Math.round(d);
-  slabs.forEach((s, i) => s.style.setProperty('--dim', (nav * (1 - clamp(1 - Math.abs(i - d)))).toFixed(4)));
-  section.querySelectorAll('[data-dig]').forEach((b, i) => { b.classList.toggle('is-on', i === active); b.toggleAttribute('aria-current', i === active); });
+  /* Slab i is chapter i, or chapter n-1-i when the chapters run bottom-up (data-reverse). */
+  const rev = section.hasAttribute('data-reverse');
+  slabs.forEach((s, i) => s.style.setProperty('--dim', (nav * (1 - clamp(1 - Math.abs((rev ? slabs.length - 1 - i : i) - d)))).toFixed(4)));
+  section.querySelectorAll('[data-dig]').forEach(b => { const on = Number(b.dataset.dig) === active; b.classList.toggle('is-on', on); b.toggleAttribute('aria-current', on); });
   /* Labels track their slab's top face; all share one column right of the widest slab. */
   if (slabs.length && !isStacked()) {
     const map = section.querySelector('.dig-map').getBoundingClientRect();
@@ -291,7 +314,7 @@ onStage((section, ps) => {
   const ask = section.querySelector('.ask-text');
   if (ask) {
     const full = ask.dataset.type;
-    const next = full.slice(0, Math.round(full.length * clamp(ps[1] / .22)));
+    const next = full.slice(0, Math.round(full.length * clamp((layerP(section, ps, 'layer-search') ?? 0) / .22)));
     if (next !== typed || ask.textContent !== next) { typed = next; ask.textContent = next; }
   }
 });

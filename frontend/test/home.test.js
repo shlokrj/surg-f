@@ -153,7 +153,11 @@ test('presentation and video demos: their own sections and chapters; the origina
  const chapters=d=>[...d.querySelectorAll('.dig .layer')].map(l=>l.id);
  const demo=doc('demo'),pres=doc('presentation-demo'),video=doc('video-demo');
  assert.deepEqual(chapters(demo).slice(0,7),['problem-length','problem-needle','problem-uses','problem-index','solution-label','solution-ask','solution-jump']);
- assert.deepEqual(order(pres),['landing-intro','problem','solution','feature-stack','architecture','model-notes','databricks','future','sources']);
+ assert.deepEqual(order(pres),['landing-intro','problem','solution','architecture','model-notes','databricks','future','sources'],'no feature cards');
+ // The presentation stack runs bottom-up; the block and its labels keep their places, only the numbers flip.
+ assert.deepEqual([...pres.querySelectorAll('#architecture .layer')].map(l=>l.id),['layer-video','layer-features','layer-model','layer-index','layer-search','layer-player']);
+ assert.deepEqual([...pres.querySelectorAll('#architecture [data-dig]')].map(b=>[b.dataset.dig,b.textContent]),[['5','6The player'],['4','5Search and chat'],['3','4Clip index'],['2','3Label model'],['1','2Frame features'],['0','1Surgery video']]);
+ assert.equal(demo.querySelector('#architecture .layer').id,'layer-player','other versions dig top-down');
  assert.deepEqual(chapters(pres).filter(id=>/^(problem|solution|model)-/.test(id)),['problem-needle','problem-docs','problem-learning','problem-uses','solution-label','solution-ask','solution-jump','solution-record','solution-practice','model-test','model-instruments','model-versions','model-boxes']);
  assert.deepEqual(order(video),['landing-intro','problem','solution','databricks','sources']);
  assert.deepEqual(chapters(video),['problem-needle','problem-learning','solution-ask','solution-jump','solution-practice','db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai','db-apps']);
