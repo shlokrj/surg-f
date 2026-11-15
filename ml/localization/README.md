@@ -68,3 +68,18 @@ The output is COCO `train.json` plus a manifest binding source annotation and sp
 The published CAMMA overlap map at revision `8347b9f4cb02ebe739747903e6eada272ee9d25e` has no listed overlap between Endoscapes training and our current protected CholecT50 validation/test/diagnostic cases. The preparation code excludes entire overlapping surgeries if those lists change. This is based on the published map, not independent visual deduplication. The saved `anatomy_train_manifest.json` records 120 surgeries, 1,212 frames, 2,126 boxes and 34 frames without either selected anatomy class.
 
 This prepares labels only. Training imagery, a separate validation manifest, model fine-tuning and held-out accuracy measurement are the next steps. The existing Grounding DINO preview is unchanged. Do not evaluate this two-category dataset through the all-category overlay evaluator without adding an explicit category-scope contract first.
+
+## Real-image training smoke test
+
+Use the isolated localization environment with pinned Torch/Torchvision requirements, plus `remotezip==0.12.6` for bounded downloads:
+
+```sh
+python ml/localization/fetch_anatomy_smoke.py --output-dir /path/to/new/anatomy-smoke-v1
+python ml/localization/train_anatomy_smoke.py --data-dir /path/to/anatomy-smoke-v1 --output-dir /path/to/new/anatomy-smoke-run-v1
+```
+
+The downloader selects two positive images from distinct surgeries in each official train/validation partition, verifies decoded dimensions, and records image hashes. Validation preparation excludes published overlaps with all current stage-2 split cases, including training. `prepare_anatomy.py --partition val` also supports complete validation annotation preparation; default remains train.
+
+The smoke runner uses [Torchvision Faster R-CNN MobileNetV3 320](https://docs.pytorch.org/vision/0.21/models/generated/torchvision.models.detection.fasterrcnn_mobilenet_v3_large_320_fpn.html), COCO_V1 pretrained weights, and a new head with background/cystic duct/gallbladder classes. It validates image hashes and surgery separation, performs exactly three CPU optimizer steps with seed 17, checks finite losses/inference and saves a local checkpoint, raw validation predictions and report. This is a lightweight alternative supervised baseline, not a fine-tuned Grounding DINO checkpoint.
+
+The real run succeeded on Endoscapes train surgeries 1/2 and validation 121/122. `anatomy_smoke_report.json` records all losses and versions. Three updates on two images do not establish useful accuracy; the 36/37 validation detections are counts, not correct detections. No checkpoint or image is committed, and the app still uses the old experimental preview. Next: prepare full train/validation imagery, add category-scoped COCO metrics and a bounded full training experiment with best-checkpoint selection on validation only. Browser acceptance remains separate.

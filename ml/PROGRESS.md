@@ -1,5 +1,12 @@
 # ML team progress
 
+## Stage 3 real-image training smoke (2026-11-14)
+
+Shlok, `feat/spatial-overlays`: extended preparation to official validation surgeries 121–161, guarding overlaps with stage-2 training as well as other protected splits. Downloaded four actual Endoscapes images through bounded remote ZIP access, verified decoding/dimensions and SHA-256, and ran three optimizer steps on the two train images using Torchvision Faster R-CNN MobileNetV3 320 with COCO_V1 initialization and a new two-anatomy head. Separate validation images produced finite inference outputs. Saved checkpoint/predictions outside Git and `anatomy_smoke_report.json` in Git. This is a pipeline smoke, not a quality result or app model replacement.
+
+Checks: localization unittest discovery passes 11 tests; both README smoke commands completed successfully. Train surgeries 1/2 and validation 121/122 are disjoint; finite total training losses approximately 1.403, 1.220, 1.142. Next: full image preparation, category-scoped evaluation and real training/validation; keep six instrument classes and browser acceptance as separate unfinished work. No stage-2 jobs changed.
+
+
 ## Stage 3 anatomy preparation (2026-11-14)
 
 Shlok, `feat/spatial-overlays`: pinned the published CAMMA surgery-overlap map at `8347b9f4cb02ebe739747903e6eada272ee9d25e`. No listed Endoscapes-train overlap with our current protected validation/test/diagnostic cases. Added `prepare_anatomy.py`, which excludes protected overlapping surgeries, rejects nontraining/unreviewed images, and maps only cystic duct/gallbladder. Real run prepared 1,212 frames, 2,126 boxes and 34 anatomy-negative frames across 120 surgeries. Source/split hashes and mapping are committed in `anatomy_train_manifest.json`; generated labels remain outside Git.
