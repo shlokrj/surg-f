@@ -17,7 +17,7 @@ from PIL import Image
 
 from artifact import validate
 from name_instruments import instrument_seconds, name_tools
-from train_anatomy import CATEGORIES, build_model
+from train_anatomy import CATEGORIES, build_model, model_options, predict
 
 NAMES = {c['id']: c['name'] for c in CATEGORIES}
 
@@ -108,7 +108,8 @@ def detections_for(result, size, frame_id, thresholds, names=None, tools=None):
 
 
 def export(model, video, seconds, ffmpeg, case_id, asset_id, fps, display_width=None, display_height=None,
-           score_threshold=.3, class_thresholds=None, max_age_sec=.12, provenance=None, names=None, naming=None):
+           score_threshold=.3, class_thresholds=None, max_age_sec=.12, provenance=None, names=None, naming=None,
+           tta=False):
     """`naming`: dict(seconds={second: {instrument}}, offset=video minus dataset seconds, source=...) to name tool boxes."""
     names = names or NAMES
     if 'tool' in names.values() and naming is None:
@@ -125,7 +126,7 @@ def export(model, video, seconds, ffmpeg, case_id, asset_id, fps, display_width=
     for frame_id, image, digest in iter_frames(ffmpeg, video, indices, stream['width'], stream['height']):
         source_hashes[f'{frame_id:06}'] = digest
         with torch.inference_mode():
-            result = model([pil_to_tensor(image).float() / 255])[0]
+            result = predict(model, pil_to_tensor(image).float() / 255, tta)
         tools = []
         timestamp = round(stream['start_sec'] + frame_id/fps, 6)
         frames.append(dict(frame_id=frame_id, timestamp_sec=timestamp,
@@ -188,6 +189,7 @@ def main():
     parser.add_argument('--class-threshold', type=parse_class_threshold, action='append', default=[],
                         help='Per-class override, e.g. "cystic duct=0.7"')
     parser.add_argument('--max-age-sec', type=float, default=.12)
+    parser.add_argument('--tta', action='store_true', help='also run each frame mirrored and merge (test-time flip)')
     parser.add_argument('--triplets', help='CholecT50 per-second labels CSV, required for tool-class models')
     parser.add_argument('--naming', choices=('strict', 'carry'), default='strict',
                         help='instrument naming rule (strict: one listed + one detected; carry also propagates by overlap)')
@@ -216,10 +218,11 @@ def main():
     architecture = checkpoint.get('architecture', 'mobilenet_v3_320')  # checkpoints before the option were 320
     categories = checkpoint.get('categories', CATEGORIES)
     names = {c['id']: c['name'] for c in categories}
-    model, _ = build_model(architecture, pretrained=False, classes=len(categories))
+    model, _ = build_model(architecture, pretrained=False, classes=len(categories), **model_options(checkpoint))
     model.load_state_dict(checkpoint['model'])
     report = Path(args.checkpoint).parent / 'report.json'
     provenance = dict(checkpoint_sha256=sha(args.checkpoint), checkpoint_epoch=checkpoint.get('epoch'), architecture=architecture,
+                      model_options=model_options(checkpoint), test_time_flip=args.tta,
                       data_signature=checkpoint['data_signature'],
                       training_report_sha256=sha(report) if report.exists() else None,
                       validation_status=json.loads(report.read_text()).get('status') if report.exists() else 'unknown',
@@ -232,7 +235,7 @@ def main():
                       source=dict(triplets_sha256=sha(args.triplets)))
     artifact = export(model, args.video, seconds, args.ffmpeg, args.case_id, args.video_asset_id, args.fps,
         args.display_width, args.display_height, args.score_threshold, dict(args.class_threshold),
-        args.max_age_sec, provenance, names, naming)
+        args.max_age_sec, provenance, names, naming, args.tta)
     text = json.dumps(artifact, separators=(',', ':'), allow_nan=False) + '\n'
     with output.open('x') as stream_out:
         stream_out.write(text)

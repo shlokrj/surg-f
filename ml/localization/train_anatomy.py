@@ -75,7 +75,8 @@ def ready_data(root, max_train=None, max_val=None):
 ARCHITECTURES = ('mobilenet_v3_320', 'mobilenet_v3_hires')
 
 
-def build_model(architecture='mobilenet_v3_320', pretrained=True, classes=2):
+def build_model(architecture='mobilenet_v3_320', pretrained=True, classes=2, min_size=480, small_anchors=False,
+                proposals=None):
     """Two-class anatomy Faster R-CNN; returns (model, pretrained weights enum or None).
 
     mobilenet_v3_320 resizes frames to a 320-pixel short side; mobilenet_v3_hires keeps
@@ -89,11 +90,44 @@ def build_model(architecture='mobilenet_v3_320', pretrained=True, classes=2):
         model = fasterrcnn_mobilenet_v3_large_320_fpn(weights=weights, weights_backbone=None)
     elif architecture == 'mobilenet_v3_hires':
         weights = FasterRCNN_MobileNet_V3_Large_FPN_Weights.COCO_V1 if pretrained else None
-        model = fasterrcnn_mobilenet_v3_large_fpn(weights=weights, weights_backbone=None, min_size=480, max_size=854)
+        # min_size 480 keeps native 854x480; 800 upscales so thin structures cover more pixels
+        model = fasterrcnn_mobilenet_v3_large_fpn(weights=weights, weights_backbone=None, min_size=min_size,
+                                                  max_size=round(min_size * 854 / 480))
     else:
         raise ValueError(f'unknown architecture: {architecture}')
     model.roi_heads.box_predictor = FastRCNNPredictor(model.roi_heads.box_predictor.cls_score.in_features, classes + 1)
+    if small_anchors:
+        # Half-size anchors with the same 3 ratios per location: the RPN head shape is unchanged,
+        # so earlier checkpoints still load, but proposals start closer to thin, small structures.
+        from torchvision.models.detection.anchor_utils import AnchorGenerator
+        levels = len(model.rpn.anchor_generator.sizes)
+        model.rpn.anchor_generator = AnchorGenerator(((16, 32, 64, 128, 256),) * levels, ((0.5, 1.0, 2.0),) * levels)
+    if proposals:
+        model.rpn._pre_nms_top_n = dict(training=proposals, testing=proposals)
+        model.rpn._post_nms_top_n = dict(training=proposals, testing=proposals)
     return model, weights
+
+
+def model_options(checkpoint):
+    """build_model keyword arguments recorded in a checkpoint (older checkpoints: defaults)."""
+    return dict(checkpoint.get('model_options', {}))
+
+
+def predict(model, pixels, tta=False):
+    """Run the detector; with tta, also on the mirrored image and merge with per-class NMS."""
+    import torch
+    from torchvision.ops import batched_nms
+    result = model([pixels])[0]
+    if not tta:
+        return result
+    width = pixels.shape[-1]
+    mirrored = model([pixels.flip(-1)])[0]
+    unflipped = mirrored['boxes'].clone()
+    unflipped[:, 0], unflipped[:, 2] = width - mirrored['boxes'][:, 2], width - mirrored['boxes'][:, 0]
+    boxes = torch.cat([result['boxes'], unflipped]); scores = torch.cat([result['scores'], mirrored['scores']])
+    labels = torch.cat([result['labels'], mirrored['labels']])
+    keep = batched_nms(boxes, scores, labels, 0.5)[:100]
+    return dict(boxes=boxes[keep], scores=scores[keep], labels=labels[keep])
 
 
 def flip_horizontal(pixels, boxes, width):
@@ -132,13 +166,13 @@ class Images:
         return pixels, target, image
 
 
-def predictions_for(model, samples, device):
+def predictions_for(model, samples, device, tta=False):
     import torch
     model.eval()
     output = []
     with torch.inference_mode():
         for pixels, _, image in samples:
-            prediction = model([pixels.to(device)])[0]
+            prediction = predict(model, pixels.to(device), tta)
             if not all(torch.isfinite(t).all() for t in prediction.values()):
                 raise ValueError('nonfinite validation prediction')
             width, height = image['width'], image['height']
@@ -185,6 +219,12 @@ def main():
     parser.add_argument('--architecture', choices=ARCHITECTURES, default='mobilenet_v3_320')
     parser.add_argument('--hflip', action='store_true', help='Random horizontal flip augmentation (training only)')
     parser.add_argument('--grad-clip', type=float, help='Clip total gradient norm (guards against divergence)')
+    parser.add_argument('--min-size', type=int, default=480, help='hires input short side (480 native, 800 upscaled)')
+    parser.add_argument('--small-anchors', action='store_true', help='half-size RPN anchors for thin, small objects')
+    parser.add_argument('--proposals', type=int, help='RPN proposals kept before/after NMS (train and test)')
+    parser.add_argument('--lr-schedule', choices=('constant', 'cosine'), default='constant')
+    parser.add_argument('--oversample-duct', type=float, default=1.0, help='sampling weight for frames with a cystic duct box')
+    parser.add_argument('--init-checkpoint', help='start from these weights (same classes and head shape)')
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--max-train-images', type=int, help='Bounded pipeline check; not an accuracy run')
     parser.add_argument('--max-val-images', type=int, help='Bounded pipeline check; not an accuracy run')
@@ -204,10 +244,30 @@ def main():
     random.seed(args.seed); torch.manual_seed(args.seed); torch.set_num_threads(4)
     train = Images(args.data_dir, 'train', subsets['train'], hflip=args.hflip)
     val = Images(args.data_dir, 'val', subsets['val'])
-    loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=0,
-                        collate_fn=lambda batch: tuple(zip(*batch)), generator=torch.Generator().manual_seed(args.seed))
+    generator = torch.Generator().manual_seed(args.seed)
+    if args.oversample_duct != 1.0:
+        from torch.utils.data import WeightedRandomSampler
+        duct_images = {a['image_id'] for a in subsets['train']['annotations'] if a['category_id'] == 1}
+        weights_per_image = [args.oversample_duct if image['id'] in duct_images else 1.0 for image in train.images]
+        sampler = WeightedRandomSampler(weights_per_image, len(weights_per_image), replacement=True, generator=generator)
+        loader = DataLoader(train, batch_size=args.batch_size, sampler=sampler, num_workers=0,
+                            collate_fn=lambda batch: tuple(zip(*batch)))
+    else:
+        loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=0,
+                            collate_fn=lambda batch: tuple(zip(*batch)), generator=generator)
     categories = subsets['train']['categories']
-    model, weights = build_model(args.architecture, classes=len(categories))
+    options = {}
+    if args.min_size != 480:
+        options['min_size'] = args.min_size
+    if args.small_anchors:
+        options['small_anchors'] = True
+    if args.proposals:
+        options['proposals'] = args.proposals
+    model, weights = build_model(args.architecture, classes=len(categories), **options)
+    if args.init_checkpoint:
+        initial = torch.load(args.init_checkpoint, map_location='cpu', weights_only=False)
+        model.load_state_dict(initial['model'])
+        init_sha256 = sha(args.init_checkpoint)
     weight_file = Path(torch.hub.get_dir()) / 'checkpoints' / Path(urlparse(weights.url).path).name
     weights_sha256 = sha(weight_file)
     expected_prefix = weight_file.stem.rsplit('-', 1)[-1]
@@ -215,6 +275,7 @@ def main():
         raise ValueError('cached pretrained weights fail published hash prefix')
     model.to(args.device)
     optimizer = torch.optim.SGD([p for p in model.parameters() if p.requires_grad], lr=args.learning_rate, momentum=.9)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs) if args.lr_schedule == 'cosine' else None
     config = dict(batch_size=args.batch_size, learning_rate=args.learning_rate, device=args.device,
                   weights_sha256=weights_sha256)
     if args.grad_clip is not None:  # only recorded when used, so earlier checkpoints still resume
@@ -225,6 +286,14 @@ def main():
         config['hflip'] = True
     if categories != CATEGORIES:
         config['categories'] = [c['name'] for c in categories]
+    if options:
+        config['model_options'] = options
+    if args.lr_schedule != 'constant':
+        config['lr_schedule'] = args.lr_schedule
+    if args.oversample_duct != 1.0:
+        config['oversample_duct'] = args.oversample_duct
+    if args.init_checkpoint:
+        config['init_checkpoint_sha256'] = init_sha256
     start, best_ap, history = 0, -1.0, []
     if args.resume:
         previous = torch.load(out / 'last.pt', map_location=args.device, weights_only=False)
@@ -233,7 +302,9 @@ def main():
         model.load_state_dict(previous['model']); optimizer.load_state_dict(previous['optimizer'])
         start, best_ap, history = previous['epoch'] + 1, previous['best_ap'], previous['history']
         torch.set_rng_state(previous['torch_rng_state'])
-        loader.generator.set_state(previous['loader_rng_state'])
+        generator.set_state(previous['loader_rng_state'])
+        if scheduler is not None:
+            scheduler.load_state_dict(previous['scheduler'])
         baseline = previous.get('baseline_validation')
     else:
         baseline = evaluate(subsets['val'], predictions_for(model, val, args.device))
@@ -251,6 +322,8 @@ def main():
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
             optimizer.step()
             losses.append(float(loss.detach()))
+        if scheduler is not None:
+            scheduler.step()
         predictions = predictions_for(model, val, args.device)
         metrics = evaluate(subsets['val'], predictions)
         ap = metrics['ap'] if metrics['ap'] is not None else -1.0
@@ -263,7 +336,8 @@ def main():
                           best_ap=best_ap, history=history, baseline_validation=baseline,
                           data_signature=signature, architecture=args.architecture, categories=categories,
                           seed=args.seed, config=config, torch_rng_state=torch.get_rng_state(),
-                          loader_rng_state=loader.generator.get_state())
+                          loader_rng_state=generator.get_state(), model_options=options,
+                          scheduler=scheduler.state_dict() if scheduler is not None else None)
         atomic_torch_save(torch, checkpoint, out / 'last.pt')
         if improved:
             atomic_torch_save(torch, checkpoint, out / 'best.pt')
@@ -273,6 +347,8 @@ def main():
                       initial_weights_sha256=weights_sha256,
                       categories=categories, seed=args.seed, device=args.device, epochs_requested=args.epochs,
                       learning_rate=args.learning_rate, batch_size=args.batch_size, grad_clip=args.grad_clip,
+                      model_options=options, lr_schedule=args.lr_schedule, oversample_duct=args.oversample_duct,
+                      init_checkpoint=args.init_checkpoint,
                       train_images=len(train), validation_images=len(val), data_signature=signature,
                       torch=torch.__version__, torchvision=torchvision.__version__,
                       baseline_validation=baseline, best_ap=None if best_ap < 0 else best_ap,

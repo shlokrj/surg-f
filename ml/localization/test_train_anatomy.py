@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from PIL import Image
-from train_anatomy import CATEGORIES, build_model, flip_horizontal, ready_data, skip_nonfinite
+from train_anatomy import CATEGORIES, build_model, flip_horizontal, predict, ready_data, skip_nonfinite
 
 
 class ReadinessTests(unittest.TestCase):
@@ -66,6 +66,34 @@ class ModelAndAugmentationTests(unittest.TestCase):
         self.assertEqual(build_model('mobilenet_v3_hires', pretrained=False)[0].transform.min_size, (480,))
         with self.assertRaises(ValueError):
             build_model('resnet9000', pretrained=False)
+
+
+class ImprovementOptionTests(unittest.TestCase):
+    def test_resolution_anchors_and_proposals(self):
+        model, _ = build_model('mobilenet_v3_hires', pretrained=False, min_size=800, small_anchors=True, proposals=2000)
+        self.assertEqual(model.transform.min_size, (800,))
+        self.assertEqual(model.transform.max_size, 1423)
+        self.assertEqual(model.rpn.anchor_generator.sizes[0][0], 16)
+        self.assertEqual(model.rpn.anchor_generator.num_anchors_per_location(),
+                         build_model('mobilenet_v3_hires', pretrained=False)[0].rpn.anchor_generator.num_anchors_per_location(),
+                         'same anchors per location, so earlier weights load')
+        self.assertEqual(model.rpn._post_nms_top_n['testing'], 2000)
+        base, _ = build_model('mobilenet_v3_hires', pretrained=False)
+        model.load_state_dict(base.state_dict())
+
+    def test_test_time_flip_mirrors_back(self):
+        import torch
+
+        class Fake(torch.nn.Module):
+            def forward(self, images):
+                flipped = bool(images[0][0, 0, 0] > .5)  # marker pixel at top-left only in the mirrored image
+                box = [6., 0., 9., 2.] if flipped else [1., 0., 3., 2.]
+                return [dict(boxes=torch.tensor([box]), scores=torch.tensor([.9 if flipped else .8]), labels=torch.tensor([1]))]
+
+        pixels = torch.zeros(3, 4, 10); pixels[0, 0, 9] = 1.0
+        merged = predict(Fake(), pixels, tta=True)
+        self.assertIn([1., 0., 4., 2.], merged['boxes'].tolist(), 'mirrored box [6,9] maps back to [1,4]')
+        self.assertEqual(len(predict(Fake(), pixels)['boxes']), 1)
 
 
 if __name__ == '__main__':
