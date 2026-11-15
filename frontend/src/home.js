@@ -117,18 +117,18 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
           <canvas class="sky-dither hero-dither" aria-hidden="true"></canvas>
           <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><button type="button" id="open-sample" class="nav-case">Open a case</button></nav>
           <div class="intro-copy"><h1 id="landing-title">${wordmark()}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="#case-preview">See the demo <span aria-hidden="true">↓</span></a></div>
-          <a href="#case-preview" class="hero-search" aria-label="Example search: when is the clipper used? Jump to the VID01 result">
-            <span class="hs-query">${searchGlyph}When is the clipper used?</span>
-            <span class="hs-hit"><span>VID01</span><span class="hs-time">11:14</span></span>
+          <a href="#case-preview" class="hero-search" aria-label="Example search: when is the cystic duct clipped? Jump to the VID01 result at 11:38">
+            <span class="hs-query">${searchGlyph}When is the cystic duct clipped?</span>
+            <span class="hs-hit"><span>VID01</span><span class="hs-time">11:38</span></span>
           </a>
         </div>
       </div>
     </section>
     <section class="case-section" id="case-preview" aria-labelledby="case-heading">
-      <div class="case-copy"><h2 id="case-heading">Find the clip.</h2><p>Ask when an instrument is used and jump straight to its annotated timestamp.</p><button type="button" class="btn-primary" id="sample">Explore the demo</button></div>
-      <div class="case-console"><div class="console-bar"><span class="console-case"><strong>VID01</strong><span>Cholecystectomy</span></span>${filterButton}</div>
-      <div class="preview-video surgical-media ${filterOn ? 'filtered' : ''}"><video src="${videoUrl}" muted playsinline preload="metadata" aria-label="Surgical footage from the VID01 demo case"></video><span class="preview-unavailable" hidden>Video preview unavailable. You can still open the case.</span></div>
-      <button type="button" id="sample-event" class="find-result"><span class="find-query">${searchGlyph}When is the clipper used?</span><span class="find-time">11:14 <span aria-hidden="true">↗</span></span></button><div class="console-caption"><span>Dataset annotation</span><span>Jump to this moment</span></div></div>
+      <div class="case-copy"><h2 id="case-heading">Find the clip.</h2><p>Ask when a step happens and jump straight to the annotated moment.</p><button type="button" class="btn-primary" id="sample">Explore the demo</button></div>
+      <div class="case-console"><div class="console-bar"><span class="console-case"><strong>VID01</strong><span>Cholecystectomy</span></span></div>
+      <div class="preview-video surgical-media ${filterOn ? 'filtered' : ''}">${filterButton}<video src="${videoUrl}" muted playsinline preload="metadata" aria-label="Surgical footage from the VID01 demo case"></video><span class="preview-unavailable" hidden>Video preview unavailable. You can still open the case.</span></div>
+      <button type="button" id="sample-event" class="find-result"><span class="find-query">${searchGlyph}When is the cystic duct clipped?</span><span class="find-time">11:38 <span aria-hidden="true">↗</span></span></button><div class="console-caption"><span>Annotated: clipper clips the cystic duct</span><span>Jump to this moment</span></div></div>
     </section>
     ${feature({id: 'feature-steps', title: 'Follow the operation, step by step.', body: 'Each case is split into its surgical phases. Select a step to jump straight to it.', action: 'Open the case timeline', horizon: .62, preview: stepsPreview(showcase.steps)})}
     ${feature({id: 'feature-chart', title: 'See which instruments appear, and for how long.', body: 'Time on screen for each instrument, totalled from the dataset annotations.', action: 'Show the instrument chart', command: '/chart instruments', horizon: .62, flip: true, preview: instrumentsPreview(showcase.timeline)})}

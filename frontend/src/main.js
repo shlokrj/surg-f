@@ -52,7 +52,7 @@ function render() {
   const wasPlaying = keepVideo && !oldVideo.paused;
 
   app.innerHTML = `<header class="topbar"><button type="button" class="logo-link" id="home-link" aria-label="surg+f home">${logo}</button>
-    <span class="top-spacer"></span>${state.page === 'dash' ? '<button type="button" class="top-action" id="change-video">Choose another video</button>' : '<nav class="home-nav" aria-label="Main"><a href="#case-preview">The demo</a><a href="#local-heading">Your video ↗</a></nav>'}</header>
+    <span class="top-spacer"></span>${state.page === 'dash' ? '<button type="button" class="top-action" id="open-local">Open your own video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>' : '<nav class="home-nav" aria-label="Main"><a href="#case-preview">The demo</a><a href="#local-heading">Your video ↗</a></nav>'}</header>
     ${state.page === 'home' ? home() : dashboard()}`;
 
   if (keepVideo) {
@@ -98,8 +98,12 @@ function caseTitle() {
   return `${id ? `<span class="case-id">${escapeHtml(id)}</span> ` : ''}<span class="case-name">${escapeHtml(name)}</span>`;
 }
 
+const EYE_OPEN = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_SLASH = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 5.7A9.7 9.7 0 0 1 12 5.5C18 5.5 21.5 12 21.5 12a17 17 0 0 1-2.7 3.5M6.3 7.4C3.9 9.1 2.5 12 2.5 12S6 18.5 12 18.5c1.7 0 3.2-.5 4.5-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18"/></svg>';
+// Content filter: an eye over the footage. Slashed while the footage is blurred.
+const eyeTitle = () => state.filterOn ? 'Footage blurred. Select to show it.' : 'Footage visible. Select to blur it.';
 function filterButton() {
-  return `<button type="button" class="filter-toggle" data-filter-toggle aria-pressed="${state.filterOn}" aria-label="Content filter ${state.filterOn ? 'on' : 'off'}">Content filter: ${state.filterOn ? 'On' : 'Off'}</button>`;
+  return `<button type="button" class="eye-toggle" data-filter-toggle aria-pressed="${state.filterOn}" aria-label="Blur footage" title="${eyeTitle()}">${state.filterOn ? EYE_SLASH : EYE_OPEN}</button>`;
 }
 
 function home() {
@@ -116,7 +120,8 @@ function detectRequest(input) {
     if (/3d|model|anatomy/.test(lower)) modes.push('model');
     if (/when|timestamp|show me|find|where|used|occurred|happen/.test(lower) || !modes.length) modes.unshift('timestamp');
   }
-  const label = instrumentLabels.find(item => new RegExp(`\\b${item}\\b`).test(lower));
+  // "clip", "clipped", "clipping" mean the clipper (for example "When is the cystic duct clipped?").
+  const label = instrumentLabels.find(item => new RegExp(`\\b${item}\\b`).test(lower)) ?? (/\bclip(?:s|ped|ping)?\b/.test(lower) ? 'clipper' : undefined);
   return { modes, label };
 }
 function parseChartRequest(input) {
@@ -191,9 +196,9 @@ function dashboard() {
   return `<main class="dash"><div class="dash-main">
     <section class="video-section" aria-labelledby="video-title">
       <div class="video-head case-head"><canvas class="sky-dither" data-horizon=".5" data-ceiling="3.2" data-ramp=".45" aria-hidden="true"></canvas><h1 id="video-title">${caseTitle()}</h1>
-        <div class="video-actions">${filterButton()}<div class="case-switch" role="group" aria-label="Demo video">${['VID01', 'VID02'].map(id => `<button type="button" data-case="${id}" aria-pressed="${state.caseId === id}">${id}</button>`).join('')}</div></div></div>
+        <div class="video-actions"><div class="case-switch" role="group" aria-label="Demo video">${['VID01', 'VID02'].map(id => `<button type="button" data-case="${id}" aria-pressed="${state.caseId === id}">${id}</button>`).join('')}</div></div></div>
       <div class="video-frame surgical-media ${state.filterOn ? 'filtered' : ''}">
-        <video id="player" data-src="${escapeHtml(state.videoUrl ?? '')}" preload="metadata" playsinline ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video>
+        ${filterButton()}<video id="player" data-src="${escapeHtml(state.videoUrl ?? '')}" preload="metadata" playsinline ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video>
         <div class="video-fallback" id="video-fallback" ${state.videoError ? '' : 'hidden'}><strong>Video unavailable</strong><span>The video for ${escapeHtml(state.caseId)} has not been downloaded or hosted yet.</span></div>
         <div class="video-controls" role="group" aria-label="Video controls"><button type="button" id="video-play" aria-label="Play video">▶</button><span id="video-time">00:00 / --:--</span><input id="video-seek" type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek video"><button type="button" id="video-mute" aria-label="Mute video">♬</button><input id="video-volume" type="range" min="0" max="1" value="1" step="0.05" aria-label="Volume"><select id="video-speed" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select><button type="button" id="video-fullscreen" aria-label="Enter fullscreen">⛶</button></div>
       </div>
@@ -212,13 +217,13 @@ function resetCase(caseId, title, videoUrl, localVideo) {
     quizAnswers: {}, quizSubmitted: false, chartRequest: null, actionRows: [], error: '', loading: false,
   });
 }
-function openSample(seek = null) {
+function openSample(seek = null, query = '/timestamp clipper') {
   resetCase('VID01', 'VID01 · Cholecystectomy', videoForCase('VID01'), false);
   state.pendingSeek = seek;
   state.messages = [{ role: 'doc', text: greeting('VID01') }];
   render();
   loadSteps();
-  if (seek != null) runSearch('/timestamp clipper');
+  if (seek != null) runSearch(query);
 }
 function openFile(file) {
   if (!file) return;
@@ -297,14 +302,14 @@ document.addEventListener('fullscreenchange', syncFullscreenButton);
 function wire() {
   const goHome = () => { state.page = 'home'; state.error = ''; render(); };
   document.querySelector('#home-link')?.addEventListener('click', goHome);
-  document.querySelector('#change-video')?.addEventListener('click', goHome);
+  document.querySelector('#open-local')?.addEventListener('click', () => document.querySelector('#file-input')?.click());
   document.querySelectorAll('[data-filter-toggle]').forEach(button => button.addEventListener('click', () => {
     state.filterOn = !state.filterOn;
     document.querySelectorAll('.surgical-media').forEach(media => media.classList.toggle('filtered', state.filterOn));
     document.querySelectorAll('[data-filter-toggle]').forEach(toggle => {
-      toggle.textContent = `Content filter: ${state.filterOn ? 'On' : 'Off'}`;
+      toggle.innerHTML = state.filterOn ? EYE_SLASH : EYE_OPEN;
       toggle.setAttribute('aria-pressed', String(state.filterOn));
-      toggle.setAttribute('aria-label', `Content filter ${state.filterOn ? 'on' : 'off'}`);
+      toggle.setAttribute('title', eyeTitle());
     });
   }));
 
@@ -312,7 +317,7 @@ function wire() {
   const preview = document.querySelector('.preview-video video');
   preview?.addEventListener('loadedmetadata', () => { preview.currentTime = 674; });
   document.querySelector('#sample')?.addEventListener('click', () => openSample());
-  document.querySelector('#sample-event')?.addEventListener('click', () => openSample(674));
+  document.querySelector('#sample-event')?.addEventListener('click', () => openSample(698, 'When is the cystic duct clipped?'));
   document.querySelector('#open-sample')?.addEventListener('click', () => openSample());
   document.querySelectorAll('[data-open-sample]').forEach(button => button.addEventListener('click', () => {
     openSample();
