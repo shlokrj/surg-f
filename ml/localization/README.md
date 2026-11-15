@@ -152,6 +152,26 @@ python ml/localization/evaluate_anatomy_coco.py /path/to/review-VID01/reference.
 
 The seeded sample (default seed 11) takes half its frames from intervals where `shared/triplets.annotation.csv` names `cystic_duct` as a target and half spread across the video, so it tests both misses and false alarms. `reference.json` is COCO with only cystic duct and gallbladder, **blank by default** (`--prefill SCORE` copies model boxes in but can anchor the reviewer), and every image starts with `is_det_keyframe: false`; the evaluator refuses until a reviewer has boxed every visible instance in a frame and set it to `true`. `predictions.json` holds raw, unthresholded predictions so AP is defined. The manifest binds video, checkpoint (architecture, epoch, data signature), triplets file and frame PNG hashes. The same seed and count reproduce the same frames, so a later checkpoint can be scored on identical frames. Pack built 2026-11-14 from the v2 checkpoint: `~/madhacks2026/localization/review-VID01-v1/`, 60 frames (32 inside cystic duct intervals). It contains Cholec80 imagery (CC BY-NC-SA 4.0); keep it out of Git. **Not yet reviewed; no VID01 accuracy exists yet.**
 
+### Labeling the pack with Label Studio (local, nothing leaves the machine)
+
+1. `pip install label-studio` in any separate environment, then `label-studio start` and open http://localhost:8080 (create a local account).
+2. **Create project** → *Labeling Setup* → *Custom template* → paste `label-studio-config.xml` from the pack folder (two labels: Cystic duct, Gallbladder).
+3. *Data Import* → upload every PNG from the pack's `frames/` folder (60 files).
+4. For each frame, draw a box around **every visible** cystic duct and gallbladder, tightly around the visible part only. If neither is visible, draw nothing. Always press **Submit**, including on empty frames, because only submitted frames count as reviewed. Use the zoom; skip nothing.
+5. *Export* → **COCO** → save the JSON (Label Studio may download a zip containing `result.json`).
+6. Convert and score:
+
+```sh
+python ml/localization/import_review_labels.py ~/madhacks2026/localization/review-VID01-v1 result.json \
+  --reviewer "Your Name" --output ~/madhacks2026/localization/review-VID01-v1/reference.reviewed.json
+python ml/localization/evaluate_anatomy_coco.py ~/madhacks2026/localization/review-VID01-v1/reference.reviewed.json \
+  ~/madhacks2026/localization/review-VID01-v1/predictions.json --output ~/madhacks2026/localization/VID01-v2-metrics.json
+python ml/localization/evaluate_anatomy_coco.py ~/madhacks2026/localization/review-VID01-v1/reference.reviewed.json \
+  ~/madhacks2026/localization/review-VID01-v3preds/predictions.json --output ~/madhacks2026/localization/VID01-v3-metrics.json
+```
+
+`import_review_labels.py` matches exported images by their six-digit frame name, accepts only the two labels, clips sub-pixel overhangs, refuses frames from outside the pack, and requires every pack frame to be submitted (`--allow-partial` marks only submitted frames reviewed). The two evaluator runs give the first real VID01 scores for v2 (deployed) and v3 on identical frames.
+
 ## Run on Databricks serverless
 
 `scripts/run_databricks_anatomy.py` (run from `scripts/` with a venv that has `databricks-sdk` and `python-dotenv`; credentials from the repo-root `.env`) submits `ml/localization/anatomy_databricks.py` as a one-off serverless CPU job from the committed revision. Everything after `--` is passed to `train_anatomy.py` or `export_anatomy_video.py` unchanged.
