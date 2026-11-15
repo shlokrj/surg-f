@@ -10,35 +10,35 @@ Built at MadHacks 2026 by Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal and Rohan
 
 ## Problem
 
-Surgical video is long and has no index. VID01, one gallbladder removal from the CholecT50 dataset, runs 28 minutes 53 seconds. The moment a student usually needs, the cystic duct being cut, starts at 14:20 and is over 17 seconds later. Finding it means scrubbing back and forth.
+Surgery videos are long and hard to search. VID01, one gallbladder removal from the CholecT50 dataset, is 28 minutes 53 seconds long. The part a student usually wants, the cystic duct being cut, starts at 14:20 and lasts 17 seconds. To find it, you scrub back and forth.
 
-Every operation is also documented by hand: each step, the instruments used, and when. That takes time, has to be exact, and gaps turn into delays and billing questions.
+Every operation is also written up by hand: each step, the tools used, and when. That is slow, it has to be exact, and mistakes cause delays and billing problems.
 
 | Who | What they need |
 |---|---|
-| Residents and students | Watch one step before doing it |
-| Surgeons | Review a step before a case |
-| Educators | Cut the critical seconds into a lesson |
+| Residents and students | Watch a step before doing it |
+| Surgeons | Review a step before an operation |
+| Educators | Cut the key seconds into a lesson |
 | Researchers | Compare one step across many operations |
 
 ## Solution
 
-surg+f labels every second of surgical video and lets you search it in plain words.
+surg+f labels every second of surgical video, so you can search it in plain words.
 
 | Feature | What it does |
 |---|---|
-| Label every second | A model predicts 29 labels per second: instruments, actions and anatomy |
+| Label every second | A model predicts 29 labels each second: tools, actions and anatomy |
 | Ask in plain words | "When is the cystic duct cut?" becomes a search for the scissors |
-| Jump to the moment | The player seeks straight to the clip's first second |
-| Study | Step timeline, instrument chart, quiz, and Lil Doc, a chat assistant |
-| Practice in 3D | A 3D model of the gallbladder region that follows the video step by step |
-| Bounding boxes | Experimental boxes around the gallbladder, cystic duct and instruments |
+| Jump to the moment | The player skips straight to the start of the clip |
+| Study | Step timeline, tool chart, quiz, and Lil Doc, a chat assistant |
+| Practice in 3D | A 3D model of the gallbladder area that follows the video step by step |
+| Bounding boxes | Experimental boxes around the gallbladder, cystic duct and tools |
 
 ![Ask in plain words](docs/images/solution.jpg)
 
 ![The 3D model at the clipping step](docs/images/model-3d.jpg)
 
-The 3D view is built from BodyParts3D. The clips, cut and triangle are schematic drawings.
+The 3D anatomy comes from BodyParts3D. The clips, cut and triangle are simple drawings we added.
 
 ## How it works
 
@@ -63,7 +63,7 @@ flowchart LR
   G --> T
 ```
 
-A search, end to end:
+What happens when you search:
 
 ```mermaid
 sequenceDiagram
@@ -76,46 +76,42 @@ sequenceDiagram
   A->>D: SELECT ... WHERE lower(label) = 'scissors'
   D-->>A: VID01, 860 to 877 s
   A-->>W: results
-  W-->>U: player seeks to 14:20
+  W-->>U: player jumps to 14:20
 ```
-
-The stack has six layers, from what you see down to the data:
 
 | Layer | What it does | Built with |
 |---|---|---|
-| Player | Plays the case, seeks to results, draws boxes | Vite, plain JavaScript, three.js |
-| Search and chat | Clip search, chat routing, free-form answers | FastAPI, Databricks SQL, Genie, Llama 3.3 70B |
-| Clip index | One row per labeled or predicted clip | Delta Lake, Lakeflow Jobs |
-| Label model | Predicts 29 labels from 5 seconds of features | scikit-learn, MLflow |
-| Frame features | 768 numbers per second of video | SurgVLP (frozen), PyTorch |
-| Surgery video | 50 laparoscopic gallbladder removals | CholecT50, Cholec80 |
+| Player | Plays the video, jumps to results, draws boxes | Vite, JavaScript, three.js |
+| Search and chat | Finds clips and answers questions | FastAPI, Databricks SQL, Genie, Llama 3.3 70B |
+| Clip index | One row for every labeled or predicted clip | Delta Lake, Lakeflow Jobs |
+| Label model | Predicts 29 labels from 5 seconds of video | scikit-learn, MLflow |
+| Frame features | Turns each second of video into 768 numbers | SurgVLP, PyTorch |
+| Surgery video | 50 gallbladder removals | CholecT50, Cholec80 |
 
-![Dig into the stack](docs/images/stack.jpg)
+![The stack](docs/images/stack.jpg)
 
 ## Model
 
 | | |
 |---|---|
-| Features | SurgVLP image encoder (ResNet-50), frozen. 768 numbers per second |
-| Classifier | Neural network (scikit-learn MLPClassifier), 29 labels at once, 5 seconds of context |
-| Data | CholecT50: trained on 42 surgeries, tuned on 3, tested on 4 it never saw |
-| Clips | Per-second predictions are smoothed: gaps of 2 s or less are filled, clips under 2 s are dropped |
-| Tracking | Every run is logged in MLflow. Demo model: run `9d18d20a` |
+| Features | SurgVLP, a model already trained on surgical video. We use it as is |
+| Classifier | A small neural network (scikit-learn) that predicts all 29 labels at once |
+| Data | Trained on 42 surgeries, tuned on 3, tested on 4 it never saw |
+| Clips | Short gaps (2 s or less) are filled in, and clips shorter than 2 s are dropped |
+| Tracking | Every run is logged in MLflow. The demo uses run `9d18d20a` |
 
-Results on the 4 held-out surgeries (F1, 0 to 1):
+Scores on the 4 test surgeries (F1, from 0 to 1, higher is better):
 
-| Instrument | F1 | Action | F1 | Target | F1 |
+| Tool | F1 | Action | F1 | Target | F1 |
 |---|---|---|---|---|---|
 | Grasper | 0.89 | Retract | 0.86 | Gallbladder | 0.88 |
 | Hook | 0.83 | Dissect | 0.78 | Specimen bag | 0.75 |
 | Bipolar | 0.52 | Coagulate | 0.46 | Liver | 0.51 |
 | Scissors | 0.29 | Grasp | 0.40 | Omentum | 0.21 |
 
-Average across all 29 labels: 0.34. Training on 42 surgeries instead of 12 raised scissors from 0.07 to 0.29. Rare labels are not reliable yet.
+The average over all 29 labels is 0.34. Common labels work well, and rare ones are not reliable yet. Training on 42 surgeries instead of 12 raised scissors from 0.07 to 0.29.
 
-Bounding boxes come from a second model, a Faster R-CNN fine-tuned on Endoscapes. On held-out frames it finds the gallbladder well (precision and recall 0.93); the small cystic duct is often missed (recall 0.39). Instruments are found well too (precision 0.89, recall 0.83 for any instrument); their names come from the surgeons' per-second labels and are shown only when exactly one instrument is listed. Accuracy on VID01 and VID02 themselves has not been measured. See the [localization plan](ml/LOCALIZATION_PLAN.md).
-
-Full evaluation: [frontend/public/model-evals.md](frontend/public/model-evals.md).
+The bounding boxes come from a second model, Faster R-CNN, trained further on Endoscapes. It finds the gallbladder well (0.93) and tools well (0.89 precision, 0.83 recall), but often misses the small cystic duct (0.39 recall). Tool names come from the surgeons' labels. More detail: [localization plan](ml/LOCALIZATION_PLAN.md) and [full results](frontend/public/model-evals.md).
 
 ![How well the model sees](docs/images/model.jpg)
 
@@ -123,49 +119,29 @@ Full evaluation: [frontend/public/model-evals.md](frontend/public/model-evals.md
 
 | Product | How we use it |
 |---|---|
-| Unity Catalog Volumes | Features for all 50 surgeries, labels, models, predictions, videos |
-| Serverless compute and Lakeflow Jobs | Feature extraction, training, the smoothing sweep, the final test, export |
-| MLflow | Every training run, sweep setting and test score |
-| Delta Lake | One clip table, `workspace.default.surgf_clips` |
-| Lakeflow job `surgf-import-clips` | Stages a CSV from the Volume, then MERGEs it; reruns insert nothing new |
-| Databricks SQL | Parameterized clip search |
-| Genie | Free-form questions over our quiz-facts view |
-| Foundation Model APIs | Llama 3.3 70B routes each chat message to a tool |
+| Unity Catalog Volumes | Stores the features, labels, models, predictions and videos |
+| Serverless compute and Lakeflow Jobs | Runs feature extraction, training, tuning, testing and export |
+| MLflow | Logs every training run and score |
+| Delta Lake | Holds one clip table, `workspace.default.surgf_clips` |
+| Lakeflow job `surgf-import-clips` | Loads new clips with MERGE, so rerunning it adds no duplicates |
+| Databricks SQL | Runs clip search |
+| Genie | Answers free-form questions about our data |
+| Foundation Model APIs | Llama 3.3 70B decides how to handle each chat message |
 | Databricks Apps | Hosts the app ([app.yaml](app.yaml)) |
 
 ![Built on Databricks](docs/images/databricks.jpg)
 
-## Run it
-
-You need Python 3.12, Node 20+, and a repo-root `.env` with the Databricks settings (ask a teammate; never commit it). Without credentials the backend serves sample data.
-
-```sh
-# backend
-cd backend
-python -m uv sync
-python -m uv run uvicorn app.main:app --reload --port 8000
-
-# frontend
-cd frontend
-npm install
-npm run dev
-
-# demo videos (needs .env)
-python scripts/fetch_videos.py VID01 VID02
-```
-
-Open http://localhost:5173. Other versions of the homepage: `/demo`, `/presentation-demo`, `/video-demo`.
+## Repo
 
 | Folder | What is in it |
 |---|---|
-| [frontend](frontend) | Web app ([README](frontend/README.md), [design notes](frontend/docs/DESIGN.md)) |
-| [backend](backend) | FastAPI service ([README](backend/README.md)) |
-| [ml](ml) | Features, training, evaluation, localization ([README](ml/README.md)) |
-| [databricks](databricks) | SQL for the clip table, import job and Genie facts ([README](databricks/README.md)) |
-| [scripts](scripts) | Databricks job launchers and checks |
+| [frontend](frontend) | Web app ([design notes](frontend/docs/DESIGN.md)) |
+| [backend](backend) | FastAPI service |
+| [ml](ml) | Features, training, testing and boxes |
+| [databricks](databricks) | SQL for the clip table, import job and Genie |
+| [scripts](scripts) | Databricks job launchers |
 | [shared](shared) | Data shared by the frontend and backend |
 | [pitch](pitch) | Presentation and video scripts |
-| [agent-kit](agent-kit/README.md) | Spec, contracts and team progress |
 
 ## Sources
 
@@ -179,10 +155,10 @@ Open http://localhost:5173. Other versions of the homepage: `/demo`, `/presentat
 | Faster R-CNN | Ren et al., [arXiv:1506.01497](https://arxiv.org/abs/1506.01497), NeurIPS 2015 | |
 | Llama 3 | Grattafiori et al., [arXiv:2407.21783](https://arxiv.org/abs/2407.21783), 2024 | |
 
-BibTeX for each is in the Sources section of the site.
+BibTeX for each one is in the Sources section of the site.
 
 ## License
 
-The code is under the [MIT License](LICENSE). The datasets, the 3D anatomy and anything derived from them keep their own licenses (table above); CholecT50, Cholec80 and Endoscapes are non-commercial.
+The code is under the [MIT License](LICENSE). The datasets and 3D anatomy keep their own licenses (above). CholecT50, Cholec80 and Endoscapes are for non-commercial use only.
 
-surg+f is a study aid, not a medical device. Model predictions are approximate, and the 3D model and quiz are not yet medically reviewed.
+surg+f is a study tool, not a medical device. The model's predictions are approximate, and the 3D model and quiz have not been reviewed by a doctor yet.
