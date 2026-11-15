@@ -12,6 +12,8 @@ import './future.css';
 import './sources.css';
 let disposeHome = () => {};
 let renderedPage = null;
+/* What the last render showed, so only what is new animates in (see render). */
+let renderedView = null, renderedPanels = new Set(), renderedMessages = 0, renderedCaseKey = '', renderedSearch = '';
 // Page load-in runs only after a real page change (home <-> case), never on re-renders from case
 // switches or commands. Re-renders inside the window continue the animation via a negative delay.
 const ENTER_MS = 650;
@@ -91,12 +93,16 @@ function render() {
   }
   wire();
   disposeHome = mountHome(document.querySelector('.landing'));
-  if (renderedPage !== state.page) enterStart = performance.now();
+  /* A new view (home, case, or the practice takeover) gets the full staggered entrance. */
+  const view = state.page === 'dash' && state.practice ? 'practice' : state.page;
+  if (renderedView !== view) enterStart = performance.now();
   const elapsed = performance.now() - enterStart, entering = elapsed < ENTER_MS;
   app.classList.toggle('page-enter', entering);
   app.style.setProperty('--enter-offset', entering ? `-${Math.round(elapsed)}ms` : '0ms');
   if (state.page === 'dash') markNew();
-  if (renderedPage !== state.page) window.scrollTo({top:0, behavior:'instant'});
+  if (renderedView !== view) window.scrollTo({top:0, behavior:'instant'});
+  if (state.page === 'dash') animateNew(entering || renderedView !== view);
+  renderedView = view;
   renderedPage = state.page;
   if (hadFocus) {
     const next = document.querySelector('#query');
@@ -108,6 +114,29 @@ function render() {
 }
 
 // Case page: paint the dithered band after each render. Motion is handled by #app.page-enter only.
+/* Within the case page, things a command or message adds rise in once: a newly opened panel (quiz,
+   chart, 3D model, study quiz), new chat messages, and a new search's results on the timeline.
+   Redraws of what is already there never replay. A case switch only swaps content, so it does not
+   animate. Reduced motion removes all of it (style.css). */
+function animateNew(wholeView) {
+  const caseKey = `${state.caseId}|${state.title}`;
+  const sameCase = caseKey === renderedCaseKey;
+  const panels = [...document.querySelectorAll('.dash .panel[id]')];
+  const search = state.queryLabel && state.results?.length ? `${state.queryLabel}|${state.results.length}` : '';
+  if (!wholeView && sameCase) {
+    panels.filter(el => !renderedPanels.has(el.id)).forEach(el => el.classList.add('panel-enter'));
+    [...document.querySelectorAll('#chat-thread > .msg:not(.msg-typing)')].slice(renderedMessages).forEach(el => el.classList.add('msg-enter'));
+    if (search && search !== renderedSearch) {
+      document.querySelectorAll('.tl-search, .tl-hits').forEach(el => el.classList.add('search-enter'));
+      document.querySelectorAll('.tl-mark').forEach((el, i) => { el.classList.add('search-enter'); el.style.setProperty('--i', Math.min(i, 20)); });
+    }
+  }
+  renderedPanels = new Set(panels.map(el => el.id));
+  renderedMessages = state.messages.length;
+  renderedCaseKey = caseKey;
+  renderedSearch = search;
+}
+
 function markNew() {
   document.querySelector('.dash')?.querySelectorAll('.sky-dither').forEach(paintDither);
 }
@@ -227,7 +256,7 @@ function chatPanel() {
          <input id="query" name="q" value="${escapeHtml(state.draft)}" placeholder="${placeholder}" autocomplete="off" required>
          <button type="submit" aria-label="Send" ${state.loading ? 'disabled' : ''}>→</button></form>`;
   const typing = state.loading
-    ? `<div class="msg msg-doc">${avatar}<p><span class="typing" aria-hidden="true"><i></i><i></i><i></i></span><span class="sr-only">Lil Doc is thinking</span></p></div>` : '';
+    ? `<div class="msg msg-doc msg-typing">${avatar}<p><span class="typing" aria-hidden="true"><i></i><i></i><i></i></span><span class="sr-only">Lil Doc is thinking</span></p></div>` : '';
   // An uploaded video cannot be searched, but Lil Doc can still take a practice request for it.
   const compose = state.localVideo
     ? `${form('Ask Lil Doc to practice a step')}<button type="button" class="btn-secondary compose-demo" id="open-sample">Open the indexed demo</button>`
