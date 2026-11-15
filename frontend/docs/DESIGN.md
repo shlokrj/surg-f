@@ -29,6 +29,16 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
 7. Buttons use only `.btn-primary`, `.btn-secondary` and the shared toggles from `style.css`. Pressed toggles darken on hover. Minimum text size is 14px. Headings and short paragraphs use `text-wrap: balance` to avoid one-word last lines.
 8. Preserve real case entry, the filtered VID01 preview, annotation timestamp action and local playback limitation. The preview-edge strip shows the real `clipper` → VID01 11:14 annotation and links to the actual preview; it is not fake product data.
 
+## Case page
+
+`src/case.css` restyles the case page to match the homepage. It uses the off-white page, the rounded product cards (video, overlay strip, timeline, charts, quiz, model) with the soft teal shadow, and a frosted topbar. A single plus-dithered sky band holds the case title, with the filter and case toggles in a white pill. Spatial/player markup and logic are unchanged; only presentation was overridden, so coordinate with Mihir before changing it further. Shared type tokens were raised to a 13px minimum (`--text-xs` 13, `--text-sm` 14, `--text-md` 15, `--text-base` 16).
+
+Motion: one entrance plays when the case opens (band, video, overlay strip and timeline rise in sequence; the chat fades), using Hangar's `cubic-bezier(.16,1,.3,1)` soft drop. After that, only newly added chat messages, new output panels, and their chart bars animate. `markNew()` in `main.js` tracks what the previous render showed, because the app re-renders with `innerHTML`. The global reduced-motion rule removes all of it.
+
+## Scrolling and the logo
+
+Hangar's brand link is a plain `#hero-title` anchor inside a smooth-scrolling page. Our earlier `scrollIntoView()` on the `h1` also scrolled the clipped, sticky hero layers, which moved the frame contents out of bounds and left the page half-zoomed. In-page links now call `window.scrollTo()` with an absolute offset. The logo and "Back to top" use `#top` (offset 0). The hero, feature panels and cards use `overflow: clip`, so they cannot be scrolled programmatically. The favicon is `public/favicon.svg`: the same lens-around-plus geometry on a teal sky tile.
+
 Reduced motion keeps the inset rounded panel static and removes extra scrolling distance. On narrow screens keep navigation, wordmark and case action within the frame. Use native scroll, accessible controls and visible focus; never intercept browser Ctrl+F.
 
 ## Acceptance
