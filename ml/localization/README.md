@@ -101,7 +101,7 @@ Input references must explicitly contain only class 1 cystic duct and class 2 ga
 
 ## Full anatomy data, training and export (Mihir)
 
-Use a separate Python environment with `requirements.txt` (including `remotezip==0.12.6` and pycocotools); keep images, checkpoints and derived video frames outside Git. `fetch_anatomy_data.py` reads the official train/validation detection-keyframe annotations through bounded remote ZIP reads, applies the existing surgery-overlap guard, checks each downloaded image's decode size and SHA-256, and resumes without replacing verified files. Its manifest binds source annotations, prepared labels, the CholecT50 split and every image hash. `--limit 2` is a bounded pipeline check only; rerun without it to finish all images. The local full download under `~/madhacks2026/localization/anatomy-data/` completed: 1,212 train and 409 validation images. A second downloader pass and `ready_data` verified every selected image hash, prepared labels and surgery separation (signature `0c003c2f469468b0acf3cb61a2788c7aff77b5b8d72ad9f59800ce1f71b07eff`). The five-epoch CPU run at `~/madhacks2026/localization/anatomy-full-v1/` is underway; metrics are pending.
+Use a separate Python environment with `requirements.txt` (including `remotezip==0.12.6` and pycocotools); keep images, checkpoints and derived video frames outside Git. `fetch_anatomy_data.py` reads the official train/validation detection-keyframe annotations through bounded remote ZIP reads, applies the existing surgery-overlap guard, checks each downloaded image's decode size and SHA-256, and resumes without replacing verified files. Its manifest binds source annotations, prepared labels, the CholecT50 split and every image hash. `--limit 2` is a bounded pipeline check only; rerun without it to finish all images. The local full download under `~/madhacks2026/localization/anatomy-data/` completed: 1,212 train and 409 validation images. A second downloader pass and `ready_data` verified every selected image hash, prepared labels and surgery separation (signature `0c003c2f469468b0acf3cb61a2788c7aff77b5b8d72ad9f59800ce1f71b07eff`). The five-epoch CPU run at `~/madhacks2026/localization/anatomy-full-v1/` completed epochs 0–3 (about 3 minutes each) and stopped at epoch 4 on the `nonfinite training loss` guard; `--resume` reproduces the stop. `best.pt` is epoch 3: validation AP 0.345, AP50 0.633; gallbladder AP50 0.945, cystic duct AP50 0.321. A new run with gradient clipping or a lower learning rate is the next training experiment; use a new output directory.
 
 ```sh
 python ml/localization/fetch_anatomy_data.py --output-dir /path/to/anatomy-data --limit 2
@@ -114,12 +114,23 @@ The trainer refuses missing or changed images, unexpected categories, changed pr
 
 After a representative validation run, export sampled-frame predictions to a **new file outside Git** before considering player deployment:
 
+Analyze fixed-threshold validation errors and choose per-class export thresholds:
+
 ```sh
+python ml/localization/analyze_anatomy_errors.py /path/to/anatomy-data/val/annotations.json \
+  /path/to/anatomy-run/best-predictions.json --output /path/to/new/errors.json
+```
+
+It matches boxes one-to-one per class at IoU 0.5, sweeps score thresholds 0.05–0.95, picks each class's threshold by validation F1 and reports false-positive types (duplicate, localization, class confusion, background), misses by box size and per-surgery recall. Thresholds chosen this way are optimistic because no untouched test split is used. The committed `anatomy_full_v1_errors.json` is the report for the epoch-3 checkpoint.
+
+```sh
+SURGF_FFMPEG=/path/to/ffmpeg python -m unittest discover -s ml/localization -p 'test_*.py'
 python ml/localization/export_anatomy_video.py \
   --checkpoint /path/to/anatomy-run/best.pt --video frontend/public/videos/VID01.mp4 \
   --case-id VID01 --video-asset-id VID01-cholec80-25fps-v1 \
-  --frame-ids 674 680 689 --display-width 854 --display-height 484 \
+  --every-sec 0.24 --max-age-sec 0.25 --display-width 854 --display-height 484 \
+  --score-threshold 0.65 --class-threshold "cystic duct=0.7" \
   --ffmpeg /path/to/ffmpeg --output /path/to/new/VID01-anatomy.json
 ```
 
-The exporter decodes the exact frame numbers, normalizes boxes to their source dimensions, binds the video's SHA-256 and model/checkpoint/data signature, records class mapping and frame hashes, and validates the artifact schema. It uses FFmpeg 5+ (`-fps_mode passthrough`). A one-frame export from the bounded model succeeded for VID01 frame 674, but that checkpoint has no defined validation AP and its 15 detections are **not** suitable for replacing the current demo artifact. The model supports only cystic duct and gallbladder anatomy; it does not validate six instrument subtypes or liver. The currently available CholecT50 mirror lacks subtype box annotations, and Endoscapes has only a generic tool box category. Official subtype-box data or independently reviewed labels remain necessary for instrument accuracy claims.
+The exporter takes **player seconds** (`--seconds` or `--every-sec` with optional `--start`/`--end`), maps each to the nearest decoded frame index, and sets `timestamp_sec` to that frame's presentation time (stream start + index/fps). Do not pass CholecT50 frame numbers as decoded indices, and do not apply the CholecT50 offset to decoded frames. It decodes the video once as raw RGB (FFmpeg 5+, `-fps_mode passthrough`), normalizes boxes to source dimensions, binds the video SHA-256, checkpoint epoch/hash and data signature, records class map, per-class thresholds and a digest of every frame's RGB hash, and validates the artifact schema. 0.24 s is exactly 6 frames at 25 fps; with `max_age_sec` 0.25 the boxes stay on during playback. The deployed VID01 export used the command above (no bundled ffmpeg on PATH here; `imageio-ffmpeg`'s FFmpeg 9.0 binary works): 7,221 frames, 7,465 boxes, 1.34 M characters. An earlier one-frame export bound frame 674 to 26.92 s because of the old frame-ID semantics; ignore it. The model supports only cystic duct and gallbladder anatomy; it does not validate six instrument subtypes or liver. The currently available CholecT50 mirror lacks subtype box annotations, and Endoscapes has only a generic tool box category. Official subtype-box data or independently reviewed labels remain necessary for instrument accuracy claims.
