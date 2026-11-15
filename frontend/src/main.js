@@ -16,6 +16,8 @@ import { timelinePanel, timelineTick } from './timeline.js';
 import { avatar, greeting, switched, localVideoNote, errorReply, reply, STEP_NOTES } from './lildoc.js';
 import { videoForCase, videoAssetForCase } from './cases.js';
 import { mountOverlays } from './overlays.js';
+import { modelPanel, mountModel, modelTick, disposeModel } from './model/panel.js';
+import { stepIndexAt } from './model/steps.js';
 import homeSteps from '../../backend/fixtures/steps.VID01.json';
 import homeTimeline from '../../backend/fixtures/timeline.VID01.json';
 import homeQuiz from '../../backend/fixtures/quiz.seed-1.json';
@@ -47,6 +49,7 @@ const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)'
 function render() {
   disposeHome();
   disposeOverlays();
+  if (state.page !== 'dash') disposeModel();
   const input = document.querySelector('#query');
   if (input) state.draft = input.value;
   const hadFocus = input && document.activeElement === input;
@@ -161,11 +164,7 @@ function outputSections() {
         <div class="panel-body">${request.categories.map(category => chartSection(category, request)).join('')}</div></section>`;
     }
     if (mode === 'quiz') return quizCard(state);
-    if (mode === 'model') {
-      return `<section class="panel" id="sec-model" aria-labelledby="model-title">
-        <div class="panel-head"><h2 id="model-title">3D model</h2><p>A three-dimensional view of the anatomy in this operation.</p></div>
-        <div class="panel-body"><p class="panel-note">This video has no linked 3D model yet. A model and a mapping from its parts to moments in the video are needed before this view can show anything.</p></div></section>`;
-    }
+    if (mode === 'model') return modelPanel(state);
     return '';
   }).join('');
 }
@@ -260,6 +259,12 @@ function updateControls() {
   if (mute) { mute.textContent = video.muted ? '♪̸' : '♬'; mute.setAttribute('aria-label', video.muted ? 'Unmute video' : 'Mute video'); }
   if (speed) speed.value = String(video.playbackRate);
   timelineTick(video.currentTime, duration);
+  modelTick(state.steps?.steps, playTime());
+}
+// The time the page should treat as "now": a seek that has not landed yet wins, so the steps
+// and the 3D model still move when the video file is missing or still loading.
+function playTime() {
+  return state.pendingSeek ?? document.querySelector('#player')?.currentTime ?? 0;
 }
 // Listeners on the <video> itself are attached once, because the element survives redraws.
 function wireVideo(video) {
@@ -276,13 +281,21 @@ function wireVideo(video) {
     updateControls();
   });
 }
-function seekTo(seconds) {
+// reveal: scroll the video into view. keepPaused: do not start a paused video (step arrows).
+function seekTo(seconds, { reveal = true, keepPaused = false } = {}) {
   const video = document.querySelector('#player');
   if (!video) return;
   state.pendingSeek = seconds;
   if (video.readyState >= 1) video.currentTime = seconds;
-  video.play().catch(() => {});
-  document.querySelector('.video-frame')?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+  if (!keepPaused || !video.paused) video.play().catch(() => {});
+  if (reveal) document.querySelector('.video-frame')?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+  updateControls();
+}
+// Move one step back (-1) or forward (+1) from the step being played.
+function stepBy(direction) {
+  const steps = state.steps?.steps ?? [];
+  const next = steps[stepIndexAt(steps, playTime()) + direction];
+  if (next) seekTo(next.start_sec, { reveal: false, keepPaused: true });
 }
 function syncFullscreenButton() {
   const button = document.querySelector('#video-fullscreen');
@@ -386,6 +399,7 @@ function wire() {
 
   // Timeline, quiz and anything else that jumps the video
   document.querySelectorAll('[data-seek]').forEach(el => el.addEventListener('click', () => seekTo(Number(el.dataset.seek))));
+  document.querySelectorAll('[data-step-nav]').forEach(el => el.addEventListener('click', () => stepBy(Number(el.dataset.stepNav))));
   document.querySelector('#clear-search')?.addEventListener('click', () => {
     state.results = []; state.queryLabel = ''; state.outputs = state.outputs.filter(mode => mode !== 'timestamp');
     render();
@@ -410,6 +424,7 @@ function wire() {
   });
   syncFullscreenButton();
   if (video && state.pendingSeek != null && video.readyState >= 1 && !video.seeking) video.currentTime = state.pendingSeek;
+  mountModel({ steps: state.steps?.steps, time: playTime() });
   updateControls();
 }
 
@@ -445,6 +460,8 @@ function planFromChat(chat, caseId) {
   if (chat.action === 'search') {
     const labels = [...new Set(chat.data.results.map(hit => hit.label))];
     plan.actions = labels.map((label, index) => ({ type: 'timestamp', label, case_id: caseId, results: index === 0 ? chat.data.results : [] }));
+  } else if (chat.action === 'model') {
+    plan.actions = [{ type: 'model', step_key: chat.data?.step_key ?? null }];
   } else {
     plan.actions = [{ type: chat.action === 'timeline' ? 'chart' : 'quiz' }];
   }
@@ -507,6 +524,10 @@ async function runSearch(raw, { keepOutputs = false } = {}) {
     else if (!keepOutputs) { state.results = []; state.queryLabel = ''; }
     const genieText = plan?.interpreter === 'genie' ? (plan.message ?? '').replaceAll('**', '') : '';
     answer = reply({ modes, labels, hits, caseId, genieText });
+    // "Show the clipping step in 3D": move the video, and so the model, to that step.
+    const stepKey = actions.find(action => action.type === 'model')?.step_key;
+    const named = stepKey && state.steps?.steps?.find(step => step.key === stepKey);
+    if (named) { seekTo(named.start_sec, { reveal: false, keepPaused: true }); answer = answer.replace('Here’s the 3D model.', `Here’s step ${named.order}, ${named.label.toLowerCase()}, in 3D.`); }
     target = modes[0] === 'timestamp' ? '#sec-timeline' : `#sec-${modes[0]}`;
   } catch (error) {
     state.error = error.message;

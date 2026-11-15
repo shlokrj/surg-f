@@ -1,0 +1,299 @@
+{
+  "file": "models/gallbladder-region.glb",
+  "units": "centimetres; y up; front of the body toward +z; patient right at -x; gallbladder centre at the origin",
+  "source": "BodyParts3D, (c) The Database Center for Life Science, licensed under CC Attribution 4.0 International",
+  "note": "A generic adult body, not any patient. The cystic artery and the port positions are schematic drawings added by Surg+F.",
+  "parts": [
+    {
+      "name": "gallbladder",
+      "label": "Gallbladder",
+      "group": "surgery",
+      "color": "#5c9a63",
+      "triangles": 2396,
+      "center": [
+        0.25,
+        0.24,
+        -0.08
+      ],
+      "size": [
+        3.64,
+        4.04,
+        4.84
+      ]
+    },
+    {
+      "name": "cystic_duct",
+      "label": "Cystic duct",
+      "group": "surgery",
+      "color": "#8fbf6a",
+      "triangles": 278,
+      "center": [
+        2.22,
+        1.64,
+        -2.2
+      ],
+      "size": [
+        0.88,
+        1.22,
+        0.93
+      ]
+    },
+    {
+      "name": "cystic_artery",
+      "label": "Cystic artery",
+      "group": "surgery",
+      "color": "#d9534a",
+      "drawn": true,
+      "triangles": 480,
+      "center": [
+        2.11,
+        1.56,
+        -1.32
+      ],
+      "size": [
+        1.95,
+        0.62,
+        0.27
+      ]
+    },
+    {
+      "name": "bile_duct",
+      "label": "Common hepatic and bile duct",
+      "group": "surgery",
+      "color": "#7fae58",
+      "triangles": 1364,
+      "center": [
+        1.67,
+        -0.71,
+        -2.93
+      ],
+      "size": [
+        2.58,
+        8.43,
+        3.75
+      ]
+    },
+    {
+      "name": "hepatic_ducts",
+      "label": "Right and left hepatic ducts",
+      "group": "surgery",
+      "color": "#7fae58",
+      "triangles": 1074,
+      "center": [
+        3.56,
+        4.58,
+        -0.64
+      ],
+      "size": [
+        3.87,
+        3.07,
+        1.74
+      ]
+    },
+    {
+      "name": "hepatic_artery",
+      "label": "Hepatic arteries",
+      "group": "surgery",
+      "color": "#c2453a",
+      "triangles": 2476,
+      "center": [
+        3.53,
+        3.42,
+        -1.18
+      ],
+      "size": [
+        3.59,
+        5.55,
+        3.29
+      ]
+    },
+    {
+      "name": "portal_vein",
+      "label": "Portal vein",
+      "group": "surgery",
+      "color": "#4a74b8",
+      "triangles": 3582,
+      "center": [
+        3.33,
+        1.79,
+        -2.12
+      ],
+      "size": [
+        1.44,
+        4.88,
+        2.06
+      ]
+    },
+    {
+      "name": "liver",
+      "label": "Liver",
+      "group": "surgery",
+      "color": "#93503f",
+      "triangles": 15997,
+      "center": [
+        3.72,
+        3.67,
+        -3.23
+      ],
+      "size": [
+        20.94,
+        15.52,
+        15.9
+      ]
+    },
+    {
+      "name": "stomach",
+      "label": "Stomach",
+      "group": "nearby",
+      "color": "#d7a08c",
+      "triangles": 1810,
+      "center": [
+        8.58,
+        2.96,
+        -1.72
+      ],
+      "size": [
+        13.45,
+        11.7,
+        11.29
+      ]
+    },
+    {
+      "name": "duodenum",
+      "label": "Duodenum",
+      "group": "nearby",
+      "color": "#dcb591",
+      "triangles": 1860,
+      "center": [
+        3.09,
+        -3.75,
+        -2.47
+      ],
+      "size": [
+        9.8,
+        9.15,
+        5.3
+      ]
+    },
+    {
+      "name": "pancreas",
+      "label": "Pancreas",
+      "group": "nearby",
+      "color": "#dcc37a",
+      "triangles": 3000,
+      "center": [
+        5.99,
+        -2.76,
+        -3.42
+      ],
+      "size": [
+        12.06,
+        7.37,
+        5.1
+      ]
+    },
+    {
+      "name": "body_outline",
+      "label": "Body outline",
+      "group": "outline",
+      "color": "#9fb8b3",
+      "triangles": 9000,
+      "center": [
+        4.71,
+        -28.73,
+        -5.41
+      ],
+      "size": [
+        66.59,
+        171.9,
+        29.13
+      ]
+    }
+  ],
+  "anchors": {
+    "gallbladderCentre": [
+      0,
+      0,
+      0
+    ],
+    "gallbladderFundus": [
+      -0.81,
+      -1.56,
+      1.92
+    ],
+    "gallbladderNeck": [
+      2.02,
+      2.1,
+      -1.97
+    ],
+    "cysticDuctAtGallbladder": [
+      2.07,
+      2.18,
+      -1.94
+    ],
+    "cysticDuctAtBileDuct": [
+      2.62,
+      1.07,
+      -2.62
+    ],
+    "cysticArteryStart": [
+      3.07,
+      1.74,
+      -1.36
+    ],
+    "cysticArteryMid": [
+      2.13,
+      1.93,
+      -1.32
+    ],
+    "cysticArteryEnd": [
+      1.18,
+      1.32,
+      -1.27
+    ],
+    "liverBed": [
+      -0.82,
+      0.87,
+      0.33
+    ],
+    "liverCentre": [
+      1.64,
+      4.66,
+      -2.09
+    ]
+  },
+  "ports": [
+    {
+      "name": "Camera port (navel)",
+      "at": [
+        4.42,
+        -10.12,
+        4.47
+      ]
+    },
+    {
+      "name": "Upper middle port",
+      "at": [
+        4.06,
+        6.1,
+        6.25
+      ]
+    },
+    {
+      "name": "Right upper port",
+      "at": [
+        -5.81,
+        2.81,
+        4.6
+      ]
+    },
+    {
+      "name": "Right side port",
+      "at": [
+        -9.1,
+        -4.95,
+        -2.57
+      ]
+    }
+  ]
+}

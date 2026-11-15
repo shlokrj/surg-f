@@ -1,5 +1,16 @@
 # Team handoffs
 
+## 3D model for `/model` (Rohan, 2026-11-14)
+
+Shlok and Mihir: `/model` is now a working 3D view of the gallbladder area that follows the video step by step. Details and file list are under "3D model" in [frontend/README.md](../frontend/README.md); the licence and what is drawn rather than sourced are in [frontend/public/models/ATTRIBUTION.md](../frontend/public/models/ATTRIBUTION.md).
+
+- **New files, all mine:** `frontend/src/model/` (viewer, panel, step pictures, styles, manifest), `frontend/public/models/`, `frontend/scripts/build-anatomy-model.mjs`, `frontend/test/model.test.js`. New dependency `three`; dev dependencies `@gltf-transform/core` and `meshoptimizer` for the build script only.
+- **Shared files I touched, kept small:** in `frontend/src/main.js`, two imports, the `model` branch of `outputSections()`, one `disposeModel()` line in `render()`, `playTime()`, `stepBy()`, two options on `seekTo()`, the `[data-step-nav]` handler and `mountModel()` call in `wire()`, and the `model` case in `planFromChat()` and `runSearch()`. In `frontend/src/timeline.js`, previous/next arrows in the Timeline panel head (`.tl-head`). In `frontend/src/lildoc.js`, the `/model` reply. No change to `style.css`, `case.css`, `home.js`, `home.css` or the overlay code. Panel classes use an `anat-` prefix because `home.css` owns `.model-*`.
+- **Shlok:** the panel uses the existing `panel` shell and tokens; the arrows, organ chips and stage are new styles in `frontend/src/model/model.css`. Please adjust them to the design system as you see fit.
+- **Needs a medical reviewer (after the build, as Rohan decided):** the seven step pictures in `frontend/src/model/steps.js`, the port positions and the drawn cystic artery are schematic. The panel shows "not yet medically reviewed" until `REVIEWED` in that file is set to `true`.
+- **Backend:** `POST /chat` can now return `action: "model"` with `{case_id, step_key, step_label}`; see the Chat section of the backend frontend guide.
+- **Checked** in headless Edge only (software rendering), not by hand, and not on a phone.
+
 ## Spatial v3 in progress: native-resolution detector (2026-11-14, Mihir)
 
 Model/CV only; no UI changes. `train_anatomy.py` gained `--architecture mobilenet_v3_hires` (native 854×480 input instead of 320) and `--hflip`; the exporter reads the architecture from the checkpoint, and v1/v2 checkpoints still export unchanged. Run in progress: `train_anatomy.py --architecture mobilenet_v3_hires --hflip --grad-clip 10 --epochs 10` → `~/madhacks2026/localization/anatomy-hires-v3/` (CPU, roughly 5 min/epoch). The VID01 overlay changes only if v3 beats v2 on the same validation error analysis. Localization tests: 26 passed.

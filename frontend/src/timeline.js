@@ -65,7 +65,10 @@ export function timelinePanel(state, stepNotes = {}) {
     ? 'Matching moments are highlighted in yellow. Select one to jump there.'
     : 'The steps of the operation in this video. Select a step to jump to it.';
   return `<section class="panel" id="sec-timeline" aria-labelledby="timeline-title">
-    <div class="panel-head"><h2 id="timeline-title">Timeline</h2><p>${intro}</p></div>
+    <div class="panel-head tl-head"><div><h2 id="timeline-title">Timeline</h2><p>${intro}</p></div>
+      ${steps.length ? `<div class="step-nav-group" role="group" aria-label="Move between steps">
+        <button type="button" class="step-nav" data-step-nav="-1" aria-label="Previous step">←</button>
+        <button type="button" class="step-nav" data-step-nav="1" aria-label="Next step">→</button></div>` : ''}</div>
     <div class="panel-body">${search}${track}${stepList}</div>
   </section>`;
 }
