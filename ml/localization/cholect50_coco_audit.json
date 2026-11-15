@@ -1,0 +1,30 @@
+{
+  "image_records": 100816,
+  "unique_images": 100776,
+  "duplicate_image_ids": 40,
+  "duplicate_category_ids": 0,
+  "annotations": 0,
+  "valid_boxes": 0,
+  "images_with_valid_boxes": 0,
+  "explicit_detection_keyframes": 0,
+  "boxes_per_label": {},
+  "boxes_per_source_case": {},
+  "excluded": {},
+  "category_inventory": {
+    "1": "abdominal_wall",
+    "2": "liver",
+    "3": "gastrointestinal_wall",
+    "4": "fat",
+    "5": "grasper",
+    "6": "connective_tissue",
+    "7": "blood",
+    "8": "cystic_duct",
+    "9": "hook",
+    "10": "gallbladder",
+    "11": "hepatic_vein",
+    "12": "liver_ligament"
+  },
+  "warning": "Images without boxes are not assumed reviewed negatives. Source case IDs are dataset-specific; cross-dataset overlap must be checked.",
+  "annotation_sha256": "27062455c5d495355cfc430d76539f087192b259cedabc9ff51551e66a7b6a67",
+  "member": "cholecT50/all/annotation_coco.json"
+}

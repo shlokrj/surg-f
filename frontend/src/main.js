@@ -1,7 +1,10 @@
 import './style.css';
 import { searchClips, getTimeline, getQuiz, interpretQuery, getActionRows, instrumentLabels } from './api.js';
 import { quizCard, wireQuiz } from './quiz.js';
-import { videoForCase } from './cases.js';
+import { videoForCase, videoAssetForCase } from './cases.js';
+import { mountOverlays } from './overlays.js';
+let disposeOverlays = () => {};
+let boxesEnabled = false;
 
 const app = document.querySelector('#app');
 const state = {
@@ -21,6 +24,7 @@ const logo = `<span class="wordmark" aria-label="Surg+F">Surg<svg aria-hidden="t
 function render() {
   const previousInput = document.querySelector('#query');
   if (previousInput) state.draft = previousInput.value;
+  disposeOverlays();
   const previousVideo = document.querySelector('#player');
   if (previousVideo?.dataset.caseId === state.caseId && previousVideo.readyState >= 1 && state.pendingSeek == null) {
     state.pendingSeek = previousVideo.currentTime;
@@ -120,6 +124,7 @@ function dashboard() {
   const duration = state.duration || 1800;
   return `<main class="dashboard dashboard-features"><section class="workbench"><div class="section-heading"><div><span class="kicker">VIDEO</span><h1>${escapeHtml(state.title)}</h1></div><div class="section-actions">${filterButton()}<div class="case-switch" role="group" aria-label="Demo video"><button data-case="VID01" ${state.caseId === 'VID01' ? 'aria-pressed="true"' : ''}>VID01</button><button data-case="VID02" ${state.caseId === 'VID02' ? 'aria-pressed="true"' : ''}>VID02</button></div></div></div>
     <div class="video-frame surgical-media ${state.filterOn ? 'filtered' : ''}"><video id="player" data-case-id="${escapeHtml(state.caseId)}" preload="metadata" playsinline ${state.videoUrl ? `src="${escapeHtml(state.videoUrl)}"` : ''}></video><div class="video-fallback" id="video-fallback" hidden><strong>Video unavailable</strong><span>The video for ${escapeHtml(state.caseId)} has not been downloaded or hosted yet.</span></div><div class="video-controls" role="group" aria-label="Video controls"><button type="button" id="video-play" aria-label="Play video">▶</button><span id="video-time">00:00 / --:--</span><input id="video-seek" type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek video"><button type="button" id="video-mute" aria-label="Mute video">♬</button><input id="video-volume" type="range" min="0" max="1" value="1" step="0.05" aria-label="Volume"><select id="video-speed" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select><button type="button" id="video-fullscreen" aria-label="Fullscreen video">⛶</button></div></div>
+    <div class="overlay-controls" id="overlay-controls"></div>
     ${state.localVideo ? '<p class="local-note">Local video playback only. This file has no indexed annotations.</p>' : ''}
     <div class="timeline-panel"><div class="timeline-header"><div><span class="kicker">CURRENT VIDEO</span><h2>Event timeline</h2></div></div>
       ${state.localVideo ? '' : '<div class="feature-options"><button data-prompt="/timestamp">/timestamp</button><button data-prompt="/quiz">/quiz</button><button data-prompt="/chart">/chart</button><button data-prompt="/model">/model</button></div>'}
@@ -253,6 +258,7 @@ function wire() {
   video?.addEventListener('play', updateControls);
   video?.addEventListener('pause', updateControls);
   video?.addEventListener('volumechange', updateControls);
+  if (video) disposeOverlays = mountOverlays({ video, host: video.parentElement, controls: document.querySelector('#overlay-controls'), caseId: state.caseId, assetId: state.localVideo ? null : videoAssetForCase(state.caseId), enabled: boxesEnabled, onToggle: value => { boxesEnabled = value; } });
   video?.addEventListener('error', () => { document.querySelector('#video-fallback').hidden = false; });
   video?.addEventListener('seeked', () => {
     if (state.pendingSeek != null && Math.abs(video.currentTime - state.pendingSeek) < 1) state.pendingSeek = null;
