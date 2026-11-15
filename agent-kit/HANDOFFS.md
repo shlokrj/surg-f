@@ -1,5 +1,9 @@
 # Team handoffs
 
+## Spatial v2 overlay and model tooling published to main (2026-11-15, Mihir)
+
+With Shlok's approval, `main` was fast-forwarded to `feat/spatial-overlays`. **Demo change:** VID01 boxes are now the v2 anatomy model (gallbladder and cystic duct; validation AP 0.352), which boxes the cystic duct at 11:38; `main` previously had v1. Also published: the review-pack, error-analysis, merge and Databricks tooling (`ml/localization/`, `scripts/run_databricks_anatomy.py`), the overlay jump-list/disabled-category behavior in `frontend/src/overlays.js`, and the standalone `/evals.html` page (not linked from the homepage). No other teammate's frontend or backend file differs from the previous `main`. Checks at the published commit: localization tests 29 passed, `node --test frontend/test/*.test.js` 27 passed, frontend build passed, headless Chrome 157 overlay check (boxes at 54 and 673.95 s, 2 boxes in every playback sample, aligned after resize, cleared on VID02). Fullscreen still needs a visible-browser check. Teammates: pull `main`. Further spatial work returns to `feat/spatial-overlays` until the next approval.
+
 ## Spatial v3 (native resolution) and Databricks runs (2026-11-14, Mihir)
 
 Model/CV only; no UI files changed. The deployed VID01 overlay is **still v2**; v3 did not show a gain on VID01.
