@@ -14,8 +14,6 @@
 3. Fetch again before pushing. Check for new upstream commits and relevant changes on `origin/main`. Reconcile them safely and rerun affected checks if the base changed. Push normally, then verify the intended commits and Markdown updates are on GitHub. If a push is rejected, resync and inspect the incoming changes before retrying.
 4. In the handoff, link the commit or PR and report the checks that ran, any remaining blocker, and who takes the next step.
 
-## Planned stage 3: video localization
+## Active stage 3: shared spatial branch
 
-Project context only: future localization/overlay work is described in the stage-3 plan. Keep proposed detector capabilities separate from verified progress, and agree the new spatial interface with its owners before implementation. The sync, verification and publication rules above still apply.
-
-See [Stage 3 localization plan](../ml/LOCALIZATION_PLAN.md) for the complete context and primary sources.
+Shlok, Aadhi and Mihir share `feat/spatial-overlays`. Follow the current owner assignments in [the localization plan](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). All feature commits must be pushed to this branch; **do not merge or push to main until Shlok explicitly requests final publication**, even though earlier turns authorized main pushes. Use separate checkouts; preserve teammates' commits, never force-push, and coordinate edits to shared contracts. Older progress notes are historical and do not override the active assignment table.
