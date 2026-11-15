@@ -1,0 +1,351 @@
+{
+ "checkpoint_sha256": "b22e7813070120a1130003ef1b101ab6fcd3797a47f6e9dca0c45d320fad6d12",
+ "checkpoint_epoch": 3,
+ "tta": true,
+ "data_signature": "0c003c2f469468b0acf3cb61a2788c7aff77b5b8d72ad9f59800ce1f71b07eff",
+ "coco": {
+  "scope": [
+   "cystic duct",
+   "gallbladder"
+  ],
+  "images": 409,
+  "missing_prediction_images": 0,
+  "ignored_out_of_scope_predictions": 0,
+  "ap": 0.38890173741981876,
+  "ap50": 0.6826935462639635,
+  "per_class": {
+   "cystic duct": {
+    "ap": 0.13522900609450417,
+    "ap50": 0.43938086930110987,
+    "recall100": 0.29550561797752806,
+    "support": 267
+   },
+   "gallbladder": {
+    "ap": 0.6425744687451335,
+    "ap50": 0.9260062232268174,
+    "recall100": 0.7098039215686275,
+    "support": 357
+   }
+  },
+  "protocol": "COCO bbox IoU .50:.05:.95, 101 recall points, maxDets=100, all areas; undefined metrics null"
+ },
+ "errors": {
+  "iou_threshold": 0.5,
+  "images": 409,
+  "anatomy_negative_images": 49,
+  "size_bins": "box area / image area: small < 0.01, medium < 0.05, large otherwise",
+  "threshold_sweep": {
+   "0.05": {
+    "cystic duct": {
+     "precision": 0.14350112697220135,
+     "recall": 0.7153558052434457,
+     "f1": 0.2390488110137672
+    },
+    "gallbladder": {
+     "precision": 0.7386609071274298,
+     "recall": 0.957983193277311,
+     "f1": 0.8341463414634146
+    }
+   },
+   "0.1": {
+    "cystic duct": {
+     "precision": 0.1977401129943503,
+     "recall": 0.6554307116104869,
+     "f1": 0.3038194444444444
+    },
+    "gallbladder": {
+     "precision": 0.7870370370370371,
+     "recall": 0.9523809523809523,
+     "f1": 0.861850443599493
+    }
+   },
+   "0.15": {
+    "cystic duct": {
+     "precision": 0.23953823953823955,
+     "recall": 0.6217228464419475,
+     "f1": 0.3458333333333333
+    },
+    "gallbladder": {
+     "precision": 0.8114558472553699,
+     "recall": 0.9523809523809523,
+     "f1": 0.8762886597938144
+    }
+   },
+   "0.2": {
+    "cystic duct": {
+     "precision": 0.27986348122866894,
+     "recall": 0.6142322097378277,
+     "f1": 0.38452520515826494
+    },
+    "gallbladder": {
+     "precision": 0.8436724565756824,
+     "recall": 0.9523809523809523,
+     "f1": 0.8947368421052632
+    }
+   },
+   "0.25": {
+    "cystic duct": {
+     "precision": 0.31640625,
+     "recall": 0.6067415730337079,
+     "f1": 0.4159178433889602
+    },
+    "gallbladder": {
+     "precision": 0.8578680203045685,
+     "recall": 0.9467787114845938,
+     "f1": 0.9001331557922769
+    }
+   },
+   "0.3": {
+    "cystic duct": {
+     "precision": 0.34490238611713664,
+     "recall": 0.5955056179775281,
+     "f1": 0.4368131868131868
+    },
+    "gallbladder": {
+     "precision": 0.8711340206185567,
+     "recall": 0.9467787114845938,
+     "f1": 0.9073825503355705
+    }
+   },
+   "0.35": {
+    "cystic duct": {
+     "precision": 0.3764988009592326,
+     "recall": 0.5880149812734082,
+     "f1": 0.4590643274853801
+    },
+    "gallbladder": {
+     "precision": 0.884514435695538,
+     "recall": 0.9439775910364145,
+     "f1": 0.9132791327913279
+    }
+   },
+   "0.4": {
+    "cystic duct": {
+     "precision": 0.40102827763496146,
+     "recall": 0.5842696629213483,
+     "f1": 0.47560975609756095
+    },
+    "gallbladder": {
+     "precision": 0.8936170212765957,
+     "recall": 0.9411764705882353,
+     "f1": 0.9167803547066848
+    }
+   },
+   "0.45": {
+    "cystic duct": {
+     "precision": 0.42492917847025496,
+     "recall": 0.5617977528089888,
+     "f1": 0.4838709677419355
+    },
+    "gallbladder": {
+     "precision": 0.8983957219251337,
+     "recall": 0.9411764705882353,
+     "f1": 0.9192886456908345
+    }
+   },
+   "0.5": {
+    "cystic duct": {
+     "precision": 0.4620253164556962,
+     "recall": 0.5468164794007491,
+     "f1": 0.5008576329331046
+    },
+    "gallbladder": {
+     "precision": 0.900804289544236,
+     "recall": 0.9411764705882353,
+     "f1": 0.9205479452054794
+    }
+   },
+   "0.55": {
+    "cystic duct": {
+     "precision": 0.5017667844522968,
+     "recall": 0.5318352059925093,
+     "f1": 0.5163636363636364
+    },
+    "gallbladder": {
+     "precision": 0.9032258064516129,
+     "recall": 0.9411764705882353,
+     "f1": 0.9218106995884774
+    }
+   },
+   "0.6": {
+    "cystic duct": {
+     "precision": 0.5252918287937743,
+     "recall": 0.5056179775280899,
+     "f1": 0.5152671755725191
+    },
+    "gallbladder": {
+     "precision": 0.9056603773584906,
+     "recall": 0.9411764705882353,
+     "f1": 0.9230769230769231
+    }
+   },
+   "0.65": {
+    "cystic duct": {
+     "precision": 0.5404255319148936,
+     "recall": 0.4756554307116105,
+     "f1": 0.5059760956175299
+    },
+    "gallbladder": {
+     "precision": 0.912568306010929,
+     "recall": 0.9355742296918768,
+     "f1": 0.9239280774550485
+    }
+   },
+   "0.7": {
+    "cystic duct": {
+     "precision": 0.5734597156398105,
+     "recall": 0.45318352059925093,
+     "f1": 0.5062761506276151
+    },
+    "gallbladder": {
+     "precision": 0.9201101928374655,
+     "recall": 0.9355742296918768,
+     "f1": 0.9277777777777778
+    }
+   },
+   "0.75": {
+    "cystic duct": {
+     "precision": 0.6170212765957447,
+     "recall": 0.4344569288389513,
+     "f1": 0.5098901098901099
+    },
+    "gallbladder": {
+     "precision": 0.9224376731301939,
+     "recall": 0.9327731092436975,
+     "f1": 0.9275766016713092
+    }
+   },
+   "0.8": {
+    "cystic duct": {
+     "precision": 0.6484848484848484,
+     "recall": 0.40074906367041196,
+     "f1": 0.49537037037037035
+    },
+    "gallbladder": {
+     "precision": 0.9275766016713092,
+     "recall": 0.9327731092436975,
+     "f1": 0.9301675977653632
+    }
+   },
+   "0.85": {
+    "cystic duct": {
+     "precision": 0.6946564885496184,
+     "recall": 0.3408239700374532,
+     "f1": 0.457286432160804
+    },
+    "gallbladder": {
+     "precision": 0.9295774647887324,
+     "recall": 0.9243697478991597,
+     "f1": 0.9269662921348315
+    }
+   },
+   "0.9": {
+    "cystic duct": {
+     "precision": 0.7444444444444445,
+     "recall": 0.250936329588015,
+     "f1": 0.3753501400560224
+    },
+    "gallbladder": {
+     "precision": 0.9450867052023122,
+     "recall": 0.9159663865546218,
+     "f1": 0.930298719772404
+    }
+   },
+   "0.95": {
+    "cystic duct": {
+     "precision": 0.7777777777777778,
+     "recall": 0.13108614232209737,
+     "f1": 0.22435897435897437
+    },
+    "gallbladder": {
+     "precision": 0.9578313253012049,
+     "recall": 0.8907563025210085,
+     "f1": 0.9230769230769231
+    }
+   }
+  },
+  "selected_by_validation_f1": {
+   "cystic duct": {
+    "score_threshold": 0.55,
+    "tp": 142,
+    "fp": 141,
+    "fn": 125,
+    "precision": 0.5017667844522968,
+    "recall": 0.5318352059925093,
+    "f1": 0.5163636363636364,
+    "false_positive_types": {
+     "duplicate": 3,
+     "localization": 80,
+     "class_confusion": 0,
+     "background": 58
+    },
+    "missed_by_size": {
+     "small": {
+      "missed": 15,
+      "support": 16,
+      "miss_rate": 0.9375
+     },
+     "medium": {
+      "missed": 79,
+      "support": 161,
+      "miss_rate": 0.4906832298136646
+     },
+     "large": {
+      "missed": 31,
+      "support": 90,
+      "miss_rate": 0.34444444444444444
+     }
+    },
+    "per_surgery_recall": {
+     "min": 0.0,
+     "median": 0.5,
+     "max": 1.0,
+     "surgeries": 41
+    }
+   },
+   "gallbladder": {
+    "score_threshold": 0.9,
+    "tp": 327,
+    "fp": 19,
+    "fn": 30,
+    "precision": 0.9450867052023122,
+    "recall": 0.9159663865546218,
+    "f1": 0.930298719772404,
+    "false_positive_types": {
+     "duplicate": 0,
+     "localization": 10,
+     "class_confusion": 0,
+     "background": 9
+    },
+    "missed_by_size": {
+     "small": {
+      "missed": 0,
+      "support": 0,
+      "miss_rate": null
+     },
+     "medium": {
+      "missed": 4,
+      "support": 5,
+      "miss_rate": 0.8
+     },
+     "large": {
+      "missed": 26,
+      "support": 352,
+      "miss_rate": 0.07386363636363637
+     }
+    },
+    "per_surgery_recall": {
+     "min": 0.5,
+     "median": 1.0,
+     "max": 1.0,
+     "surgeries": 41
+    }
+   }
+  },
+  "negative_images_with_detection_at_selected_threshold": {
+   "cystic duct": 1,
+   "gallbladder": 5
+  },
+  "caveat": "Thresholds are selected on the same validation split; no untouched test split was used."
+ }
+}

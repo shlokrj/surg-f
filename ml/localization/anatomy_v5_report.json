@@ -1,0 +1,253 @@
+{
+  "status": "full validation run",
+  "architecture": "mobilenet_v3_hires",
+  "hflip": true,
+  "initial_weights": "COCO_V1",
+  "initial_weights_sha256": "fb6a3cc702b1df54c18a44b26708cd083614211062d0c36d2ca7bf9270df3533",
+  "categories": [
+    {
+      "id": 1,
+      "name": "cystic duct",
+      "supercategory": "anatomy"
+    },
+    {
+      "id": 2,
+      "name": "gallbladder",
+      "supercategory": "anatomy"
+    }
+  ],
+  "seed": 17,
+  "device": "cpu",
+  "epochs_requested": 6,
+  "learning_rate": 0.001,
+  "batch_size": 2,
+  "grad_clip": 10.0,
+  "model_options": {
+    "min_size": 800,
+    "small_anchors": true,
+    "proposals": 2000
+  },
+  "lr_schedule": "cosine",
+  "oversample_duct": 3.0,
+  "init_checkpoint": "/Users/mihirkaushal/madhacks2026/localization/anatomy-hires-v3/best.pt",
+  "train_images": 1212,
+  "validation_images": 409,
+  "data_signature": "0c003c2f469468b0acf3cb61a2788c7aff77b5b8d72ad9f59800ce1f71b07eff",
+  "torch": "2.6.0",
+  "torchvision": "0.21.0",
+  "baseline_validation": {
+    "scope": [
+      "cystic duct",
+      "gallbladder"
+    ],
+    "images": 409,
+    "missing_prediction_images": 0,
+    "ignored_out_of_scope_predictions": 0,
+    "ap": 0.040471734097054055,
+    "ap50": 0.14687064838573324,
+    "per_class": {
+      "cystic duct": {
+        "ap": 0.045937360931873915,
+        "ap50": 0.18899228946897864,
+        "recall100": 0.1647940074906367,
+        "support": 267
+      },
+      "gallbladder": {
+        "ap": 0.035006107262234194,
+        "ap50": 0.10474900730248783,
+        "recall100": 0.07450980392156863,
+        "support": 357
+      }
+    },
+    "protocol": "COCO bbox IoU .50:.05:.95, 101 recall points, maxDets=100, all areas; undefined metrics null"
+  },
+  "best_ap": 0.3881448703694977,
+  "history": [
+    {
+      "epoch": 0,
+      "mean_loss": 0.5501888990156328,
+      "validation": {
+        "scope": [
+          "cystic duct",
+          "gallbladder"
+        ],
+        "images": 409,
+        "missing_prediction_images": 0,
+        "ignored_out_of_scope_predictions": 0,
+        "ap": 0.36707070925013685,
+        "ap50": 0.651659502030705,
+        "per_class": {
+          "cystic duct": {
+            "ap": 0.13366668154832895,
+            "ap50": 0.40975918918314425,
+            "recall100": 0.298501872659176,
+            "support": 267
+          },
+          "gallbladder": {
+            "ap": 0.6004747369519448,
+            "ap50": 0.8935598148782661,
+            "recall100": 0.6795518207282913,
+            "support": 357
+          }
+        },
+        "protocol": "COCO bbox IoU .50:.05:.95, 101 recall points, maxDets=100, all areas; undefined metrics null"
+      },
+      "skipped_all_negative_batches": []
+    },
+    {
+      "epoch": 1,
+      "mean_loss": 0.4553166476167468,
+      "validation": {
+        "scope": [
+          "cystic duct",
+          "gallbladder"
+        ],
+        "images": 409,
+        "missing_prediction_images": 0,
+        "ignored_out_of_scope_predictions": 0,
+        "ap": 0.377055675880913,
+        "ap50": 0.6530766635109533,
+        "per_class": {
+          "cystic duct": {
+            "ap": 0.1358280697968262,
+            "ap50": 0.3942921008789422,
+            "recall100": 0.30149812734082404,
+            "support": 267
+          },
+          "gallbladder": {
+            "ap": 0.6182832819649998,
+            "ap50": 0.9118612261429642,
+            "recall100": 0.6938375350140056,
+            "support": 357
+          }
+        },
+        "protocol": "COCO bbox IoU .50:.05:.95, 101 recall points, maxDets=100, all areas; undefined metrics null"
+      },
+      "skipped_all_negative_batches": []
+    },
+    {
+      "epoch": 2,
+      "mean_loss": 0.408499115198949,
+      "validation": {
+        "scope": [
+          "cystic duct",
+          "gallbladder"
+        ],
+        "images": 409,
+        "missing_prediction_images": 0,
+        "ignored_out_of_scope_predictions": 0,
+        "ap": 0.3746229409525452,
+        "ap50": 0.6459061448377436,
+        "per_class": {
+          "cystic duct": {
+            "ap": 0.12595000610757714,
+            "ap50": 0.39447551673318737,
+            "recall100": 0.26441947565543067,
+            "support": 267
+          },
+          "gallbladder": {
+            "ap": 0.6232958757975133,
+            "ap50": 0.8973367729422996,
+            "recall100": 0.6907563025210084,
+            "support": 357
+          }
+        },
+        "protocol": "COCO bbox IoU .50:.05:.95, 101 recall points, maxDets=100, all areas; undefined metrics null"
+      },
+      "skipped_all_negative_batches": []
+    },
+    {
+      "epoch": 3,
+      "mean_loss": 0.3832797359785821,
+      "validation": {
+        "scope": [
+          "cystic duct",
+          "gallbladder"
+        ],
+        "images": 409,
+        "missing_prediction_images": 0,
+        "ignored_out_of_scope_predictions": 0,
+        "ap": 0.3881448703694977,
+        "ap50": 0.6945360199144397,
+        "per_class": {
+          "cystic duct": {
+            "ap": 0.1390726585741517,
+            "ap50": 0.4635632738636919,
+            "recall100": 0.2861423220973783,
+            "support": 267
+          },
+          "gallbladder": {
+            "ap": 0.6372170821648436,
+            "ap50": 0.9255087659651876,
+            "recall100": 0.7016806722689075,
+            "support": 357
+          }
+        },
+        "protocol": "COCO bbox IoU .50:.05:.95, 101 recall points, maxDets=100, all areas; undefined metrics null"
+      },
+      "skipped_all_negative_batches": []
+    },
+    {
+      "epoch": 4,
+      "mean_loss": 0.374510268862098,
+      "validation": {
+        "scope": [
+          "cystic duct",
+          "gallbladder"
+        ],
+        "images": 409,
+        "missing_prediction_images": 0,
+        "ignored_out_of_scope_predictions": 0,
+        "ap": 0.3806124976576862,
+        "ap50": 0.6676878730358178,
+        "per_class": {
+          "cystic duct": {
+            "ap": 0.13226919462937659,
+            "ap50": 0.4207036597319839,
+            "recall100": 0.2794007490636704,
+            "support": 267
+          },
+          "gallbladder": {
+            "ap": 0.6289558006859959,
+            "ap50": 0.9146720863396518,
+            "recall100": 0.696078431372549,
+            "support": 357
+          }
+        },
+        "protocol": "COCO bbox IoU .50:.05:.95, 101 recall points, maxDets=100, all areas; undefined metrics null"
+      },
+      "skipped_all_negative_batches": []
+    },
+    {
+      "epoch": 5,
+      "mean_loss": 0.35902043808214734,
+      "validation": {
+        "scope": [
+          "cystic duct",
+          "gallbladder"
+        ],
+        "images": 409,
+        "missing_prediction_images": 0,
+        "ignored_out_of_scope_predictions": 0,
+        "ap": 0.38651317289318826,
+        "ap50": 0.6819994238673766,
+        "per_class": {
+          "cystic duct": {
+            "ap": 0.1386542721378284,
+            "ap50": 0.44044901766168143,
+            "recall100": 0.2794007490636704,
+            "support": 267
+          },
+          "gallbladder": {
+            "ap": 0.6343720736485482,
+            "ap50": 0.9235498300730716,
+            "recall100": 0.6980392156862745,
+            "support": 357
+          }
+        },
+        "protocol": "COCO bbox IoU .50:.05:.95, 101 recall points, maxDets=100, all areas; undefined metrics null"
+      },
+      "skipped_all_negative_batches": []
+    }
+  ]
+}
