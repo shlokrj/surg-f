@@ -100,7 +100,6 @@ body:has(.landing)>.topbar,body:has(.landing) #app>.topbar{display:none}
 .local-open.drag{background:var(--surface-tint);border-color:#9db5aa}
 .landing .hero-search input:focus-visible{outline:none}
 @media(max-width:480px){.hero-search .glyph{display:none}.landing .hero-search{padding-left:16px}}
-.hs-case{flex:none;padding:5px 9px;border-radius:var(--radius-sm);background:var(--brand-tint);color:var(--brand-strong);font-size:14px;font-weight:600}
 
 /* Footer: a tall section with a sticky panel (Hangar's structure). The giant mark is a plus dither that
    fills in and zooms slightly as --footer-progress runs 0 → 1 (see paintFooterWord). Reduced motion

@@ -193,7 +193,7 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
           <div class="intro-copy"><h1 id="landing-title">${wordmark()}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="#case-preview">See the demo <span aria-hidden="true">↓</span></a></div>
           <form class="hero-search" id="hero-search" role="search">
             <label class="sr-only" for="hero-q">Ask about the VID01 demo case</label>
-            ${searchGlyph}<span class="hs-case" aria-hidden="true">VID01</span><input id="hero-q" name="q" value="${DEMO_QUESTION}" autocomplete="off" spellcheck="false" required>
+            ${searchGlyph}<input id="hero-q" name="q" value="${DEMO_QUESTION}" placeholder="Ask about the VID01 demo case" autocomplete="off" spellcheck="false" required>
             <button type="submit" aria-label="Search VID01"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
           </form>
         </div>
