@@ -1,0 +1,3 @@
+# Databricks Apps entry point (deploy from the repo root so shared/ is included).
+# The Apps runtime sets UVICORN_HOST=0.0.0.0 and UVICORN_PORT for uvicorn automatically.
+command: ['uvicorn', 'app.main:app', '--app-dir', 'backend']
