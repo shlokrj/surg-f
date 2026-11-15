@@ -1,5 +1,19 @@
 # Surg+F progress
 
+## Frontend v2 merged to main (2026-11-14)
+
+Shlok approved the redesign and merged `feat/shlok-frontend-v2` into `main`. Changes:
+
+- Light teal hero with a plus-mark dither ombre.
+- `surg+f` wordmark with the lens drawn around a real `+`, also used as a transparent-background favicon.
+- Three feature sections built from saved backend fixtures.
+- Case page restyled to match the homepage, with entrance motion.
+- Content filter is now an eye button over the footage.
+- Top bar action changed to "Open your own video".
+- Demo example: "When is the cystic duct clipped?" → VID01 11:38.
+
+Merged `main` through `bfd08d4`; the only conflict was the `main.js` import line, which now keeps Rohan's `chatMessage`. Checks: `node --test frontend/test/*.test.js` passed 11 tests, and `npm --prefix frontend run build` passed. Chrome screenshots were checked at desktop and mobile widths, along with the logo-scroll, eye toggle and 11:38 seek. Live backend chat replies were not exercised. See [design criteria](../frontend/docs/DESIGN.md). Next: Mihir checks overlay controls under the new case styles.
+
 ## Frontend v2 revision after design review (2026-11-14)
 
 Shlok rejected the first visual direction. On `feat/shlok-frontend-v2`, replaced the reticle/cursor with deterministic plus-sign dither, lowercase light-teal surg+f using the magnifier-plus mark, a white inset rounded frame that expands on scroll, and less copy. Updated `frontend/docs/DESIGN.md` and `ANTI_SLOP.md` with the explicit rejected patterns and screenshot-based requirements. Local commits only; no push or main merge.
