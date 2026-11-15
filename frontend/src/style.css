@@ -86,7 +86,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
   padding: 0 32px; background: #fffffff2; color: var(--ink); border-bottom: 1px solid var(--line); backdrop-filter: blur(12px);
 }
 .top-spacer { flex: 1; }
-.topbar-mark { font-size: 26px; color: var(--brand-strong); }
+.topbar-mark { font-size: 18px; color: var(--brand-strong); }
 .logo-link { display: inline-flex; align-items: center; padding: 4px 6px; margin: -4px -6px; border: 0; border-radius: var(--radius-sm); background: none; }
 .logo-link:hover .sf-mark { opacity: .8; }
 .top-action { min-height: 36px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font-size: var(--text-md); font-weight: 500; }
