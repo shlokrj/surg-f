@@ -22,16 +22,16 @@ export function modelPanel(state) {
     <div class="panel-head"><h2 id="model-title">3D model</h2><p>The gallbladder and the organs around it${hasSteps ? ', following the video step by step' : ''}.</p></div>
     <div class="panel-body">
       ${hasSteps ? `<div class="anat-step">
-        <button type="button" class="step-nav" data-step-nav="-1" aria-label="Previous step">←</button>
+        <button type="button" class="step-nav" data-step-nav="-1" aria-label="Previous step"><i class="ico ico-left" aria-hidden="true"></i></button>
         <div class="anat-step-text" aria-live="polite"><strong id="model-step-title"></strong><span id="model-step-note"></span></div>
-        <button type="button" class="step-nav" data-step-nav="1" aria-label="Next step">→</button>
+        <button type="button" class="step-nav" data-step-nav="1" aria-label="Next step"><i class="ico ico-right" aria-hidden="true"></i></button>
       </div>` : ''}
       <div class="anat-stage" id="model-stage">
         <p class="anat-status" id="model-status">Loading the 3D model…</p>
         <span class="anat-hover" id="model-hover" aria-hidden="true"></span>
         <div class="anat-tools" role="group" aria-label="View">
-          <button type="button" id="model-zoom-in" aria-label="Zoom in">+</button>
-          <button type="button" id="model-zoom-out" aria-label="Zoom out">−</button>
+          <button type="button" id="model-zoom-in" aria-label="Zoom in"><i class="ico ico-plus" aria-hidden="true"></i></button>
+          <button type="button" id="model-zoom-out" aria-label="Zoom out"><i class="ico ico-minus" aria-hidden="true"></i></button>
           <button type="button" id="model-reset">Reset view</button>
         </div>
       </div>
