@@ -26,7 +26,7 @@ Then open:
 | `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_TOKEN` | repo-root `.env` (git-ignored) | When all three are set, the backend uses live Databricks data |
 | `SURGF_CORS_ORIGINS` | backend environment | Optional comma-separated origins. Default `http://localhost:5173,http://127.0.0.1:5173` |
 | `SURGF_WARMUP` | backend environment | `0` turns off the startup query that wakes the SQL warehouse |
-| `DATABRICKS_GENIE_SPACE_ID` | repo-root `.env` | Optional. Turns on Genie for free-form questions in `/interpret` and `/chat` |
+| `DATABRICKS_GENIE_SPACE_ID` | repo-root `.env` | Optional. Turns on Genie for free-form questions in `/interpret` and `/chat`. The team space is `01f1e08655eb17c1931c9dbb6cd4750b` |
 | `DATABRICKS_CHAT_ENDPOINT` | repo-root `.env` | Optional. Name of the Databricks serving endpoint that routes `/chat` messages, for example `databricks-meta-llama-3-3-70b-instruct`. Without it, keyword rules route |
 | `SURGF_CHAT_TIMEOUT_SEC` | backend environment | Optional. Time limit for the chat model before the rules take over. Default `8` |
 
@@ -411,7 +411,7 @@ type AnswerTable = { columns: string[]; rows: unknown[][]; sql: string | null };
 | `search` | Same shape as `GET /search`, already limited to the open video and to annotation rows | The "Matching moments" list. Clicking a result seeks the player to `start_sec`. An empty `results` list is possible; `reply` then says nothing was found |
 | `quiz` | Same as `GET /quiz` | The quiz card |
 | `timeline` | Same as `GET /cases/{case_id}/timeline` | The instrument chart (`summary`) and timeline track (`segments`) |
-| `answer` | A small table from Databricks Genie, or `null` | The reply text, plus an optional plain table of `columns` and `rows`. Only appears once a Genie space exists |
+| `answer` | A small table from Databricks Genie, or `null` | The reply text, plus an optional plain table of `columns` and `rows`. Only appears when the backend has `DATABRICKS_GENIE_SPACE_ID` set |
 | `none` | `null` | Only the reply. Used for medical-advice and off-topic messages, an unknown video, and a data outage |
 
 **How the backend decides (you don't need to handle any of this):**
@@ -419,7 +419,7 @@ type AnswerTable = { columns: string[]; rows: unknown[][]; sql: string | null };
 2. Keyword rules answer when the model is not configured, is slow, fails, or picks something invalid. In fixture mode (no credentials) the rules always answer.
 3. `/chat` returns 200 for every valid request, including when routing or the data store fails. The only error is 422 for a blank or too-long `message` or a bad `case_id`.
 
-**Latency (measured 2026-11-14, live Databricks):** 0.6 to 1.7 s through the model, 0.3 to 1.0 s through the rules. The first data request after the SQL warehouse has slept can take much longer, so keep a loading state.
+**Latency (measured 2026-11-14, live Databricks):** 0.6 to 1.7 s through the model, 0.3 to 1.0 s through the rules, and 11 to 14 s when Genie answers an open-ended data question (`router: genie`). The first data request after the SQL warehouse has slept can take much longer, so keep a loading state.
 
 **Real example per action** (also in [fixtures/chat.examples.json](../fixtures/chat.examples.json), with full lists):
 
@@ -561,10 +561,10 @@ type AnswerTable = { columns: string[]; rows: unknown[][]; sql: string | null };
 }
 ```
 
-`answer`: `{"message": "which instrument was used the longest?"}`. **Illustrative, not a real response:** this action needs a Surg+F Genie space, which doesn't exist yet.
+`answer`: `{"message": "which instrument was used the longest?"}` (answered by Genie in 13.8 s)
 ```json
 {
-  "reply": "The grasper was used the longest in VID01.",
+  "reply": "For case_id 'VID01', the instrument used for the longest total time was the grasper, with a total of 1141 seconds. The next longest was the hook at 788 seconds.",
   "action": "answer",
   "data": {
     "columns": [
@@ -579,9 +579,39 @@ type AnswerTable = { columns: string[]; rows: unknown[][]; sql: string | null };
         42,
         1141.0,
         0.0
+      ],
+      [
+        "hook",
+        9,
+        788.0,
+        20.0
+      ],
+      [
+        "irrigator",
+        9,
+        133.0,
+        291.0
+      ],
+      [
+        "bipolar",
+        4,
+        124.0,
+        325.0
+      ],
+      [
+        "clipper",
+        5,
+        102.0,
+        674.0
+      ],
+      [
+        "scissors",
+        1,
+        17.0,
+        860.0
       ]
     ],
-    "sql": "SELECT label, count(*) AS count, sum(end_sec - start_sec) AS total_sec, min(start_sec) AS first_sec FROM workspace.default.surgf_clips WHERE case_id = 'VID01' AND source = 'annotation' GROUP BY label ORDER BY total_sec DESC LIMIT 1"
+    "sql": "SELECT label, count(*) AS count, sum(end_sec - start_sec) AS total_sec, min(start_sec) AS first_sec\nFROM workspace.default.surgf_clips\nWHERE case_id = 'VID01' AND source = 'annotation'\n  AND label IN ('grasper','hook','irrigator','bipolar','clipper','scissors')\nGROUP BY label ORDER BY total_sec DESC"
   },
   "router": "genie"
 }
@@ -591,6 +621,7 @@ type AnswerTable = { columns: string[]; rows: unknown[][]; sql: string | null };
 - **The timeline returns the six instruments only.** The live clip table also holds verb and target labels such as `grasp` and `gallbladder`. Since 2026-11-14 `GET /cases/{case_id}/timeline` and the chat `timeline` action leave them out, so live VID01 matches the saved fixture again (70 segments, 6 labels). Your existing filter to the six labels in `main.js` is harmless and can stay.
 - **Which endpoint for which input (decided 2026-11-14, Rohan):** use `POST /chat` for free-typed chat messages. Keep `GET /interpret` for the search bar's slash commands, because it can return several actions at once (`/quiz /chart`) and `/chat` returns exactly one. `/interpret` is not being retired.
 - **Chat search is narrower than `GET /search`:** it returns annotation rows for the open video only, which is what the matching-moments list shows. Call `GET /search` directly when you need every video or model predictions.
+- **Already wired (2026-11-14):** `runSearch` in `frontend/src/main.js` sends free-typed messages to `/chat` through `chatMessage` in `api.js`, and falls back to `/interpret` when `/chat` can't be reached. The `answer` table is not rendered yet; only its reply text is shown.
 - **`/interpret` is unchanged.** `/chat` reuses its keyword rules. `/interpret` returns a list of actions and the requests to make; `/chat` returns one action with the data attached.
 - **Slash commands work as messages:** `/quiz`, `/chart`, `/timestamp clipper`. `/model` returns `none` with a "no 3D model yet" reply.
 - **CORS** now allows `POST` from the default dev origins.

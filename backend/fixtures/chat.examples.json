@@ -1,5 +1,5 @@
 {
-  "description": "One POST /chat example per action. The search, quiz, timeline and none examples are real responses generated in fixture mode by the rule-based router (the quiz is one random draw); live Databricks returns the same VID01 search and timeline data. The answer example is illustrative.",
+  "description": "One POST /chat example per action, all real responses. The search, quiz, timeline and none examples were generated in fixture mode by the rule-based router (the quiz is one random draw); live Databricks returns the same VID01 search and timeline data. The answer example came from the live Genie space.",
   "examples": [
     {
       "request": {
@@ -611,10 +611,10 @@
         "message": "which instrument was used the longest?",
         "case_id": "VID01"
       },
-      "verified": false,
-      "note": "Illustrative only. The answer action needs a Surg+F Genie space, which does not exist yet. Shape taken from the backend tests; values from the verified VID01 timeline.",
+      "verified": true,
+      "note": "Real response from the Surg+F Genie space on 2026-11-14.",
       "response": {
-        "reply": "The grasper was used the longest in VID01.",
+        "reply": "For case_id 'VID01', the instrument used for the longest total time was the grasper, with a total of 1141 seconds. The next longest was the hook at 788 seconds.",
         "action": "answer",
         "data": {
           "columns": [
@@ -629,9 +629,39 @@
               42,
               1141.0,
               0.0
+            ],
+            [
+              "hook",
+              9,
+              788.0,
+              20.0
+            ],
+            [
+              "irrigator",
+              9,
+              133.0,
+              291.0
+            ],
+            [
+              "bipolar",
+              4,
+              124.0,
+              325.0
+            ],
+            [
+              "clipper",
+              5,
+              102.0,
+              674.0
+            ],
+            [
+              "scissors",
+              1,
+              17.0,
+              860.0
             ]
           ],
-          "sql": "SELECT label, count(*) AS count, sum(end_sec - start_sec) AS total_sec, min(start_sec) AS first_sec FROM workspace.default.surgf_clips WHERE case_id = 'VID01' AND source = 'annotation' GROUP BY label ORDER BY total_sec DESC LIMIT 1"
+          "sql": "SELECT label, count(*) AS count, sum(end_sec - start_sec) AS total_sec, min(start_sec) AS first_sec\nFROM workspace.default.surgf_clips\nWHERE case_id = 'VID01' AND source = 'annotation'\n  AND label IN ('grasper','hook','irrigator','bipolar','clipper','scissors')\nGROUP BY label ORDER BY total_sec DESC"
         },
         "router": "genie"
       }
