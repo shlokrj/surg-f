@@ -25,7 +25,7 @@ Locally, add the path to the dev server URL, for example `http://localhost:5173/
 
 **Video demo** (faster pace):
 
-1. Problem, 2 scenes: 17 seconds; writing it all down.
+1. Problem, 2 scenes: 17 seconds in a 29-minute video; learning surgery is slow and expensive (cited: ACGME, Babineau 2004, Bridges and Diamond 1999, Rapp 2016).
 2. Solution, 3 scenes: ask; jump; practice in 3D.
 3. Databricks, all 6 scenes.
 
@@ -59,6 +59,10 @@ Every number in the scripts is on the site and traced to the repo. Do not round 
 | Test F1 | average 0.34; grasper 0.89, hook 0.83; scissors 0.07 → 0.29 from v1 to v2 | same |
 | Frame features | SurgVLP, frozen ResNet-50, 768 numbers per second | `ml/README.md` |
 | Boxes | Faster R-CNN on Endoscapes; gallbladder precision and recall 0.93; cystic duct recall 0.39; instruments (any type) precision 0.89, recall 0.83, named from surgeon labels when only one is listed | `frontend/src/modelnotes.js`, the eval docs |
+| Residency case minimum | 850 major operations over five years | ACGME defined-category minimums, 2024 |
+| Teaching time | Laparoscopic cholecystectomy 63 min alone, 86 min with a resident | Babineau et al., Arch Surg 2004 |
+| Teaching cost | $47,970 of extra OR time per resident (one center, 1999) | Bridges and Diamond, Am J Surg 1999 |
+| Video use | 95% of surgical learners prepare with video, mostly YouTube | Rapp et al., J Surg Educ 2016 |
 | Databricks run log | Volume `/Volumes/workspace/default/surgf`; Lakeflow job `surgf-import-clips` (stage, then MERGE; a rerun inserts 0); smoothing sweep picked 2 s : 2 s; Llama route 2.0 s; Genie answer 11.7 s | `agent-kit/DATABRICKS.md`, `ml/PROGRESS.md` |
 
 ## Citations

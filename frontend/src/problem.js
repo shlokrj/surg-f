@@ -68,6 +68,29 @@ const CHAPTERS = [
       <div class="pb-review"><b data-review="${VID01_LEN}">0:00</b><span>of 28:53 reviewed, by hand</span></div></div>`,
   },
   {
+    id: 'learning', name: 'Learning is costly',
+    title: 'Learning surgery is slow and expensive.',
+    body: 'A general surgery resident must operate on 850 cases over five years. Teaching in the operating room adds time: a laparoscopic gallbladder removal took 86 minutes with a resident instead of 63. To prepare, nearly every learner watches surgical video, and none of it is searchable.',
+    sources: [
+      ['ACGME, General Surgery case minimums, 2024', 'https://www.acgme.org/globalassets/definedcategoryminimumnumbersforgeneralsurgeryresidentsandcreditrole.pdf'],
+      ['Babineau et al., Archives of Surgery, 2004', 'https://doi.org/10.1001/archsurg.139.4.366'],
+      ['Bridges and Diamond, American Journal of Surgery, 1999', 'https://doi.org/10.1016/S0002-9610(98)00289-X'],
+      ['Rapp et al., Journal of Surgical Education, 2016', 'https://doi.org/10.1016/j.jsurg.2016.04.024'],
+    ],
+    note: 'Published figures; each card names its source. The cost is one center’s 1999 estimate of extra operating time per resident.',
+    scene: () => `<div class="sc pb-learn">
+      <div class="lc lc-cases" style="--k:0"><span class="lc-src">ACGME</span><b data-num="850">0</b><span>major operations a general surgery resident must perform</span>
+        <div class="lc-years">${[1, 2, 3, 4, 5].map(y => `<i style="--y:${y}"><em>${y}</em></i>`).join('')}</div><small class="lc-cap">over five years of residency</small></div>
+      <div class="lc lc-time" style="--k:1"><span class="lc-src">Babineau et al., 2004</span><span>Laparoscopic gallbladder removal</span>
+        <div class="lc-bar a"><em>Surgeon alone</em><i style="--w:${63 / 90}"></i><b>63 min</b></div>
+        <div class="lc-bar b"><em>With a resident</em><i style="--w:${86 / 90}"></i><b>86 min</b></div>
+        <span class="lc-plus">+23 min</span></div>
+      <div class="lc lc-cost" style="--k:2"><span class="lc-src">Bridges and Diamond, 1999</span><b>$<span data-num="47970" data-sep>0</span></b><span>of extra operating-room time per resident trained</span></div>
+      <div class="lc lc-video" style="--k:3"><span class="lc-src">Rapp et al., 2016</span><b><span data-num="95">0</span>%</b><span>of surgical learners prepare by watching video, mostly YouTube</span>
+        <div class="lc-dots">${Array.from({length: 20}, (_, i) => `<i class="${i < 19 ? 'on' : ''}" style="--i:${i}"></i>`).join('')}</div></div>
+    </div>`,
+  },
+  {
     id: 'uses', name: 'Who needs it',
     title: 'Everyone who learns from surgery needs one moment.',
     body: 'A resident wants to watch the duct being clipped before doing it. A surgeon reviews the dissection before a case. An educator cuts the critical seconds into a lesson. A researcher compares one step across many operations.',
@@ -94,7 +117,7 @@ export function problemSection({only, per = 2} = {}) {
       <div class="mn-heading"><h2 id="problem-heading">Finding one moment.</h2></div>
       <div class="dig-map"><ol class="dig-labels" aria-label="The problem">${chapters.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>
       ${chapters.map((c, i) => `<div class="layer" id="problem-${c.id}" data-layer="${i}" style="--p:0;--s:1">
-        <div class="dig-copy layer-copy"><h3>${c.title}</h3><p>${c.body}</p></div>
+        <div class="dig-copy layer-copy"><h3>${c.title}</h3><p>${c.body}</p>${c.sources ? `<div class="lv-sources"><span>Sources</span><ul>${c.sources.map(([t, h]) => `<li><a href="${h}" target="_blank" rel="noopener noreferrer">${t}</a></li>`).join('')}</ul></div>` : ''}</div>
         <div class="pit" style="--k:${i}" role="img" aria-label="${c.name} animation"><canvas class="sky-dither" data-horizon=".72" data-ceiling="4.6" aria-hidden="true"></canvas><div class="fit">${c.scene()}</div><p class="v-cap">${c.note}</p></div>
       </div>`).join('')}
     </div>
@@ -133,6 +156,13 @@ onStage((section, ps) => {
   /* Writing it down: the review clock runs as the rows are typed in. */
   const pDocs = layerP(section, ps, 'problem-docs');
   if (pDocs !== null) { const el = section.querySelector('[data-review]'); setText(el, clock(Number(el.dataset.review) * clamp((pDocs - .08) / .7))); }
+  /* Learning is costly: each card's number counts up as it arrives. */
+  const pLearn = layerP(section, ps, 'problem-learning');
+  if (pLearn !== null) section.querySelectorAll('#problem-learning [data-num]').forEach(el => {
+    const k = Number(el.closest('.lc').style.getPropertyValue('--k'));
+    const v = Number(el.dataset.num) * ease(clamp((pLearn - .08 - k * .16) / .3));
+    setText(el, el.hasAttribute('data-sep') ? Math.round(v).toLocaleString('en-US') : String(Math.round(v)));
+  });
   /* Hand-labeled clips count up as the lanes are drawn. */
   const pIndex = layerP(section, ps, 'problem-index');
   if (pIndex !== null) { const el = section.querySelector('[data-count]'); setText(el, Math.round(Number(el.dataset.count) * ease(clamp((pIndex - .3) / .4))).toLocaleString('en-US')); }
