@@ -1,6 +1,7 @@
 # Spatial overlay prototype (stage 3)
 
-Current team: Shlok owns model/evaluation, Aadhi owns data/export, Mihir owns player/browser verification. Work and push on `feat/spatial-overlays`; main publication requires Shlok's explicit final request. See [ordered tasks and owned paths](../LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). This supersedes earlier single-owner notes below.
+Current ownership: **Shlok — general frontend design; Aadhi — spatial data/models/evaluation/export; Mihir — spatial player/browser verification.** Spatial work stays on `feat/spatial-overlays`. Shlok and Mihir coordinate shared frontend markup/styles. See [tasks and handoffs](../LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). Earlier owner notes below are historical.
+
 
 Owner: Shlok. Branch: `feat/spatial-overlays`. Aadhitya continues stage 2 independently on `ml-dev`.
 

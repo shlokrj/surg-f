@@ -73,7 +73,8 @@ function home() {
       <div class="preview-video surgical-media ${state.filterOn ? 'filtered' : ''}"><video src="${escapeHtml(videoForCase('VID01'))}" muted playsinline preload="auto" aria-label="Preview of VID01 surgery footage"></video></div>
       <div class="preview-details"><h2>Explore a real annotated case</h2>
         <p>VID01 is a laparoscopic gallbladder removal. Follow the steps of the operation, find when each instrument is used, and test yourself with a quiz.</p>
-        <button type="button" id="sample" class="btn-primary">View demo</button></div>
+        <button type="button" id="sample" class="btn-primary">View demo</button>
+        <button type="button" id="sample-event" class="preview-event-link">View clipper event at 11:14 <span aria-hidden="true">↗</span></button></div>
     </aside></main>`;
 }
 
@@ -140,8 +141,8 @@ function outputSections() {
 }
 
 function chatPanel() {
-  const bubble = message => message.role === 'user'
-    ? `<div class="msg msg-user"><p>${escapeHtml(message.text)}</p></div>`
+  const bubble = (message, index) => message.role === 'user'
+    ? `<div class="msg msg-user"><button type="button" data-history="${index}" title="Ask again and show matching moments">${escapeHtml(message.text)}</button></div>`
     : `<div class="msg msg-doc">${avatar}<p>${escapeHtml(message.text)}</p></div>`;
   const typing = state.loading
     ? `<div class="msg msg-doc">${avatar}<p><span class="typing" aria-hidden="true"><i></i><i></i><i></i></span><span class="sr-only">Lil Doc is thinking</span></p></div>` : '';
@@ -183,11 +184,13 @@ function resetCase(caseId, title, videoUrl, localVideo) {
     quizAnswers: {}, quizSubmitted: false, chartRequest: null, actionRows: [], error: '', loading: false,
   });
 }
-function openSample() {
+function openSample(seek = null) {
   resetCase('VID01', 'VID01 · Cholecystectomy', videoForCase('VID01'), false);
+  state.pendingSeek = seek;
   state.messages = [{ role: 'doc', text: greeting('VID01') }];
   render();
   loadSteps();
+  if (seek != null) runSearch('/timestamp clipper');
 }
 function openFile(file) {
   if (!file) return;
@@ -233,17 +236,21 @@ function wireVideo(video) {
   if (!video || video.dataset.wired) return;
   video.dataset.wired = 'true';
   ['timeupdate', 'play', 'pause', 'volumechange', 'ratechange', 'seeked'].forEach(name => video.addEventListener(name, updateControls));
+  video.addEventListener('seeked', () => {
+    if (state.pendingSeek != null && Math.abs(video.currentTime - state.pendingSeek) < 1) state.pendingSeek = null;
+  });
   video.addEventListener('error', () => { state.videoError = true; const fallback = document.querySelector('#video-fallback'); if (fallback) fallback.hidden = false; });
   video.addEventListener('loadedmetadata', () => {
     state.duration = video.duration;
-    if (state.pendingSeek != null) { video.currentTime = state.pendingSeek; state.pendingSeek = null; }
+    if (state.pendingSeek != null) video.currentTime = state.pendingSeek;
     updateControls();
   });
 }
 function seekTo(seconds) {
   const video = document.querySelector('#player');
   if (!video) return;
-  if (video.readyState >= 1) video.currentTime = seconds; else state.pendingSeek = seconds;
+  state.pendingSeek = seconds;
+  if (video.readyState >= 1) video.currentTime = seconds;
   video.play().catch(() => {});
   document.querySelector('.video-frame')?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
 }
@@ -276,8 +283,9 @@ function wire() {
   // Home
   const preview = document.querySelector('.preview-video video');
   preview?.addEventListener('loadedmetadata', () => { preview.currentTime = 674; });
-  document.querySelector('#sample')?.addEventListener('click', openSample);
-  document.querySelector('#open-sample')?.addEventListener('click', openSample);
+  document.querySelector('#sample')?.addEventListener('click', () => openSample());
+  document.querySelector('#sample-event')?.addEventListener('click', () => openSample(674));
+  document.querySelector('#open-sample')?.addEventListener('click', () => openSample());
   const zone = document.querySelector('#drop-zone');
   const fileInput = document.querySelector('#file-input');
   zone?.addEventListener('click', () => fileInput.click());
@@ -328,6 +336,10 @@ function wire() {
     queryInput.focus();
     queryInput.setSelectionRange(queryInput.value.length, queryInput.value.length);
   }));
+  document.querySelectorAll('[data-history]').forEach(el => el.addEventListener('click', () => {
+    const question = state.messages[Number(el.dataset.history)]?.text;
+    if (question) runSearch(question);
+  }));
 
   // Timeline, quiz and anything else that jumps the video
   document.querySelectorAll('[data-seek]').forEach(el => el.addEventListener('click', () => seekTo(Number(el.dataset.seek))));
@@ -354,7 +366,7 @@ function wire() {
     syncFullscreenButton();
   });
   syncFullscreenButton();
-  if (video && state.pendingSeek != null && video.readyState >= 1) { video.currentTime = state.pendingSeek; state.pendingSeek = null; }
+  if (video && state.pendingSeek != null && video.readyState >= 1 && !video.seeking) video.currentTime = state.pendingSeek;
   updateControls();
 }
 

@@ -1,5 +1,13 @@
 # ML team progress
 
+## Current ownership: Shlok moves to frontend design (2026-11-14)
+
+Shlok now owns **general frontend design and presentation**, and is no longer assigned spatial ML work. **Aadhi owns spatial data, model training, evaluation, inference and artifact export**, including Shlok's unfinished trainer tasks. **Mihir owns spatial player integration and browser verification**. This supersedes earlier assignment tables and historical ownership notes below.
+
+Spatial teammates continue on `feat/spatial-overlays`; Aadhi should retain the scoped evaluator already pushed in `78dfef0`. Shlok and Mihir must coordinate shared `frontend/src/main.js`, `style.css` and player markup: Shlok owns overall design, Mihir owns overlay behavior. Do not overwrite each other's edits. Full tasks and handoffs are in [the localization plan](LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow).
+
+This request authorizes pushing these ownership docs to main only. Unfinished spatial code remains on its branch until a later explicit publication request. Documentation-only update; Markdown links and diff checked, no application changes or new training runs.
+
 ## Shlok evaluation task started (2026-11-14)
 
 At Shlok's explicit request, published the current spatial team branch and incoming main changes to main at `dd2dfaf`; frontend tests (6) and build passed after integration. New task work continues on `feat/spatial-overlays`, not main.
