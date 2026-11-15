@@ -106,11 +106,11 @@ About 690 spoken words at roughly 140 words a minute. If you run long, cut the l
 
 > Grasper and hook score 0.89 and 0.83 F1. Rare tools like scissors are harder.
 
-**→ v1 to v2**
+**→ Label model: v1 to v2**
 
 > Going from 12 to 42 training surgeries lifted scissors from 0.07 to 0.29.
 
-**→ Boxes on the video**
+**→ Box detector (v3)**
 
 > A second model draws boxes. The gallbladder is found reliably; the small cystic duct is often missed, and we say so in the app.
 

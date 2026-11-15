@@ -82,23 +82,23 @@ const CHAPTERS = [
       <div class="ticks"><span>0 s</span><span>20 s</span><span>40 s</span></div></div>`,
   },
   {
-    id: 'versions', name: 'v1 to v2',
+    id: 'versions', name: 'Label model: v1 to v2',
     title: 'More surgeries, better scissors.',
     body: 'Training on 42 surgeries instead of 12 raised the average F1 and more than quadrupled scissors F1, the instrument behind “When is the cystic duct cut?”. Every number traces to a logged MLflow run.',
-    note: 'Neural network v1 against v2, the live model. Final model: MLflow run 9d18d20a.',
+    note: 'Label model v1 against v2, the live label model. Final model: MLflow run 9d18d20a.',
     link: '/evals.html',
     scene: () => `<div class="sc mn-up"><div class="ver"><span class="v1">v1</span><span class="v2">v2, live</span></div>
       ${[['Training surgeries', 12, 42, 50, 0], ['Average F1', .30, .34, 1, 2], ['Scissors F1', .07, .29, 1, 2]].map(([label, a, b, max, dg], i) => `<div class="up" data-up data-from="${a}" data-to="${b}" data-digits="${dg}" data-i="${i}" style="--a:${a / max};--b:${b / max};--u:0"><span>${label}</span><div class="bars"><i class="was"></i><i class="now"></i></div><b>${a.toFixed(dg)}</b></div>`).join('')}
       <code class="run">MLflow 9d18d20a</code></div>`,
   },
   {
-    id: 'boxes', name: 'Boxes on the video',
+    id: 'boxes', name: 'Box detector (v3)',
     title: 'Boxes on the video.',
     body: 'A second model, a Faster R-CNN fine-tuned on Endoscapes, draws boxes around the gallbladder and cystic duct every quarter second. On 409 frames from 41 surgeries it never trained on, the gallbladder is reliable. The cystic duct is small and often hidden, so many are missed. It has not yet been checked on this video itself.',
     note: 'Precision: boxes that are right. Recall: real ones it finds. A box counts when it overlaps the surgeon’s box by at least half.',
     link: '/evals.html#bounding-boxes-on-the-video-experimental',
     scene: () => `<div class="sc mn-board"><div class="mn-panel"><h4>Gallbladder</h4>${rows(BOXES.gallbladder)}</div><div class="mn-panel"><h4>Cystic duct</h4>${rows(BOXES.duct, 2)}</div>
-      <div class="avg"><b data-avg="${BOXES.ap}">0.00</b><span>detection score (COCO AP), up from 0.35</span></div></div>`,
+      <div class="avg"><b data-avg="${BOXES.ap}">0.00</b><span>detection score (COCO AP), up from 0.35 in v2</span></div></div>`,
   },
 ];
 

@@ -19,7 +19,7 @@ Locally, add the path to the dev server URL, for example `http://localhost:5173/
 2. Solution, 5 scenes: label every second; ask in plain words; jump to the moment; the labels are the record; practice in 3D.
 3. Features, 3 cards: step timeline, instrument chart, quiz.
 4. The stack: the block, then 6 layers.
-5. Model, 4 scenes: held-out test; instruments; v1 to v2; boxes on the video.
+5. Model, 4 scenes: held-out test; instruments; label model: v1 to v2; box detector (v3).
 6. Databricks, 5 scenes: Volume; serverless jobs; MLflow; Lakeflow and Delta; SQL, Genie and Llama.
 7. What's next, 4 scenes: Lil Counsel, Lil Ledger, Lil Watch, Lil Pal.
 

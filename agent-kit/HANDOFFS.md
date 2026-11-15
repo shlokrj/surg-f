@@ -1,5 +1,9 @@
 # Team handoffs
 
+## Model notes: chapters named by model (2026-11-15, Mihir, at Mihir's request)
+
+Two different models have their own version numbers: the **label model** (Aadhitya's 29-label classifier, v1 → v2 live) and the **box detector** (Mihir's Faster R-CNN, v1 → v2 → v3 live). To stop "v2, live" in chapter 5 being read as the box model, the rail labels are now **"Label model: v1 to v2"** and **"Box detector (v3)"** (`frontend/src/modelnotes.js`); chapter 5's caption says "Label model v1 against v2" and chapter 6's score line says "up from 0.35 in v2". **Shlok:** the presenter cues in `pitch/presentation-demo-script.md` and the scene list in `pitch/README.md` use the new names; `frontend/docs/DESIGN.md` notes the rename. Checks: 49 frontend tests and build pass; Chrome at 1400 px and 390 px shows both labels on one line with no overflow.
+
 ## Player speed menu arrow fix (2026-11-15, Mihir, at Mihir's request)
 
 The native arrow on the playback-speed `<select>` sat on the box's right border (60 px wide, 8 px padding). `frontend/src/case.css` now uses `appearance: none` with a white SVG chevron inside the box and 28 px right padding; options keep the page's ink/surface colors. Checked in headless Chrome 157 with keyboard focus (before/after screenshots); frontend tests and build pass. **Shlok:** your file; restyle as you like.
