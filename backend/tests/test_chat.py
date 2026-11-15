@@ -330,6 +330,18 @@ def test_genie_table_becomes_an_answer_action():
     }
 
 
+def test_genie_reply_is_shortened_to_two_plain_sentences():
+    answer = GenieAnswer(
+        conversation_id="c1",
+        text="The **grasper** was used longest. The hook was next. Scissors were last.\n\n- a\n- b",
+        columns=["label", "total_sec"],
+        rows=[["grasper", 1141]],
+    )
+    llm = FakeLLM(ToolChoice("ask_data", {"question": "longest?"}))
+    body = ask(make_client(llm=llm, genie=FakeGenie(answer)), "which was used longest?")
+    assert body["reply"] == "The grasper was used longest. The hook was next."
+
+
 def test_genie_failure_falls_back_to_rules():
     llm = FakeLLM(ToolChoice("ask_data", {"question": "x"}))
     genie = FakeGenie(error=GenieError("timeout"))
