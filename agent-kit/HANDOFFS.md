@@ -1,5 +1,9 @@
 # Team handoffs
 
+## Player speed menu arrow fix (2026-11-15, Mihir, at Mihir's request)
+
+The native arrow on the playback-speed `<select>` sat on the box's right border (60 px wide, 8 px padding). `frontend/src/case.css` now uses `appearance: none` with a white SVG chevron inside the box and 28 px right padding; options keep the page's ink/surface colors. Checked in headless Chrome 157 with keyboard focus (before/after screenshots); frontend tests and build pass. **Shlok:** your file; restyle as you like.
+
 ## VID02 now has bounding boxes; overlay panel tidied (2026-11-15, Mihir)
 
 **Why VID02 said "Retry loading boxes":** there was no `frontend/public/overlays/VID02.json`. The Vite server answers a missing file with the app's HTML page, which the player read as corrupt data and offered Retry. Now:
