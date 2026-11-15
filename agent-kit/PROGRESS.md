@@ -32,6 +32,13 @@ The earlier integrated `frontend/dev` work reached `main` through `6d468dd`. Fur
 - To fit five chips on one row of the chat, `frontend/src/case.css` chip side padding went from 10 to 6 px and the gap from 6 to 4 px. **Shlok:** adjust if you prefer.
 - Checks: `node --test frontend/test/*.test.js` 49 passed; build passed. The headless Chrome walkthrough passed 40 checks with no page errors: VID02 refused; the chip inserts and highlights `/practice`; the chip alone gets the offer; the full four-stage loop on hosted VID01; and the upload path still starts. Chips stay on one row at 1440, 1280, 1024 and 390 px.
 
+**Simplified practice panel (2026-11-15, Rohan's request):**
+- Removed: the "Practice · draft, not yet medically reviewed" line, "Stage N of 4", the "Stage 2/3/4" labels in the rail (numbers only), the button row under the 3D view (tray 1–4, position, Place here, gesture, Return to tray), the "Legend and limits" panel, and the "back in the tray" message.
+- All actions now happen in the 3D view. Keyboard play remains on the focused model: 1–4, arrows, Enter, Space, Esc.
+- A pass shows **✓ Passed** at the model's top right and scrolls to the Accepted explanation.
+- The draft status is still stated in Lil Doc's offer.
+- Checks: 49 unit tests and the build passed; the headless walkthrough passed 47 checks with no page errors, including a check for each removal, the marker's position and the scroll.
+
 **Blockers / next:**
 - (1) **Clinical review**: a surgeon or educator must check the stage order, tools, clip positions, feedback and reference intervals, then set `review.status` (delivery stage 4). Until then the UI says "draft, not yet medically reviewed".
 - (2) A first-time-resident usability walkthrough.
