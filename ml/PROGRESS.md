@@ -361,3 +361,5 @@ Quality limitation: predictions include scissors/irrigator on a clipper example 
 
 
 **Demo eval page (2026-11-14, Aadhitya).** Added `frontend/public/model-evals.md` on main (`d6dcd77`) at the user's request. It is a plain-language summary of the v2 MLP test results for the app homepage, served by Vite at `/model-evals.md`. Mihir: the frontend has no Markdown renderer; render it or link to it.
+
+**Architecture page (2026-11-14, Aadhitya).** Added `frontend/public/architecture.md` on ml-dev. It explains the 9 pipeline stages, includes a Mermaid diagram, and has a Databricks touchpoints table (Volume, serverless CPU, MLflow, Lakeflow, Delta, SQL warehouse, Genie, Model Serving). It is the source for the website schematic. Not on main yet.
