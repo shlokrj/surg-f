@@ -9,7 +9,7 @@ export function validateOverlay(data, caseId, assetId) {
   }
   if (!number(data.max_age_sec) || data.max_age_sec <= 0 || data.max_age_sec > .25) throw Error('Unsafe overlay expiry.');
   if (!data.provenance || typeof data.provenance !== 'object' || !Object.keys(data.provenance).length) throw Error('Missing provenance.');
-  if (!Array.isArray(data.frames) || data.frames.length > 10000) throw Error('Invalid frame list.');
+  if (!Array.isArray(data.frames) || data.frames.length > 20000) throw Error('Invalid frame list.');
   let previous = -1; const ids = new Set();
   for (const f of data.frames) {
     if (!number(f.timestamp_sec) || f.timestamp_sec < 0 || f.timestamp_sec <= previous || !Number.isInteger(f.frame_id) || f.frame_id < 0 || ids.has(f.frame_id)) throw Error('Invalid frame order or identity.');
@@ -48,8 +48,12 @@ async function load(caseId, assetId) {
   const key = `${caseId}:${assetId}`;
   if (!cache.has(key)) cache.set(key, (async () => {
     const response = await fetch(`/overlays/${encodeURIComponent(caseId)}.json`);
-    if (!response.ok) throw Error('No bounding-box data for this video yet.');
-    const text = await response.text(); if (text.length > 2000000) throw Error('Overlay file is too large.');
+    // A missing file (404, or a dev server's HTML fallback) is not a transient failure: no retry offered.
+    const missing = () => Object.assign(Error('No bounding boxes for this video yet.'), { missing: true });
+    if (response.status === 404) throw missing();
+    if (!response.ok) throw Error('Could not load bounding boxes.');
+    const text = await response.text(); if (/^\s*</.test(text)) throw missing();
+    if (text.length > 4000000) throw Error('Overlay file is too large.');
     let parsed;
     try { parsed = JSON.parse(text); } catch { throw Error('No valid bounding-box data for this video yet.'); }
     return validateOverlay(parsed, caseId, assetId);
@@ -57,7 +61,7 @@ async function load(caseId, assetId) {
   return cache.get(key);
 }
 export function mountOverlays({ video, host, controls, caseId, assetId, enabled = false, onToggle = () => {} }) {
-  let disposed = false, data = null, pending = false, callback = null, key = '', error = '';
+  let disposed = false, data = null, pending = false, callback = null, key = '', error = '', missing = false;
   const categories = new Set(['instrument','anatomy']);
   let minimumScore = 0;
   const layer = document.createElement('div'); layer.className = 'spatial-layer'; layer.setAttribute('aria-hidden','true'); host.append(layer);
@@ -67,7 +71,7 @@ export function mountOverlays({ video, host, controls, caseId, assetId, enabled 
   const say = text => { if (status.textContent !== text) status.textContent = text; };
   function draw() {
     if (disposed) return;
-    retry.hidden = !error || !!data || !assetId || !toggle.checked;
+    retry.hidden = !error || missing || !!data || !assetId || !toggle.checked;
     const visible = toggle.checked && data && !error && !video.seeking && !video.error && video.readyState >= 2;
     if (!toggle.checked) say('Boxes off. Sparse detections appear only near sampled frames.');
     else if (error) say(error);
@@ -103,9 +107,9 @@ export function mountOverlays({ video, host, controls, caseId, assetId, enabled 
       for (const input of controls.querySelectorAll('[data-category]')) {
         if (data.frames.some(f => f.detections.some(d => d.category === input.dataset.category))) continue;
         input.checked = false; input.disabled = true; categories.delete(input.dataset.category);
-        input.parentElement.append(' (none in this file)');
+        input.parentElement.title = 'No boxes of this kind for this video';
       }
-    } catch (reason) { if (!disposed) error = reason.message; }
+    } catch (reason) { if (!disposed) { error = reason.message; missing = !!reason.missing; } }
     finally { pending = false; }
     draw();
   }

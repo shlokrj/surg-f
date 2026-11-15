@@ -30,7 +30,7 @@ def validate(data):
     if not isinstance(data.get('provenance'), dict) or not data['provenance']:
         raise ValueError('provenance required')
     previous, frame_ids = -1, set()
-    if not isinstance(data.get('frames'), list) or len(data['frames']) > 10000:
+    if not isinstance(data.get('frames'), list) or len(data['frames']) > 20000:
         raise ValueError('bounded frame list required')
     for frame in data['frames']:
         stamp, index = frame.get('timestamp_sec'), frame.get('frame_id')
