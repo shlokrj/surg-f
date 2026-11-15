@@ -70,6 +70,7 @@ def settings_from(values: Mapping[str, str | None]) -> Settings:
     return Settings(
         databricks=databricks,
         cors_origins=origins or DEFAULT_CORS_ORIGINS,
+        fixture_file=Path(values.get("SURGF_FIXTURE_FILE") or FIXTURE_FILE),  # offline snapshot
         warmup=warmup,
         genie_space_id=(values.get("DATABRICKS_GENIE_SPACE_ID") or "").strip() or None,
         genie_timeout_sec=genie_timeout,

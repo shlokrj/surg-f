@@ -48,7 +48,11 @@ class FixtureClipRepository:
         return [clip for clip in self._clips if clip.label.lower() == label]
 
     def find_by_case(self, case_id: str) -> list[Clip]:
-        return list(self._cases.get(case_id, []))
+        if case_id in self._cases:
+            return list(self._cases[case_id])
+        # No saved timeline: build it from the search rows (a full SURGF_FIXTURE_FILE snapshot).
+        rows = [c for c in self._clips if c.case_id == case_id and c.source != "fixture"]
+        return sorted(rows, key=lambda c: (c.start_sec, c.label))
 
     def warm_up(self) -> None:
         return None
