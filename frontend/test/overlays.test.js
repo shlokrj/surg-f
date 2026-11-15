@@ -42,3 +42,14 @@ test('deployed VID01 artifact is the validated anatomy export with continuous co
  assert.equal(frameAt(deployed,673.95).frame_id,16848);
  assert.equal(deployed.provenance.validation_status,'full validation run');
 });
+test('deployed VID02 artifact covers the whole video with the same model and sampling',()=>{
+ const text=fs.readFileSync(new URL('../public/overlays/VID02.json',import.meta.url),'utf8');
+ assert.ok(text.length<4000000);
+ const deployed=validateOverlay(JSON.parse(text),'VID02','VID02-cholec80-25fps-v1');
+ assert.deepEqual([deployed.display_width,deployed.display_height],[854,484]);
+ assert.ok(deployed.frames.length>10000&&deployed.frames.at(-1).timestamp_sec>2830,'47-minute video sampled every 0.24 s');
+ assert.ok(deployed.frames.every(f=>f.detections.every(d=>d.category==='anatomy')));
+ for (let i=1;i<deployed.frames.length;i++) assert.ok(deployed.frames[i].timestamp_sec-deployed.frames[i-1].timestamp_sec<=deployed.max_age_sec);
+ const vid01=JSON.parse(fs.readFileSync(new URL('../public/overlays/VID01.json',import.meta.url),'utf8'));
+ assert.equal(deployed.provenance.checkpoint_sha256,vid01.provenance.checkpoint_sha256,'same model as VID01');
+});

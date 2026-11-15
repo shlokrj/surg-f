@@ -95,7 +95,7 @@ export function mountOverlays({ video, host, controls, caseId, assetId, enabled 
     if (data && toggle.checked && !error) {
       const source = data.source === 'fixture' ? 'Synthetic fixture' : data.source === 'annotation' ? 'Dataset boxes' : 'Experimental model predictions';
       const count = frame?.detections.filter(d => categories.has(d.category) && d.score >= minimumScore).length ?? 0;
-      say(`${source} · ${frame ? `${count} boxes at sampled frame ${frame.frame_id}` : 'No current detection frame; choose a sampled frame'} · no tracking or action recognition.`);
+      say(`${source} · ${frame ? `${count} ${count === 1 ? 'box' : 'boxes'} at sampled frame ${frame.frame_id}` : 'No current detection frame; choose a sampled frame'} · no tracking or action recognition.`);
     }
     if (!assetId) say(error);
   }
