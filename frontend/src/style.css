@@ -1,5 +1,5 @@
 /* Surg+F styles. One set of tokens; every screen uses them.
-   Type: IBM Plex Sans everywhere. IBM Plex Mono only for timecodes and literal /commands. */
+   Type: Inclusive Sans Variable everywhere. IBM Plex Mono only for timecodes and literal /commands. */
 
 :root {
   --ink: #1d302b;
@@ -32,7 +32,7 @@
   --topbar: 64px;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
 
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-family: 'Inclusive Sans Variable', system-ui, sans-serif;
   font-size: var(--text-base);
   line-height: 1.5;
   color: var(--ink);
@@ -187,7 +187,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
 .tl-hits { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 8px 12px 48px; }
 .tl-hits-flat { margin-top: 16px; padding-left: 0; }
 .tl-hit { padding: 4px 8px; border: 1px solid var(--hit-line); border-radius: var(--radius-sm); background: var(--hit-tint); color: var(--hit-ink); font: var(--text-sm) var(--mono); box-shadow: 0 1px 0 #d9b84a; transition: background-color .15s, transform .1s, box-shadow .1s; }
-.tl-hit span { font-family: 'IBM Plex Sans', system-ui, sans-serif; font-weight: 600; text-transform: capitalize; }
+.tl-hit span { font-family: 'Inclusive Sans Variable', system-ui, sans-serif; font-weight: 600; text-transform: capitalize; }
 .tl-hit:hover { background: var(--hit); }
 .tl-hit:active { transform: translateY(1px); box-shadow: none; }
 .tl-hit.is-predicted { border-style: dashed; background: #fffbea; box-shadow: none; }

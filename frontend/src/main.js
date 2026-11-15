@@ -1,4 +1,9 @@
+import '@fontsource-variable/inclusive-sans';
 import './style.css';
+import './home.css';
+import { homePage, mountHome } from './home.js';
+let disposeHome = () => {};
+let renderedPage = null;
 import { searchClips, getTimeline, getQuiz, getSteps, interpretQuery, getActionRows, instrumentLabels } from './api.js';
 import { quizCard, wireQuiz } from './quiz.js';
 import { timelinePanel, timelineTick } from './timeline.js';
@@ -31,6 +36,7 @@ const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)'
 // The whole page is redrawn from state. The <video> element is carried over to the new
 // markup when the same video stays open, so playback never restarts on a redraw.
 function render() {
+  disposeHome();
   disposeOverlays();
   const input = document.querySelector('#query');
   if (input) state.draft = input.value;
@@ -39,8 +45,8 @@ function render() {
   const keepVideo = state.page === 'dash' && oldVideo?.dataset.src === state.videoUrl;
   const wasPlaying = keepVideo && !oldVideo.paused;
 
-  app.innerHTML = `<header class="topbar"><button type="button" class="logo-link" id="home-link" aria-label="Surg+F home">${logo}</button>
-    <span class="top-spacer"></span>${state.page === 'dash' ? '<button type="button" class="top-action" id="change-video">Choose another video</button>' : ''}</header>
+  app.innerHTML = `<header class="topbar"><button type="button" class="logo-link" id="home-link" aria-label="Surg+F home">${state.page === 'home' ? 'Surg+F' : logo}</button>
+    <span class="top-spacer"></span>${state.page === 'dash' ? '<button type="button" class="top-action" id="change-video">Choose another video</button>' : '<nav class="home-nav" aria-label="Main"><a href="#case-preview">The demo</a><a href="#local-heading">Your video ↗</a></nav>'}</header>
     ${state.page === 'home' ? home() : dashboard()}`;
 
   if (keepVideo) {
@@ -48,6 +54,9 @@ function render() {
     if (wasPlaying && oldVideo.paused) oldVideo.play().catch(() => {});
   }
   wire();
+  disposeHome = mountHome(document.querySelector('.landing'));
+  if (renderedPage !== state.page) window.scrollTo({top:0, behavior:'instant'});
+  renderedPage = state.page;
   if (hadFocus) {
     const next = document.querySelector('#query');
     next?.focus({ preventScroll: true });
@@ -62,20 +71,7 @@ function filterButton() {
 }
 
 function home() {
-  return `<main class="home"><div class="hero"><div class="hero-logo">${logo}</div>
-    <h1>Find the moments that <em>matter.</em></h1>
-    <p>Search annotated surgical footage by instrument and jump directly to matching moments.</p>
-    <div class="upload-card" id="drop-zone" tabindex="0" role="button" aria-label="Open a local MP4 or MOV for playback only">
-      <div class="upload-icon" aria-hidden="true">↑</div><strong>Open your own video</strong><span>Play a local MP4 or MOV. Search works on the indexed demo cases only.</span>
-    </div><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>
-    ${state.error ? `<p class="home-error" role="alert">${escapeHtml(state.error)}</p>` : ''}
-    </div><aside class="sample-preview"><div class="preview-top"><span class="preview-label">Demo case</span>${filterButton()}</div>
-      <div class="preview-video surgical-media ${state.filterOn ? 'filtered' : ''}"><video src="${escapeHtml(videoForCase('VID01'))}" muted playsinline preload="auto" aria-label="Preview of VID01 surgery footage"></video></div>
-      <div class="preview-details"><h2>Explore a real annotated case</h2>
-        <p>VID01 is a laparoscopic gallbladder removal. Follow the steps of the operation, find when each instrument is used, and test yourself with a quiz.</p>
-        <button type="button" id="sample" class="btn-primary">View demo</button>
-        <button type="button" id="sample-event" class="preview-event-link">View clipper event at 11:14 <span aria-hidden="true">↗</span></button></div>
-    </aside></main>`;
+  return homePage({videoUrl: escapeHtml(videoForCase('VID01')), filterOn: state.filterOn, filterButton: filterButton(), error: escapeHtml(state.error)});
 }
 
 function detectRequest(input) {

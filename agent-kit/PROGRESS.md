@@ -1,5 +1,12 @@
 # Surg+F progress
 
+## Shlok frontend v2 homepage (2026-11-14)
+
+On `feat/shlok-frontend-v2`, Shlok implemented a minimal surgical-green/white homepage with centered Surg+F, self-hosted Inclusive Sans, native-scroll title/geometry motion, immediate case entry, real filtered VID01 preview and local-video entry. Design and anti-slop criteria live in `frontend/docs/`; the references and accessibility/content guidance are linked there. Changes are local commits only; do not push or merge this design round without instruction. Mihir's spatial behavior is unchanged.
+
+Verification: `node --test frontend/test/*.test.js` passed 8 tests; `npm --prefix frontend run build` and `git diff --check` passed; local preview at port 5180 returned HTTP 200. Browser access host is unavailable, so live desktop/mobile layout, animations and real interactions remain visually unverified. The existing fixture-mode dev server is running with VID01 linked. Next: Shlok reviews the homepage locally and directs design iterations.
+
+
 ## Current ownership: Shlok moves to frontend design (2026-11-14)
 
 Shlok now owns **general frontend design and presentation**, and is no longer assigned spatial ML work. **Aadhi owns spatial data, model training, evaluation, inference and artifact export**, including Shlok's unfinished trainer tasks. **Mihir owns spatial player integration and browser verification**. This supersedes earlier assignment tables and historical ownership notes below.
