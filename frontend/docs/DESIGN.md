@@ -65,6 +65,7 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
   4. No index: a pen sweeps the strip while the surgeons' lanes are drawn in, and the 11,264 hand-labeled clips count up.
 - **Solution** (`src/solution.js`, `src/solution.css`; demo only, in place of Find the clip): "Ask, and jump to it." in three chapters: a read head labels every second, the demo question types and maps "cut" to scissors with the real VID01 result (and 103 more scissors clips), then the knob jumps to 14:20 on the real frame. The last chapter holds the "Open VID01 at 14:20" and "Explore the demo" buttons.
 - Find the clip's example now matches what it opens: "When is the cystic duct cut?", 14:20, scissors (it read "clipped, 11:38" but opened 14:20).
+- **Presenter keys:** Left and Right arrows step through every chapter of the pinned stages in page order (the top of the page is the first stop), using the same positions as the chapter buttons. Not mentioned on the page on purpose. Ignored while typing or with a modifier key.
 - **Pinned nav:** the logo and "Open a case" stay fixed at the top of the homepage. Over the hero they are white; past it they switch to a frosted logo and a teal button. The footer no longer repeats them.
 
 ## Case page
