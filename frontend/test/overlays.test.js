@@ -16,6 +16,9 @@ test('reject wrong asset, invalid geometry, duplicates and stale intervals',()=>
  for (const change of [d=>d.max_age_sec=2,d=>d.frames[0].detections[0].score=NaN,d=>d.frames[0].detections[0].bbox_xyxy=[0,0,2,1],d=>d.frames.push(d.frames[0])]) {
   const bad=structuredClone(data);change(bad);assert.throws(()=>validateOverlay(bad,'VID01',bad.video_asset_id));
  }
+ for (const change of [d=>delete d.display_height,d=>d.display_width=0]) {
+  const bad=structuredClone(data);change(bad);assert.throws(()=>validateOverlay(bad,'VID01',bad.video_asset_id));
+ }
 });
 test('letterbox and portrait layouts map to the content rectangle',()=>{
  assert.deepEqual(contentRect(1000,1000,800,400),{width:1000,height:500,left:0,top:250});

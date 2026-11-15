@@ -5,6 +5,8 @@
   "source": "prediction",
   "image_width": 854,
   "image_height": 480,
+  "display_width": 854,
+  "display_height": 484,
   "max_age_sec": 0.12,
   "frames": [
     {
@@ -147,6 +149,8 @@
     }
   ],
   "provenance": {
+    "video_pixel_aspect_ratio": "253:255",
+    "video_display_mapping": "FFmpeg reports decoded 854x480 with SAR 253:255; Chrome 157 exposes 854x484 display dimensions for the same asset. Normalized source boxes map across the full displayed frame.",
     "model_id": "IDEA-Research/grounding-dino-tiny",
     "model_revision": "a2bb814dd30d776dcf7e30523b00659f4f141c71",
     "weights_sha256": "1a2412ef99bd74bcd3c2a246fa1e48581f8889a1300c9051974741314fc042f3",

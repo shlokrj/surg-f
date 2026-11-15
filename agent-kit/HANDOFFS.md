@@ -1,14 +1,18 @@
 # Team handoffs
 
+## Mihir takes over remaining spatial work (2026-11-14)
+
+Aadhi has moved to other work. Mihir now owns spatial data, model training, evaluation, inference/export, player integration and browser acceptance on `feat/spatial-overlays`. Shlok continues to own general frontend design. Earlier Aadhi-to-Mihir requests below are historical; Mihir will resolve their remaining work. The VID01 dimension mismatch was traced to the MP4's 854×480 decoded frame and 253:255 pixel aspect ratio: Chrome 157 exposes 854×484 display dimensions. The artifact now binds both sizes, and automated player and producer checks pass. A headless Chrome check with the real MP4 displayed four boxes at sampled frame 674 and kept the layer within a resized player; `/tmp/surgf-overlay-check.png` was inspected locally. Fullscreen remains unverified because headless Chrome denied the fullscreen request.
+
 ## Spatial player browser check and retry handoff (2026-11-14)
 
 Mihir added a keyboard-accessible **Retry loading boxes** action for failed overlay-file requests on `feat/spatial-overlays` (`8928876`). `node --test frontend/test/*.test.js` passed 7 tests, including a failed request followed by a successful retry; `npm --prefix frontend run build` passed. In Chrome 157.0.8103.51 on macOS, fixture mode with the real VID01 MP4 reached `11:14 / 28:53` and showed the default-on content filter and overlay controls. The local screenshot is `~/Downloads/SurgF-VID01-overlay-browser-check.png` and is not committed.
 
 **Aadhi → Mihir:** the video reports `854×484`, while `frontend/public/overlays/VID01.json` declares `854×480`. Provide the verified source-to-video pixel transform and asset binding. Mihir will then correct the player/artifact alignment as appropriate and verify visible boxes, seeking, and fullscreen in a real browser. The dimension guard still blocks boxes; browser overlay acceptance is pending.
 
-## Current ownership: Shlok moves to frontend design (2026-11-14)
+## Previous ownership: Shlok moved to frontend design (superseded 2026-11-14)
 
-Shlok now owns **general frontend design and presentation**, and is no longer assigned spatial ML work. **Aadhi owns spatial data, model training, evaluation, inference and artifact export**, including Shlok's unfinished trainer tasks. **Mihir owns spatial player integration and browser verification**. This supersedes earlier assignment tables and historical ownership notes below.
+Shlok moved to **general frontend design and presentation**. At that point, Aadhi owned spatial data/model/export and Mihir owned player integration. The newer Mihir-only spatial ownership above supersedes this handoff.
 
 Spatial teammates continue on `feat/spatial-overlays`; Aadhi should retain the scoped evaluator already pushed in `78dfef0`. Shlok and Mihir must coordinate shared `frontend/src/main.js`, `style.css` and player markup: Shlok owns overall design, Mihir owns overlay behavior. Do not overwrite each other's edits. Full tasks and handoffs are in [the localization plan](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow).
 

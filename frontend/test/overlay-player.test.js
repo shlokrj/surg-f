@@ -10,8 +10,8 @@ function setup(assetId = artifact.video_asset_id) {
  globalThis.document = dom.window.document;
  globalThis.ResizeObserver = class {observe() {} disconnect() {}};
  const video = document.querySelector('video'), host = document.querySelector('#host'), controls = document.querySelector('#controls');
- for (const [k,v] of Object.entries({readyState:2,videoWidth:854,videoHeight:480,seeking:false})) Object.defineProperty(video,k,{value:v,writable:true});
- Object.defineProperty(host,'clientWidth',{value:854});Object.defineProperty(host,'clientHeight',{value:480});
+ for (const [k,v] of Object.entries({readyState:2,videoWidth:854,videoHeight:484,seeking:false})) Object.defineProperty(video,k,{value:v,writable:true});
+ Object.defineProperty(host,'clientWidth',{value:854});Object.defineProperty(host,'clientHeight',{value:484});
  video.pause=()=>{};video.currentTime=679.96;
  const dispose=mountOverlays({video,host,controls,caseId:'VID01',assetId});
  const event=(el,name)=>el.dispatchEvent(new dom.window.Event(name));

@@ -4,6 +4,9 @@ export function validateOverlay(data, caseId, assetId) {
   if (data?.schema_version !== 1 || data.case_id !== caseId || data.video_asset_id !== assetId) throw Error('Overlay belongs to a different video or schema.');
   if (!['prediction','annotation','fixture'].includes(data.source)) throw Error('Unknown overlay source.');
   if (![data.image_width,data.image_height].every(v => Number.isInteger(v) && v > 0)) throw Error('Missing source dimensions.');
+  if (data.display_width !== undefined || data.display_height !== undefined) {
+    if (![data.display_width,data.display_height].every(v => Number.isInteger(v) && v > 0)) throw Error('Invalid video display dimensions.');
+  }
   if (!number(data.max_age_sec) || data.max_age_sec <= 0 || data.max_age_sec > .25) throw Error('Unsafe overlay expiry.');
   if (!data.provenance || typeof data.provenance !== 'object' || !Object.keys(data.provenance).length) throw Error('Missing provenance.');
   if (!Array.isArray(data.frames) || data.frames.length > 10000) throw Error('Invalid frame list.');
@@ -63,7 +66,7 @@ export function mountOverlays({ video, host, controls, caseId, assetId, enabled 
     else if (error) say(error);
     else if (!data) say('Loading bounding-box data…');
     let frame = visible ? frameAt(data,video.currentTime) : null;
-    if (visible && (video.videoWidth !== data.image_width || video.videoHeight !== data.image_height)) { error = 'Overlay dimensions do not match this video.'; frame = null; say(error); }
+    if (visible && (video.videoWidth !== (data.display_width ?? data.image_width) || video.videoHeight !== (data.display_height ?? data.image_height))) { error = 'Overlay dimensions do not match this video.'; frame = null; say(error); }
     const r = contentRect(host.clientWidth,host.clientHeight,video.videoWidth || 1,video.videoHeight || 1);
     Object.assign(layer.style,{left:`${r.left}px`,top:`${r.top}px`,width:`${r.width}px`,height:`${r.height}px`});
     const next = `${frame?.frame_id ?? ''}:${[...categories]}:${minimumScore}:${!!visible}`;
