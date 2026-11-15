@@ -222,7 +222,7 @@ class ChatRequest(BaseModel):
 
 
 class AnswerData(BaseModel):
-    """A result table from Databricks Genie, for the `answer` action."""
+    """A small result table for the `answer` action, computed here or by Genie."""
 
     columns: list[str] = Field(description="Column names of the result table.")
     rows: list[list] = Field(description="Result rows (max 500), in column order.")
@@ -234,7 +234,8 @@ class ChatResponse(BaseModel):
     action: ChatAction = Field(
         description="search: `data` is a GET /search payload, already limited to the open "
         "video. quiz: `data` is a GET /quiz payload. timeline: `data` is a "
-        "GET /cases/{case_id}/timeline payload. answer: `data` is a result table from Genie. "
+        "GET /cases/{case_id}/timeline payload. answer: `data` is a small result table (or "
+        "null), computed by the backend or by Genie. "
         "none: nothing to render besides `reply`; `data` is null."
     )
     data: SearchResponse | QuizResponse | TimelineResponse | AnswerData | None = Field(

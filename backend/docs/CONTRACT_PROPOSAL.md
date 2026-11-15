@@ -43,7 +43,7 @@ Status: **proposal, 2026-11-14 (Rohan).** The backend serves these endpoints on 
 
 - **Timeline labels:** the live table now holds verb and target labels as `annotation` rows (VID01 had 24 labels and 226 segments), with no column that separates them from instruments. `GET /cases/{case_id}/timeline` now returns the six instruments only, which restores the documented response (VID01: 70 segments, 6 labels, identical to the saved fixture). Search is unchanged, so `GET /search?q=grasp` still finds verb rows. A category column in the table would be the cleaner long-term fix; that is Data's call.
 - **Chat versus interpret:** `POST /chat` is for free-typed chat messages. `GET /interpret` stays for slash commands, because it can return several actions at once. Neither is retired.
-- **`answer` data shape:** `{"columns": [], "rows": [], "sql": null}` or null. It has no matching GET endpoint because Genie tables have no fixed columns. Examples: `backend/fixtures/chat.examples.json`.
+- **`answer` data shape:** `{"columns": [], "rows": [], "sql": null}` or null. It has no matching GET endpoint. Tables the backend computes (rankings, one instrument's usage) always have the columns `label`, `count`, `total_sec`, `first_sec`; Genie tables have no fixed columns. Examples: `backend/fixtures/chat.examples.json`.
 - **Chat search scope:** annotation rows for the requested case only. `GET /search` keeps returning every case and both sources.
 
 **Still open:**
