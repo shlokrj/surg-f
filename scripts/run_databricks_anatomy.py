@@ -1,6 +1,7 @@
 """Run spatial anatomy jobs on Databricks serverless CPU from a committed snapshot.
 
   python scripts/run_databricks_anatomy.py upload-data ~/madhacks2026/localization/anatomy-data
+  python scripts/run_databricks_anatomy.py upload-run ~/madhacks2026/localization/anatomy-hires-v3 anatomy-hires-v3
   python scripts/run_databricks_anatomy.py probe
   python scripts/run_databricks_anatomy.py train RUN_NAME -- --epochs 10 --architecture mobilenet_v3_hires --hflip --grad-clip 10
   python scripts/run_databricks_anatomy.py export RUN_NAME OUTPUT.json -- --every-sec 0.24 ...
@@ -83,10 +84,23 @@ def upload_data(local):
     print(json.dumps({'uploaded': sent, 'already_present': skipped, 'destination': f'{VOLUME}/anatomy-data'}))
 
 
+def upload_run(local, name):
+    """Upload a locally trained run (best.pt, report.json) so Databricks jobs can export from it."""
+    w, root = client(), Path(local).expanduser()
+    for item in ('best.pt', 'report.json'):
+        w.files.upload(f'{VOLUME}/runs/{name}/{item}', io.BytesIO((root / item).read_bytes()), overwrite=True)
+        size = w.files.get_metadata(f'{VOLUME}/runs/{name}/{item}').content_length
+        if size != (root / item).stat().st_size:
+            raise SystemExit(f'upload size mismatch for {item}')
+    print(json.dumps({'run': name, 'destination': f'{VOLUME}/runs/{name}',
+                      'best_pt_sha256': hashlib.sha256((root / 'best.pt').read_bytes()).hexdigest()}))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest='action', required=True)
     sub.add_parser('upload-data').add_argument('local')
+    up = sub.add_parser('upload-run'); up.add_argument('local'); up.add_argument('name')
     probe = sub.add_parser('probe'); probe.add_argument('--timeout-min', type=int, default=20)
     train = sub.add_parser('train'); train.add_argument('run_name'); train.add_argument('--timeout-min', type=int, default=180)
     train.add_argument('extra', nargs=argparse.REMAINDER)
@@ -99,6 +113,8 @@ def main():
     strip = lambda extra: extra[1:] if extra[:1] == ['--'] else extra
     if a.action == 'upload-data':
         upload_data(a.local)
+    elif a.action == 'upload-run':
+        upload_run(a.local, a.name)
     elif a.action == 'probe':
         submit('probe', timeout_min=a.timeout_min)
     elif a.action == 'train':
