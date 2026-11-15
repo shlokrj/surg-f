@@ -30,6 +30,18 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
 8. Buttons use only `.btn-primary`, `.btn-secondary` and the shared toggles from `style.css`. Pressed toggles darken on hover. Minimum text size is 14px. Headings and short paragraphs use `text-wrap: balance` to avoid one-word last lines.
 9. Preserve real case entry, the filtered VID01 preview, annotation timestamp action and local playback limitation. The preview-edge strip shows the real `clipper` → VID01 11:14 annotation and links to the actual preview; it is not fake product data.
 
+## Feature stack, how it works, model notes (2026-11-14)
+
+- **Feature stack:** the three feature sections are sticky cards (`.stack-card`, `top: 5vh + i·22px`). As the next card slides up, `--cover` (0–1) scales the previous card to 94% and dims its content. Reduced motion unpins them.
+- **How it works:** a pinned scene (`.arch`, `100svh + 6 × 42svh` of scroll) on a plus-dithered panel. Scroll progress sets `--fill`, which draws the line and moves a `+` runner. Six keycap nodes light up in turn, and the detail below swaps to the active step's text and card.
+  - Steps: surgery video, frame features, label model, clip index, search and chat, the moment.
+  - Facts come from the README, SPEC, DATABRICKS, backend README and Aadhi's `public/model-evals.md`.
+  - Each card uses only real data: the 50 cases with VID01/VID02 live, feature shapes `[1734,768]` and `[2840,768]`, the 29 CholecT50 labels, real clip rows, and a live `/search` and Genie answer checked on 2026-11-14.
+  - Narrow screens and reduced motion show the steps as a list.
+- **Model notes:** Aadhi's held-out F1 scores (final model, MLflow `9d18d20a`).
+  - Instrument, best action and best target bars grow, and their numbers count up, once in view.
+  - A v1→v2 comparison, three reading notes, and a link to the full `model-evals.md`.
+
 ## Case page
 
 `src/case.css` restyles the case page to match the homepage. It uses the off-white page, the rounded product cards (video, overlay strip, timeline, charts, quiz, model) with the soft teal shadow, and a frosted topbar. A single plus-dithered sky band holds the case title, with the VID01/VID02 toggles in a white pill. The content filter is an eye icon button overlaid on the footage, top right; the top bar action is "Open your own video". Spatial/player markup and logic are unchanged; only presentation was overridden, so coordinate with Mihir before changing it further. Shared type tokens were raised to a 13px minimum (`--text-xs` 13, `--text-sm` 14, `--text-md` 15, `--text-base` 16).
