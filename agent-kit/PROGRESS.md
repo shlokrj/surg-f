@@ -9,6 +9,18 @@ Mihir continues spatial work on `feat/spatial-overlays`, retaining the scoped ev
 The earlier integrated `frontend/dev` work reached `main` through `6d468dd`. Further unfinished spatial work remains on `feat/spatial-overlays` until explicitly published. The frontend lane row below records current verification and remaining model/data limits.
 
 
+## Content filter: blurred footage is now grayscale (2026-11-15, Rohan)
+
+**What changed:** at Rohan's request, the eye's blur now also fully desaturates the footage (`grayscale(1)`), on both the case or preview players and the homepage frames. The change is two CSS rules: `style.css` (`.surgical-media.filtered::after`) and `home.css` (`.landing.is-blurred` canvases). A pixelated version was tried and dropped; it is not on `main`. **Shlok:** these are your files, so adjust as you like.
+
+**Checks:**
+- `node --test frontend/test/*.test.js`: 50 passed. Build: passed.
+- Headless Chrome, 6/6 with no page errors:
+  - computed filters are `blur(10px) grayscale(1)` (player) and `blur(8px) grayscale(1)` (homepage);
+  - a screenshot of the case player measures as grey (average colour spread 3.0 with the filter on, 59.6 with it off);
+  - the eye still turns everything off.
+
+
 ## 3D surgery practice v1 (2026-11-15, Rohan)
 
 **Status:** implemented on `feat/surgery-practice` (branched from `main` at `b64845f`, then merged with `origin/main` through `26ed6ba`). **Published to `main` by fast-forward at Rohan's request (2026-11-15).** Teammates: pull `main`. The content is still a draft until the clinical review below. Plan: [frontend/docs/SURGERY_PRACTICE_PLAN.md](../frontend/docs/SURGERY_PRACTICE_PLAN.md). Demo steps and file map: [frontend README, Practice](../frontend/README.md#practice-3d-surgery-practice).
