@@ -1,6 +1,6 @@
 # Presentation script: 5 minutes, 4 speakers
 
-Page: `/presentation-demo`. One person drives the arrows for the whole talk (the speaker, or a teammate beside the laptop). **→** means press Right once and wait for the scene to play (about 3 s). Talk over the animation; it is paced for that.
+Page: `/presentation-demo`. One person drives the arrows for the whole talk (the speaker, or a teammate beside the laptop). **→** means press Right once and wait for the scene to play (about 5 s). Talk over the animation; it is paced for that.
 
 Speaker assignments follow who built each part (see `agent-kit/PROGRESS.md`). Swap names freely; the segments stand on their own.
 

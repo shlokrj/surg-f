@@ -157,7 +157,7 @@ test('presentation and video demos: their own sections and chapters; the origina
  assert.deepEqual(chapters(pres).filter(id=>/^(problem|solution|model)-/.test(id)),['problem-needle','problem-docs','problem-uses','solution-label','solution-ask','solution-jump','solution-record','solution-practice','model-test','model-instruments','model-versions','model-boxes']);
  assert.deepEqual(order(video),['landing-intro','problem','solution','databricks','sources']);
  assert.deepEqual(chapters(video),['problem-needle','problem-docs','solution-ask','solution-jump','solution-practice','db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai']);
- assert.equal(video.querySelector('main').dataset.playMs,'2300','the video demo plays faster');
+ assert.equal(video.querySelector('main').dataset.playMs,'3800','the video demo plays faster');
  assert.equal(video.querySelector('#problem').dataset.per,'1.6');
  assert.equal(pres.querySelectorAll('#problem-docs .pb-form-row').length,7,'the seven VID01 steps');
  assert.match(pres.querySelector('#solution-record').textContent,/does not write clinical notes yet/);

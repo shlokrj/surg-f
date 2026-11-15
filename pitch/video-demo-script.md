@@ -2,7 +2,7 @@
 
 Page: `/video-demo`, recorded full screen. Devpost limit: **3:00**. This video is for the Databricks sponsorship track, so more than half of it shows how we used Databricks, and it names each product on screen.
 
-The voiceover is split across the four of us by topic. Record each part separately and lay it over the screen recording, or record it live in one take. **→** means press Right once (each scene plays in about 2.3 s).
+The voiceover is split across the four of us by topic. Record each part separately and lay it over the screen recording, or record it live in one take. **→** means press Right once (each scene plays in about 3.8 s).
 
 | # | Segment | Voice | Time | On screen |
 |---|---|---|---|---|

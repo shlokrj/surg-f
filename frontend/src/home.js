@@ -199,16 +199,16 @@ const feature = ({id, title, body, action, command, horizon, preview, index}) =>
      Databricks first.
    Scripts: pitch/ at the repo root. */
 const VERSIONS = {
-  public: {playMs: 3200, sections: [['find'], ['features'], ['architecture'], ['model'], ['local'], ['sources']]},
-  demo: {playMs: 3200, sections: [
+  public: {playMs: 5200, sections: [['find'], ['features'], ['architecture'], ['model'], ['local'], ['sources']]},
+  demo: {playMs: 5200, sections: [
     ['problem', {only: ['length', 'needle', 'uses', 'index']}], ['solution', {only: ['label', 'ask', 'jump']}],
     ['features'], ['architecture'], ['model'], ['databricks'], ['future'], ['sources'],
   ]},
-  'presentation-demo': {playMs: 3000, sections: [
+  'presentation-demo': {playMs: 5000, sections: [
     ['problem', {only: ['needle', 'docs', 'uses']}], ['solution', {only: ['label', 'ask', 'jump', 'record', 'practice']}],
     ['features'], ['architecture'], ['model', {only: ['test', 'instruments', 'versions', 'boxes']}], ['databricks'], ['future'], ['sources'],
   ]},
-  'video-demo': {playMs: 2300, sections: [
+  'video-demo': {playMs: 3800, sections: [
     ['problem', {only: ['needle', 'docs'], per: 1.6}], ['solution', {only: ['ask', 'jump', 'practice'], per: 1.6}],
     ['databricks', {per: 1.6}], ['sources'],
   ]},
@@ -341,39 +341,40 @@ export function mountHome(root) {
     if (top !== null) window.scrollTo({top, behavior: 'auto'});
   };
   root.addEventListener('focusin', reveal);
-  /* Presenter shortcut (deliberately not shown on the page). Right moves quickly to the next scene, then
-     plays its animation slowly. Left slowly unplays the current scene, then moves quickly back to the
-     previous scene's finished state. Mid-scene, Right finishes the scene and Left rewinds it. A press
+  /* Presenter shortcut (deliberately not shown on the page). Right moves quickly to the start of the next
+     scene, then plays the whole scene slowly (PLAY_MS, the same for every scene however long its scroll).
+     Left plays the current scene backwards, then moves quickly to the previous scene's finished state.
+     From anywhere mid-scene, Right finishes the scene and Left rewinds it, at the same speed. A press
      during a glide counts from where the glide is headed, so every press is one scene. Ignored while
-     typing or with a modifier held; a wheel, touch or click cancels the glide. Chapter buttons use the
-     same motion. */
-  const PLAY_MS = Number(root.dataset.playMs) || 3200;
-  let glide = 0, aim = null;
+     typing in a visible field or with a modifier held. Chapter buttons use the same motion. */
+  const PLAY_MS = Number(root.dataset.playMs) || 5200;
+  let glide = 0, aim = null, glideStart = 0, lastWheel = 0;
   const stopGlide = () => { cancelAnimationFrame(glide); glide = 0; aim = null; };
   const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   const easeSine = t => .5 - Math.cos(Math.PI * t) / 2;
-  const moveMs = dist => Math.min(1500, 450 + Math.abs(dist) / window.innerHeight * 260);
-  /* Runs legs one after another: each leg is {to, ms, ease}. */
+  const moveLeg = (from, to) => ({to, ms: Math.min(1400, 420 + Math.abs(to - from) / window.innerHeight * 240), ease: easeInOut});
+  /* A scene's play leg lasts PLAY_MS for the whole scene, or its share when starting mid-scene. */
+  const playLeg = (from, to, scene) => ({to, ms: Math.max(350, PLAY_MS * Math.min(1, Math.abs(to - from) / Math.max(1, scene.end - scene.start))), ease: easeSine});
+  /* Runs legs one after another; each leg is {to, ms, ease}. Legs that would not move are skipped. */
   const run = (legs, target) => {
     cancelAnimationFrame(glide);
     if (media.matches) { aim = null; window.scrollTo(0, target); return; }
-    aim = target;
-    let i = 0, from = window.scrollY, start = performance.now();
+    let from = window.scrollY;
+    const todo = legs.filter(leg => { const keep = Math.abs(leg.to - from) > 1; from = leg.to; return keep; });
+    if (!todo.length) { aim = null; return; }
+    aim = target; glideStart = performance.now();
+    let i = 0, start = performance.now();
+    from = window.scrollY;
     const tick = now => {
-      const leg = legs[i];
-      const t = leg.ms ? Math.min(1, (now - start) / leg.ms) : 1;
+      const leg = todo[i];
+      const t = Math.min(1, (now - start) / leg.ms);
       window.scrollTo(0, from + (leg.to - from) * leg.ease(t));
       if (t < 1) { glide = requestAnimationFrame(tick); return; }
       i += 1; from = leg.to; start = now;
-      if (i < legs.length) glide = requestAnimationFrame(tick); else { glide = 0; aim = null; }
+      if (i < todo.length) glide = requestAnimationFrame(tick); else { glide = 0; aim = null; }
     };
     glide = requestAnimationFrame(tick);
   };
-  const legs = (y, list) => list.filter(([to]) => Math.abs(to - y) > 2).reduce((out, [to, kind]) => {
-    const prev = out.length ? out[out.length - 1].to : y;
-    out.push(kind === 'play' ? {to, ms: Math.max(600, PLAY_MS * Math.min(1, Math.abs(to - prev) / Math.max(1, window.innerHeight * 1.4))), ease: easeSine} : {to, ms: moveMs(to - prev), ease: easeInOut});
-    return out;
-  }, []);
   /* The feature cards are stops too: each card's scroll position when it reaches its sticky top. Sticky
      cards report their stuck position, so natural tops are summed from the container instead. */
   const cardScenes = () => {
@@ -388,28 +389,53 @@ export function mountHome(root) {
     });
   };
   const allScenes = () => [...digScenes(root), ...cardScenes()].sort((a, b) => a.start - b.start);
-  const playScene = scene => { const y = window.scrollY; const l = legs(y, [[scene.start, 'move'], [scene.end, 'play']]); if (l.length) run(l, scene.end); };
+  const playScene = scene => { const y = window.scrollY; run([moveLeg(y, scene.start), playLeg(scene.start, scene.end, scene)], scene.end); };
+  const forward = from => {
+    const scenes = allScenes();
+    const next = scenes.find(sc => sc.end > from + 4);
+    if (!next) return null;
+    const y = window.scrollY;
+    /* Inside the scene (or a glide already heading into it): finish it from where the page is. */
+    if (from >= next.start - 4) return [[playLeg(Math.max(y, next.start), next.end, next)], next.end];
+    return [[moveLeg(y, next.start), playLeg(next.start, next.end, next)], next.end];
+  };
+  const backward = from => {
+    const scenes = allScenes();
+    const k = scenes.findLastIndex(sc => sc.start < from - 4);
+    const y = window.scrollY;
+    if (k < 0) return from > 4 ? [[moveLeg(y, 0)], 0] : null;
+    const cur = scenes[k], prev = scenes[k - 1], back = prev ? prev.end : 0;
+    /* Past the scene's end (between scenes): go back to its finished state. */
+    if (from > cur.end + 4) return [[moveLeg(y, cur.end)], cur.end];
+    return [[playLeg(Math.min(y, cur.end), cur.start, cur), moveLeg(cur.start, back)], back];
+  };
+  const typingIn = target => {
+    const field = target.closest?.('input, textarea, select, [contenteditable="true"]');
+    if (!field) return false;
+    /* A field scrolled out of view keeps focus but is not being typed in: let the arrows work. */
+    const r = field.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > window.innerHeight) { field.blur(); return false; }
+    return true;
+  };
   const step = event => {
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.defaultPrevented) return;
-    if (event.target.closest?.('input, textarea, select, [contenteditable="true"], video')) return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.defaultPrevented || event.repeat) return;
+    if (typingIn(event.target) || event.target.closest?.('video')) return;
     event.preventDefault();
-    const scenes = allScenes(), y = window.scrollY, from = aim ?? y;
-    if (event.key === 'ArrowRight') {
-      const next = scenes.find(sc => sc.end > from + 4);
-      if (!next) return;
-      const inside = from >= next.start - 4;
-      run(legs(y, inside ? [[next.end, 'play']] : [[next.start, 'move'], [next.end, 'play']]), next.end);
-    } else {
-      const k = scenes.findLastIndex(sc => sc.start < from - 4);
-      if (k < 0) { if (from > 4) run(legs(y, [[0, 'move']]), 0); return; }
-      const cur = scenes[k], prev = scenes[k - 1];
-      if (from > cur.end + 4) { run(legs(y, [[cur.end, 'move']]), cur.end); return; }
-      const back = prev ? prev.end : 0;
-      run(legs(y, [[cur.start, 'play'], [back, 'move']]), back);
-    }
+    const plan = (event.key === 'ArrowRight' ? forward : backward)(aim ?? window.scrollY);
+    if (plan) run(...plan);
   };
-  ['wheel', 'touchstart', 'mousedown'].forEach(type => window.addEventListener(type, stopGlide, {passive: true}));
+  /* Taking over: a click or touch stops a glide. A wheel stops it only when it is a new gesture; the
+     trackpad's momentum from a scroll made just before the key press is absorbed instead of cancelling. */
+  const onWheel = event => {
+    const now = performance.now(), gap = now - lastWheel;
+    lastWheel = now;
+    if (!glide) return;
+    if (gap > 140 && now - glideStart > 250) { stopGlide(); return; }
+    event.preventDefault();
+  };
+  window.addEventListener('wheel', onWheel, {passive: false});
+  ['touchstart', 'mousedown'].forEach(type => window.addEventListener(type, stopGlide, {passive: true}));
   window.addEventListener('keydown', step);
   /* Hero keys: pressing a key sinks only that key, like a real keycap. Purely visual: it does not move
      focus or touch the search box, and the browser's own Ctrl+F is never intercepted. */
@@ -428,5 +454,5 @@ export function mountHome(root) {
   video?.addEventListener('error', unavailable); // the demo version has no preview video
   update();
   root.ownerDocument?.fonts?.ready?.then(() => { footerCache.size = null; schedule(); });
-  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); window.removeEventListener('keydown', step); stopGlide(); ['wheel', 'touchstart', 'mousedown'].forEach(type => window.removeEventListener(type, stopGlide)); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video?.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
+  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); window.removeEventListener('keydown', step); stopGlide(); window.removeEventListener('wheel', onWheel); ['touchstart', 'mousedown'].forEach(type => window.removeEventListener(type, stopGlide)); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video?.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
 }

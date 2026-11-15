@@ -31,7 +31,7 @@ Locally, add the path to the dev server URL, for example `http://localhost:5173/
 
 ## Driving the page
 
-- **Right arrow:** moves quickly into the next scene, then plays its animation slowly (about 3 s on the presentation demo, 2.3 s on the video demo). **Left arrow:** rewinds the current scene, then goes back to the previous one. A press during a glide moves one more scene. This is not shown on the page.
+- **Right arrow:** moves quickly into the next scene, then plays its animation slowly (5 s on the presentation demo, 3.8 s on the video demo). If you scrolled partway into a scene, Right finishes it. **Left arrow:** rewinds the current scene, then goes back to the previous one. A press during a glide moves one more scene; holding the key does not repeat. Scrolling or clicking takes over at any time. This is not shown on the page.
 - Clicking a chapter name on the right plays that scene the same way.
 - Scrolling with a trackpad also works, but arrows give an even pace.
 - **Eye button** (top right): blurs or shows every surgery frame on the page. It starts blurred. Click it once before you present if the room is fine with surgical footage.
