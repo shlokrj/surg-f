@@ -51,12 +51,13 @@ export function mountOverlays({ video, host, controls, caseId, assetId, enabled 
   const categories = new Set(['instrument','anatomy']);
   let minimumScore = 0;
   const layer = document.createElement('div'); layer.className = 'spatial-layer'; layer.setAttribute('aria-hidden','true'); host.append(layer);
-  controls.innerHTML = `<div class="overlay-toolbar"><label class="overlay-toggle"><input type="checkbox" data-overlay-toggle> Bounding boxes <span>Experimental</span></label><button type="button" data-overlay-fullscreen>Fullscreen with overlays</button></div><div class="overlay-options" hidden><label><input type="checkbox" data-category="instrument" checked> Instruments</label><label><input type="checkbox" data-category="anatomy" checked> Anatomy</label><label>Sampled frame <select aria-label="Jump to sampled detection frame"><option value="">Choose a frame</option></select></label><label>Minimum score <input type="range" data-score min="0" max="1" step="0.05" value="0" aria-label="Minimum detection score"><output data-score-value>0.00</output></label></div><p class="overlay-status" role="status"></p>`;
-  const toggle = controls.querySelector('[data-overlay-toggle]'), options = controls.querySelector('.overlay-options'), status = controls.querySelector('.overlay-status'), select = controls.querySelector('select');
+  controls.innerHTML = `<div class="overlay-toolbar"><label class="overlay-toggle"><input type="checkbox" data-overlay-toggle> Bounding boxes <span>Experimental</span></label><button type="button" data-overlay-retry hidden>Retry loading boxes</button><button type="button" data-overlay-fullscreen>Fullscreen with overlays</button></div><div class="overlay-options" hidden><label><input type="checkbox" data-category="instrument" checked> Instruments</label><label><input type="checkbox" data-category="anatomy" checked> Anatomy</label><label>Sampled frame <select aria-label="Jump to sampled detection frame"><option value="">Choose a frame</option></select></label><label>Minimum score <input type="range" data-score min="0" max="1" step="0.05" value="0" aria-label="Minimum detection score"><output data-score-value>0.00</output></label></div><p class="overlay-status" role="status"></p>`;
+  const toggle = controls.querySelector('[data-overlay-toggle]'), retry = controls.querySelector('[data-overlay-retry]'), options = controls.querySelector('.overlay-options'), status = controls.querySelector('.overlay-status'), select = controls.querySelector('select');
   toggle.checked = enabled;
   const say = text => { if (status.textContent !== text) status.textContent = text; };
   function draw() {
     if (disposed) return;
+    retry.hidden = !error || !!data || !assetId || !toggle.checked;
     const visible = toggle.checked && data && !error && !video.seeking && !video.error && video.readyState >= 2;
     if (!toggle.checked) say('Boxes off. Sparse detections appear only near sampled frames.');
     else if (error) say(error);
@@ -94,6 +95,7 @@ export function mountOverlays({ video, host, controls, caseId, assetId, enabled 
     draw();
   }
   toggle.addEventListener('change',() => { options.hidden = !toggle.checked; onToggle(toggle.checked); ensureData(); draw(); });
+  retry.addEventListener('click', () => { if (!pending && !data) ensureData(); });
   controls.querySelectorAll('[data-category]').forEach(input => input.addEventListener('change',() => { input.checked ? categories.add(input.dataset.category) : categories.delete(input.dataset.category); draw(); }));
   controls.querySelector('[data-score]').addEventListener('input', event => { minimumScore = Number(event.target.value); controls.querySelector('[data-score-value]').textContent = minimumScore.toFixed(2); draw(); });
   select.addEventListener('change',() => { if (select.value !== '') { video.pause(); video.currentTime = Number(select.value); } });

@@ -41,3 +41,14 @@ test('late failed requests cannot update a disposed player',async()=>{
  const p=setup('unavailable-test-asset');p.enable();p.dispose();const before=p.controls.textContent;
  respond({ok:false});await settle();assert.equal(p.controls.textContent,before);assert.equal(p.boxes().length,0);
 });
+test('failed overlay request offers an accessible retry',async()=>{
+ let attempts=0;
+ const retryArtifact={...artifact,video_asset_id:'retry-test-asset'};
+ globalThis.fetch=async()=>{attempts++;return attempts===1?{ok:false}:{ok:true,text:async()=>JSON.stringify(retryArtifact)};};
+ const p=setup('retry-test-asset');p.enable();await settle();
+ const retry=p.controls.querySelector('[data-overlay-retry]');
+ assert.equal(retry.hidden,false);assert.equal(p.boxes().length,0);
+ p.event(retry,'click');await settle();
+ assert.equal(attempts,2);assert.equal(retry.hidden,true);assert.equal(p.boxes().length,3);
+ p.dispose();
+});
