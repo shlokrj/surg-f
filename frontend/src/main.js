@@ -85,7 +85,7 @@ function parseChartRequest(input) {
 }
 function chartSection(category, request) {
   if (category === 'instruments') {
-    const counts = (state.timeline?.summary ?? []).filter(item => !request.instrument || item.label === request.instrument);
+    const counts = (state.timeline?.summary ?? []).filter(item => instrumentLabels.includes(item.label) && (!request.instrument || item.label === request.instrument));
     const max = Math.max(1, ...counts.map(item => item.count));
     return `<div class="chart-block"><h3>Instruments</h3><p>Annotated intervals by instrument in ${escapeHtml(state.caseId)}. The current dataset exposes six instrument labels.</p><div class="chart">${counts.map(item => `<div class="chart-row"><span>${escapeHtml(item.label)}</span><div class="chart-track"><div style="width:${item.count / max * 100}%"></div></div><strong>${item.count}</strong></div>`).join('')}</div></div>`;
   }
