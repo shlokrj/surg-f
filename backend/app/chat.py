@@ -268,8 +268,13 @@ class ChatService:
         if not text and not answer.rows:
             raise GenieError("empty answer")
         data = AnswerData(columns=answer.columns, rows=answer.rows, sql=answer.sql)
+        if not text:
+            # Genie gave a table without words: read out its first row.
+            cells = zip(answer.columns, answer.rows[0], strict=False)
+            top = ", ".join(f"{c} {v:g}" if isinstance(v, float) else f"{c} {v}" for c, v in cells)
+            text = f"Top result: {top}."
         return ChatResponse(
-            reply=text or "Here is what the clip data shows.",
+            reply=text,
             action="answer",
             data=data if answer.rows else None,
             router="genie",

@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from app.chat import STUDY_AID_REPLY, LLMError, LLMRouter, ToolChoice, tool_specs
 from app.config import FIXTURES_DIR, settings_from
-from app.genie import GenieAnswer, GenieError
+from app.genie import GenieAnswer, GenieClient, GenieError
 from app.main import build_llm, create_app
 from app.models import ChatResponse, Clip
 from app.repository import RepositoryError
@@ -340,6 +340,49 @@ def test_genie_reply_is_shortened_to_two_plain_sentences():
     llm = FakeLLM(ToolChoice("ask_data", {"question": "longest?"}))
     body = ask(make_client(llm=llm, genie=FakeGenie(answer)), "which was used longest?")
     assert body["reply"] == "The grasper was used longest. The hook was next."
+
+
+def test_genie_table_without_words_reads_out_the_first_row():
+    answer = GenieAnswer(
+        conversation_id="c1", columns=["label", "total_sec"], rows=[["grasper", 1141.0]]
+    )
+    llm = FakeLLM(ToolChoice("ask_data", {"question": "longest?"}))
+    body = ask(make_client(llm=llm, genie=FakeGenie(answer)), "which was used longest?")
+    assert body["action"] == "answer"
+    assert body["reply"] == "Top result: label grasper, total_sec 1141."
+
+
+@pytest.mark.parametrize(
+    ("texts", "with_table", "expected"),
+    [
+        (["Want the longest single interval instead?", "The grasper was longest."], True, "The"),
+        (["Want the longest single interval instead?"], True, None),  # table speaks instead
+        (["Which video do you mean?"], False, "Which"),  # nothing else to show
+    ],
+)
+def test_genie_client_prefers_a_statement_over_a_follow_up_question(texts, with_table, expected):
+    base = "/api/2.0/genie/spaces/s1"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if path == f"{base}/start-conversation":
+            return httpx.Response(200, json={"conversation_id": "c1", "message_id": "m1"})
+        if path == f"{base}/conversations/c1/messages/m1":
+            attachments = [
+                {"attachment_id": f"t{i}", "text": {"content": t}} for i, t in enumerate(texts)
+            ]
+            if with_table:
+                attachments.append({"attachment_id": "q1", "query": {"query": "SELECT 1"}})
+            return httpx.Response(200, json={"status": "COMPLETED", "attachments": attachments})
+        schema = {"columns": [{"name": "label", "type_name": "STRING"}]}
+        body = {"manifest": {"schema": schema}, "result": {"data_array": [["grasper"]]}}
+        return httpx.Response(200, json={"statement_response": body})
+
+    genie = GenieClient(
+        CREDS, "s1", timeout_sec=1, poll_sec=0, transport=httpx.MockTransport(handler)
+    )
+    text = genie.ask("x").text
+    assert text is None if expected is None else text.startswith(expected)
 
 
 def test_genie_failure_falls_back_to_rules():
