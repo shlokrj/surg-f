@@ -62,8 +62,8 @@ const CANDS = [[4, 46, 30, 40], [58, 50, 34, 44], [18, 20, 44, 52], [46, 4, 46, 
 /* shared/triplets.annotation.csv, VID01, in time order. */
 const ROWS = [['VID01', 561, 658, 'hook'], ['VID01', 674, 690, 'clipper'], ['VID01', 698, 747, 'clipper'], ['VID01', 815, 844, 'clipper'], ['VID01', 860, 877, 'scissors'], ['VID01', 894, 921, 'hook'], ['VID01', 1010, 1026, 'bipolar']];
 /* VID01 instrument time line, merged per instrument from the same CSV (1,728 s long). */
-const VID01_LEN = 1728;
-const TRACKS = {
+export const VID01_LEN = 1728;
+export const TRACKS = {
   grasper: [[0, 5], [10, 108], [136, 172], [177, 190], [276, 298], [302, 312], [324, 363], [367, 387], [391, 395], [397, 401], [403, 406], [415, 471], [477, 484], [493, 496], [524, 530], [536, 621], [651, 746], [750, 751], [754, 758], [763, 771], [774, 796], [812, 883], [935, 936], [1037, 1039], [1100, 1111], [1116, 1118], [1158, 1437], [1439, 1440], [1443, 1460], [1478, 1565], [1567, 1655], [1658, 1678], [1689, 1690], [1697, 1709], [1711, 1718], [1721, 1728]],
   hook: [[20, 272], [484, 505], [561, 658], [894, 921], [1039, 1378], [1381, 1434], [1438, 1439]],
   bipolar: [[325, 391], [433, 476], [1010, 1026]],
@@ -288,41 +288,47 @@ onStage((section, ps) => {
   }
 });
 
-/* ---- Real VID01 frames. One hidden video seeks to each needed second and copies the picture into a
-   cache, then every canvas for that second is painted. Without the video, cards keep their fallback. ---- */
+/* ---- Real VID01 frames. One hidden video seeks to each requested second in turn and copies the picture
+   into a cache; every canvas for that second is then painted. Any section can ask (paintFrames). Without
+   the video, cards keep their gradient fallback. ---- */
 const frameCache = new Map();
-let framesStarted = false;
-function paintFrames(section) {
-  const canvases = [...section.querySelectorAll('canvas.vf')];
-  const draw = () => canvases.forEach(c => {
-    const src = frameCache.get(c.dataset.t);
-    if (!src || c.dataset.painted) return;
-    try { c.getContext('2d')?.drawImage(src, 0, 0, c.width, c.height); c.dataset.painted = '1'; c.classList.add('is-painted'); } catch { /* no canvas */ }
-  });
-  draw();
-  if (framesStarted) return;
-  framesStarted = true;
+const pending = new Set();
+let frameVideo = null, seeking = false, framesFailed = false;
+const drawFrame = el => {
+  const src = frameCache.get(el.dataset.t);
+  if (!src || el.dataset.painted) return;
+  try { el.getContext('2d')?.drawImage(src, 0, 0, el.width, el.height); el.dataset.painted = '1'; el.classList.add('is-painted'); } catch { /* no canvas */ }
+};
+export const cachedFrame = t => frameCache.get(String(t)) ?? null;
+export function paintFrames(scope) {
+  scope.querySelectorAll('canvas.vf').forEach(c => { if (frameCache.has(c.dataset.t)) drawFrame(c); else pending.add(c.dataset.t); });
+  pumpFrames();
+}
+function pumpFrames() {
+  if (seeking || framesFailed || !pending.size || typeof document === 'undefined' || /jsdom/i.test(navigator.userAgent)) return;
   const url = videoForCase('VID01');
-  if (!url || typeof document === 'undefined' || /jsdom/i.test(navigator.userAgent)) return;
-  const times = [...new Set(canvases.map(c => c.dataset.t))].map(Number).sort((a, b) => a - b);
-  const video = document.createElement('video');
-  video.muted = true; video.preload = 'auto'; video.playsInline = true;
-  const next = () => {
-    const t = times.shift();
-    if (t === undefined) { video.removeAttribute('src'); video.load(); return; }
-    video.addEventListener('seeked', () => {
-      try {
-        const c = document.createElement('canvas');
-        c.width = 854; c.height = 480;
-        c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
-        frameCache.set(String(t), c);
-      } catch { /* decode failed: keep the fallback */ }
-      document.querySelectorAll('.dig canvas.vf').forEach(el => { if (el.dataset.t === String(t) && !el.dataset.painted) { const src = frameCache.get(String(t)); if (src) { el.getContext('2d')?.drawImage(src, 0, 0, el.width, el.height); el.dataset.painted = '1'; el.classList.add('is-painted'); } } });
-      next();
-    }, {once: true});
-    video.currentTime = t;
-  };
-  video.addEventListener('loadedmetadata', next, {once: true});
-  video.addEventListener('error', () => { framesStarted = true; }, {once: true});
-  video.src = url;
+  if (!url) return;
+  seeking = true;
+  if (!frameVideo) {
+    frameVideo = document.createElement('video');
+    frameVideo.muted = true; frameVideo.preload = 'auto'; frameVideo.playsInline = true;
+    frameVideo.addEventListener('error', () => { framesFailed = true; seeking = false; }, {once: true});
+    frameVideo.addEventListener('loadedmetadata', () => { seeking = false; pumpFrames(); }, {once: true});
+    frameVideo.src = url;
+    return;
+  }
+  const key = [...pending].sort((a, b) => a - b)[0];
+  pending.delete(key);
+  frameVideo.addEventListener('seeked', () => {
+    try {
+      const c = document.createElement('canvas');
+      c.width = 854; c.height = 480;
+      c.getContext('2d').drawImage(frameVideo, 0, 0, c.width, c.height);
+      frameCache.set(key, c);
+    } catch { /* decode failed: keep the fallback */ }
+    document.querySelectorAll('canvas.vf').forEach(el => { if (el.dataset.t === key) drawFrame(el); });
+    seeking = false;
+    pumpFrames();
+  }, {once: true});
+  frameVideo.currentTime = Number(key);
 }

@@ -1,6 +1,7 @@
 import { architectureSection, updateArchitecture, digScrollTop } from './architecture.js';
 import { modelSection } from './modelnotes.js';
 import { databricksSection } from './databricks.js';
+import { problemSection } from './problem.js';
 
 /* Brand: "surg" and "f" as keycaps joined by "+", read like the Ctrl+F shortcut. Same markup in the hero
    and the small lockup; colors follow currentColor, so it works white-on-teal and teal-on-light.
@@ -185,23 +186,12 @@ const feature = ({id, title, body, action, command, horizon, preview, index}) =>
   <div class="feature-visual"><canvas class="sky-dither" data-horizon="${horizon}" data-ceiling="7.2" aria-hidden="true"></canvas>${preview}</div>
 </section>`;
 
-export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}}) {
-  return `<main class="landing" id="main-content">
-    <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><button type="button" id="open-sample" class="nav-case">Open a case</button></nav>
-    <section class="landing-intro" aria-labelledby="landing-title">
-      <div class="intro-sticky">
-        <div class="hero-frame">
-          <canvas class="sky-dither hero-dither" aria-hidden="true"></canvas>
-          <div class="intro-copy"><h1 id="landing-title">${wordmark('sf-hero')}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="#case-preview">See the demo <span aria-hidden="true">↓</span></a></div>
-          <form class="hero-search" id="hero-search" role="search">
-            <label class="sr-only" for="hero-q">Ask about the VID01 demo case</label>
-            ${searchGlyph}<input id="hero-q" name="q" value="${DEMO_QUESTION}" placeholder="Ask about the VID01 demo case" autocomplete="off" spellcheck="false" required>
-            <button type="submit" aria-label="Search VID01"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
-          </form>
-        </div>
-      </div>
-    </section>
-    <section class="case-section" id="case-preview" aria-labelledby="case-heading">
+/* Two versions of the homepage. `public`: the product. `demo` (/demo or ?demo, used to present the
+   project): opens with the problem statement, adds the Databricks section, and moves "Find the clip" and
+   the three feature cards below it. */
+export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}, mode = 'public'}) {
+  const demo = mode === 'demo';
+  const product = `    <section class="case-section" id="case-preview" aria-labelledby="case-heading">
       <div class="case-copy"><h2 id="case-heading">Find the clip.</h2><p>Ask when a step happens and jump straight to the annotated moment.</p><button type="button" class="btn-primary" id="sample">Explore the demo</button></div>
       <div class="case-console"><div class="console-bar"><span class="console-case"><strong>VID01</strong><span>Cholecystectomy</span></span></div>
       <div class="preview-video surgical-media ${filterOn ? 'filtered' : ''}">${filterButton}<video src="${videoUrl}" muted playsinline preload="metadata" aria-label="Surgical footage from the VID01 demo case"></video><span class="preview-unavailable" hidden>Video preview unavailable. You can still open the case.</span></div>
@@ -211,16 +201,32 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
     ${feature({index: 0, id: 'feature-steps', title: 'Follow the operation, step by step.', body: 'Each case is split into its surgical phases. Select a step to jump straight to it.', action: 'Open the case timeline', horizon: .62, preview: stepsPreview(showcase.steps)})}
     ${feature({id: 'feature-chart', title: 'See which instruments appear, and for how long.', body: 'Time on screen for each instrument, totalled from the dataset annotations.', action: 'Show the instrument chart', command: '/chart instruments', horizon: .62, index: 1, preview: instrumentsPreview(showcase.timeline)})}
     ${feature({id: 'feature-quiz', title: 'Test yourself on the procedure.', body: 'Five questions on step order and instruments, each with an explanation and example clips.', action: 'Start the quiz', command: '/quiz', horizon: .62, index: 2, preview: quizPreview(showcase.quiz)})}
-    </div>
+    </div>`;
+  return `<main class="landing${demo ? ' is-demo' : ''}" id="main-content">
+    <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><button type="button" id="open-sample" class="nav-case">Open a case</button></nav>
+    <section class="landing-intro" aria-labelledby="landing-title">
+      <div class="intro-sticky">
+        <div class="hero-frame">
+          <canvas class="sky-dither hero-dither" aria-hidden="true"></canvas>
+          <div class="intro-copy"><h1 id="landing-title">${wordmark('sf-hero')}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="${demo ? '#problem' : '#case-preview'}">${demo ? 'See the problem' : 'See the demo'} <span aria-hidden="true">↓</span></a></div>
+          <form class="hero-search" id="hero-search" role="search">
+            <label class="sr-only" for="hero-q">Ask about the VID01 demo case</label>
+            ${searchGlyph}<input id="hero-q" name="q" value="${DEMO_QUESTION}" placeholder="Ask about the VID01 demo case" autocomplete="off" spellcheck="false" required>
+            <button type="submit" aria-label="Search VID01"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+          </form>
+        </div>
+      </div>
+    </section>
+    ${demo ? problemSection() : product}
     ${architectureSection()}
     ${modelSection()}
-    ${databricksSection()}
+    ${demo ? `${databricksSection()}\n${product}` : ''}
     <section class="local-section" aria-labelledby="local-heading"><div><h2 id="local-heading">Open your own video.</h2><p>MP4 and MOV files open for local playback. Indexed search covers the demo cases.</p></div><button type="button" id="drop-zone" class="btn-secondary local-open" aria-label="Open a local MP4 or MOV for playback only">Open a video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>${error ? `<p class="home-error" role="alert">${error}</p>` : ''}</section>
     <footer class="site-footer" aria-label="About surg+f">
       <div class="footer-sticky">
         <div class="footer-top">
           <div class="footer-identity"><p>Search surgical video.</p></div>
-          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#architecture">The stack</a><a href="#model-notes">Model</a><a href="#databricks">Databricks</a><a href="#top">Back to top</a></nav>
+          <nav class="footer-links" aria-label="Footer">${demo ? '<a href="#problem">The problem</a>' : ''}<a href="#case-preview">The demo</a><a href="#architecture">The stack</a><a href="#model-notes">Model</a>${demo ? '<a href="#databricks">Databricks</a>' : ''}<a href="#top">Back to top</a></nav>
         </div>
         <canvas class="footer-word" aria-hidden="true"></canvas>
         <div class="footer-legal"><span>Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>
