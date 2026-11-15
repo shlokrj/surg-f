@@ -49,9 +49,9 @@
 .cells i.on{background:color-mix(in srgb,#ffffff1f,#fff calc(var(--r) * 100%))}
 .cells i.fill{background:color-mix(in srgb,#ffffff1f,#9ff3df calc(var(--f) * 100%));box-shadow:0 0 calc(var(--f) * 10px) #9ff3df80}
 .cells i.drop{transform:translateY(calc(var(--dr) * 34px));opacity:calc(1 - var(--dr))}
-.lane{position:relative;height:26px;border-radius:5px;background:#ffffff14}
-.lane i{position:absolute;top:0;bottom:0;border-radius:5px;background:#fff;transform-origin:left;transform:scaleX(var(--cl))}
-.s-label .lane i{background:var(--hit);transform:none}
+.slane{position:relative;height:26px;border-radius:5px;background:#ffffff14}
+.slane i{position:absolute;top:0;bottom:0;border-radius:5px;background:#fff;transform-origin:left;transform:scaleX(var(--cl))}
+.s-label .slane i{background:var(--hit);transform:none}
 .ticks{position:absolute;left:148px;right:18px;top:372px;display:flex;justify-content:space-between;color:#cfe6dc;font:500 13px var(--mono)}
 
 /* 5. v1 to v2: the v1 value stays as a dashed outline while v2 grows past it; numbers count with the scroll. */

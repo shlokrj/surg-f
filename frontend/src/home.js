@@ -1,5 +1,6 @@
 import { architectureSection, updateArchitecture, digScrollTop } from './architecture.js';
 import { modelSection } from './modelnotes.js';
+import { databricksSection } from './databricks.js';
 
 /* Brand: "surg" and "f" as keycaps joined by "+", read like the Ctrl+F shortcut. Same markup in the hero
    and the small lockup; colors follow currentColor, so it works white-on-teal and teal-on-light.
@@ -213,12 +214,13 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
     </div>
     ${architectureSection()}
     ${modelSection()}
+    ${databricksSection()}
     <section class="local-section" aria-labelledby="local-heading"><div><h2 id="local-heading">Open your own video.</h2><p>MP4 and MOV files open for local playback. Indexed search covers the demo cases.</p></div><button type="button" id="drop-zone" class="btn-secondary local-open" aria-label="Open a local MP4 or MOV for playback only">Open a video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>${error ? `<p class="home-error" role="alert">${error}</p>` : ''}</section>
     <footer class="site-footer" aria-label="About surg+f">
       <div class="footer-sticky">
         <div class="footer-top">
           <div class="footer-identity"><p>Search surgical video.</p></div>
-          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#architecture">The stack</a><a href="#model-notes">Model</a><a href="#top">Back to top</a></nav>
+          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#architecture">The stack</a><a href="#model-notes">Model</a><a href="#databricks">Databricks</a><a href="#top">Back to top</a></nav>
         </div>
         <canvas class="footer-word" aria-hidden="true"></canvas>
         <div class="footer-legal"><span>Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>

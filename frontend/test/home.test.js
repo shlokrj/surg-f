@@ -95,3 +95,14 @@ test('dig into the stack and model notes render real, cited project data',()=>{
  assert.equal(model.querySelectorAll('.t-test').length,4);
  assert.equal(doc.querySelectorAll('.stack-card').length,3);
 });
+test('databricks section covers the real Databricks work, with the mark and checked links',()=>{
+ const doc=new JSDOM(markup()).window.document;
+ const db=doc.querySelector('#databricks');
+ assert.ok(db.querySelector('h2 .db-mark'),'Databricks mark in the heading');
+ assert.deepEqual([...db.querySelectorAll('.layer')].map(l=>l.id),['db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai']);
+ assert.equal(db.querySelectorAll('.bundles i').length,50,'one bundle per surgery');
+ assert.match(db.textContent,/9d18d20a/);assert.match(db.textContent,/surgf-import-clips/);assert.match(db.textContent,/surgf_quiz_facts/);
+ assert.deepEqual([...db.querySelectorAll('[data-scrub]')].map(b=>b.dataset.scrub.split(',')[1]),['50','0.304','0.343','11264','1658']);
+ assert.ok([...db.querySelectorAll('.layer-copy a')].every(a=>a.rel.includes('noopener')&&a.target==='_blank'));
+ assert.ok(doc.querySelector('.footer-links a[href="#databricks"]'));
+});

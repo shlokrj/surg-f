@@ -73,8 +73,8 @@ const CHAPTERS = [
     note: 'Illustration of the smoothing rule on 40 seconds. Surgeon-labeled clips are ground truth.',
     scene: () => `<div class="sc mn-smooth">
       <div class="strip s-raw"><span>Each second</span><div class="cells">${RAW.map((v, i) => `<i class="${v ? 'on' : ''}${SMOOTHED.fill[i] === 2 ? ' fill' : ''}${SMOOTHED.drop.some(([a, b]) => i >= a && i < b) ? ' drop' : ''}" style="--i:${i}"></i>`).join('')}</div></div>
-      <div class="strip s-clip"><span>Predicted clips</span><div class="lane">${SMOOTHED.keep.map(([a, b]) => `<i style="left:${(a / 40 * 100).toFixed(2)}%;width:${((b - a) / 40 * 100).toFixed(2)}%"></i>`).join('')}</div></div>
-      <div class="strip s-label"><span>Surgeon labels</span><div class="lane">${LABELED.map(([a, b]) => `<i style="left:${(a / 40 * 100).toFixed(2)}%;width:${((b - a) / 40 * 100).toFixed(2)}%"></i>`).join('')}</div></div>
+      <div class="strip s-clip"><span>Predicted clips</span><div class="slane">${SMOOTHED.keep.map(([a, b]) => `<i style="left:${(a / 40 * 100).toFixed(2)}%;width:${((b - a) / 40 * 100).toFixed(2)}%"></i>`).join('')}</div></div>
+      <div class="strip s-label"><span>Surgeon labels</span><div class="slane">${LABELED.map(([a, b]) => `<i style="left:${(a / 40 * 100).toFixed(2)}%;width:${((b - a) / 40 * 100).toFixed(2)}%"></i>`).join('')}</div></div>
       <div class="ticks"><span>0 s</span><span>20 s</span><span>40 s</span></div></div>`,
   },
   {
