@@ -136,3 +136,18 @@ python ml/localization/export_anatomy_video.py \
 ```
 
 The exporter takes **player seconds** (`--seconds` or `--every-sec` with optional `--start`/`--end`), maps each to the nearest decoded frame index, and sets `timestamp_sec` to that frame's presentation time (stream start + index/fps). Do not pass CholecT50 frame numbers as decoded indices, and do not apply the CholecT50 offset to decoded frames. It decodes the video once as raw RGB (FFmpeg 5+, `-fps_mode passthrough`), normalizes boxes to source dimensions, binds the video SHA-256, checkpoint epoch/hash and data signature, records class map, per-class thresholds and a digest of every frame's RGB hash, and validates the artifact schema. 0.24 s is exactly 6 frames at 25 fps; with `max_age_sec` 0.25 the boxes stay on during playback. The deployed VID01 export used the command above (no bundled ffmpeg on PATH here; `imageio-ffmpeg`'s FFmpeg 9.0 binary works): 7,221 frames, 7,465 boxes, 1.34 M characters. An earlier one-frame export bound frame 674 to 26.92 s because of the old frame-ID semantics; ignore it. The model supports only cystic duct and gallbladder anatomy; it does not validate six instrument subtypes or liver. The currently available CholecT50 mirror lacks subtype box annotations, and Endoscapes has only a generic tool box category. Official subtype-box data or independently reviewed labels remain necessary for instrument accuracy claims.
+
+## Measure accuracy on a playable video (VID01 review pack)
+
+Every anatomy number above is on Endoscapes validation images. To measure the deployed model on VID01 itself, build a review pack (outside Git) and have a reviewer box the frames:
+
+```sh
+python ml/localization/prepare_video_review.py --checkpoint /path/to/anatomy-run/best.pt \
+  --video frontend/public/videos/VID01.mp4 --case-id VID01 --count 60 \
+  --ffmpeg /path/to/ffmpeg --output-dir /path/to/new/review-VID01
+# after review:
+python ml/localization/evaluate_anatomy_coco.py /path/to/review-VID01/reference.json \
+  /path/to/review-VID01/predictions.json --output /path/to/new/VID01-metrics.json
+```
+
+The seeded sample (default seed 11) takes half its frames from intervals where `shared/triplets.annotation.csv` names `cystic_duct` as a target and half spread across the video, so it tests both misses and false alarms. `reference.json` is COCO with only cystic duct and gallbladder, **blank by default** (`--prefill SCORE` copies model boxes in but can anchor the reviewer), and every image starts with `is_det_keyframe: false`; the evaluator refuses until a reviewer has boxed every visible instance in a frame and set it to `true`. `predictions.json` holds raw, unthresholded predictions so AP is defined. The manifest binds video, checkpoint (architecture, epoch, data signature), triplets file and frame PNG hashes. The same seed and count reproduce the same frames, so a later checkpoint can be scored on identical frames. Pack built 2026-11-14 from the v2 checkpoint: `~/madhacks2026/localization/review-VID01-v1/`, 60 frames (32 inside cystic duct intervals). It contains Cholec80 imagery (CC BY-NC-SA 4.0); keep it out of Git. **Not yet reviewed; no VID01 accuracy exists yet.**
