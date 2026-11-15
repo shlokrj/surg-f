@@ -1,0 +1,39 @@
+/* "Sources": citations right before the footer, on every version. Groups slide in as they enter the view
+   (--in, set by updateSources); rows follow one after another (--k). */
+.sources{padding:120px clamp(20px,6vw,96px) 110px;border-top:1px solid var(--line);background:var(--page);overflow-x:clip}
+.src-head{max-width:760px;margin-bottom:56px}
+.src-head h2{margin:0 0 14px;font-size:clamp(36px,4vw,60px)}
+.src-head p{margin:0;max-width:56ch;color:var(--ink-muted);font-size:18px;line-height:1.6}
+.src-groups{display:grid;gap:22px}
+.src-group{--in:0;display:grid;grid-template-columns:minmax(220px,.36fr) minmax(0,1fr);gap:34px;padding:34px 0 30px;border-top:1px solid var(--line-strong);opacity:clamp(0, calc(var(--in) * 1.6), 1);transform:translateY(calc((1 - var(--in)) * 40px))}
+.src-group::before{content:"";grid-column:1/-1;grid-row:1;height:2px;margin-top:-35px;background:var(--brand);transform-origin:left;transform:scaleX(var(--in))}
+.src-group-head{grid-row:2;display:flex;gap:16px;align-items:flex-start;position:sticky;top:110px;align-self:start}
+.src-num{font:600 14px var(--mono);color:var(--brand);padding-top:6px}
+.src-group-head h3{margin:0 0 8px;font-size:22px;font-weight:500;letter-spacing:-.02em}
+.src-group-head p{margin:0;color:var(--ink-muted);font-size:15px;line-height:1.5}
+.src-list,.src-tools{grid-row:2;list-style:none;margin:0;padding:0}
+.src-list{display:grid;gap:14px}
+.src-item{--r:clamp(0, calc(var(--in) * 2.2 - var(--k) * .22), 1);padding:20px 22px;border:1px solid var(--line);border-radius:16px;background:#fff;opacity:var(--r);transform:translateX(calc((1 - var(--r)) * 28px))}
+.src-cite{margin:0 0 8px;font-size:15.5px;line-height:1.55;color:var(--ink);text-wrap:pretty}
+.src-cite b{font-weight:600}
+.src-role{margin:0 0 12px;color:var(--ink-muted);font-size:15px;line-height:1.5}
+.src-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.src-meta a{padding:5px 10px;border:1px solid var(--line-strong);border-radius:8px;color:var(--ink);font-size:14px;text-decoration:none;transition:background-color .15s,border-color .15s}
+.src-meta a:hover{background:var(--surface-tint);border-color:#9db5aa}
+.src-meta a::after{content:" ↗";color:var(--ink-muted);font-size:12px}
+.src-license a{border-color:transparent;background:var(--brand-tint);color:var(--brand-strong)}
+.src-bib{margin-top:12px}
+.src-bib summary{width:max-content;cursor:pointer;color:var(--brand-strong);font-size:14px;font-weight:600}
+.src-bib pre{margin:10px 0 0;padding:14px 16px;overflow:auto;border-radius:10px;background:#0f2d2a;color:#cfe6dc;font:500 12.5px/1.6 var(--mono)}
+.src-tools{display:flex;flex-wrap:wrap;gap:10px;align-content:start}
+.src-tools li{--r:clamp(0, calc(var(--in) * 2.4 - var(--k) * .1), 1);opacity:var(--r);transform:translateY(calc((1 - var(--r)) * 14px))}
+.src-tools a{display:inline-flex;padding:8px 13px;border:1px solid var(--line-strong);border-radius:var(--radius);background:#fff;color:var(--ink);font-size:15px;text-decoration:none}
+.src-tools a::after{content:" ↗";color:var(--ink-muted);font-size:13px;margin-left:4px}
+.src-tools a:hover{background:var(--surface-tint)}
+@media(max-width:860px){
+  .sources{padding:80px 6vw}
+  .src-group{grid-template-columns:1fr;gap:18px}
+  .src-group-head{position:static}
+  .src-list,.src-tools{grid-row:auto}
+}
+@media(prefers-reduced-motion:reduce){.src-group,.src-item,.src-tools li{opacity:1;transform:none}.src-group::before{transform:none}}
