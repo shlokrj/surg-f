@@ -1,5 +1,9 @@
 # Team handoffs
 
+## Problem section: card stripes removed (2026-11-15, Mihir, at Mihir's request)
+
+In "Who needs it" (demo pages), the four cards (Residents, Surgeons, Educators, Researchers) no longer have the colored vertical line on their left edge: the `.pb-use::before` rule was removed from `frontend/src/problem.css`. Each card's time range keeps its color, so the link to the matching marks on the timeline strip is unchanged. Checked on `/presentation-demo` in headless Chrome; 49 frontend tests and build pass. **Shlok:** your file; restore or restyle if you prefer.
+
 ## Model notes: chapters named by model (2026-11-15, Mihir, at Mihir's request)
 
 Two different models have their own version numbers: the **label model** (Aadhitya's 29-label classifier, v1 → v2 live) and the **box detector** (Mihir's Faster R-CNN, v1 → v2 → v3 live). To stop "v2, live" in chapter 5 being read as the box model, the rail labels are now **"Label model: v1 to v2"** and **"Box detector (v3)"** (`frontend/src/modelnotes.js`); chapter 5's caption says "Label model v1 against v2" and chapter 6's score line says "up from 0.35 in v2". **Shlok:** the presenter cues in `pitch/presentation-demo-script.md` and the scene list in `pitch/README.md` use the new names; `frontend/docs/DESIGN.md` notes the rename. Checks: 49 frontend tests and build pass; Chrome at 1400 px and 390 px shows both labels on one line with no overflow.

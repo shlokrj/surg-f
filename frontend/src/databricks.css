@@ -101,16 +101,19 @@
    service principal's key travels down each one. Marked "Planned". */
 .db-apps{--c:clamp(0, calc(var(--p) / .25), 1);--w:clamp(0, calc((var(--p) - .2) / .35), 1);--kt:clamp(0, calc((var(--p) - .5) / .3), 1)}
 .app-card{position:absolute;left:50%;top:40px;width:330px;display:grid;gap:12px;padding:18px 20px;border-radius:18px;background:#fff;color:var(--ink);box-shadow:0 30px 70px #052a2655;translate:-50% 0;opacity:var(--c);transform:translateY(calc((1 - var(--c)) * 24px)) scale(calc(.94 + .06 * var(--c)))}
-.app-head{display:flex;align-items:center;gap:8px;color:#1b3139;font-size:30px}
-.app-head .db-mark{width:.9em;height:.9em}.app-head .db-word{height:.62em;width:auto;aspect-ratio:106.85/16.91}
-.app-head b{margin-left:2px;font-size:.66em;font-weight:500;line-height:1;letter-spacing:-.01em}
+/* Lockup: "Apps" sits on the wordmark's baseline (the SVG's bottom edge), its capitals as tall as the
+   wordmark's ascenders. The mark is centred on the wordmark. */
+.app-head{display:flex;align-items:baseline;gap:.26em;color:#1b3139;font-size:30px;line-height:1}
+.app-head .db-mark{align-self:center;width:.9em;height:.9em}
+.app-head .db-word{height:.62em;width:auto;aspect-ratio:106.85/16.91}
+.app-head b{font-size:.86em;font-weight:500;line-height:1;letter-spacing:-.02em}
 .app-parts{display:flex;gap:8px}.app-parts span{flex:1;padding:9px 10px;border-radius:10px;background:var(--surface-tint);font-size:14px;font-weight:600;text-align:center}
 .app-sp{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:#0f2d2a;color:#cfe6dc;font-size:14px}
 .app-sp i{position:relative;width:16px;height:9px;border:2px solid #9ff3df;border-radius:5px}
 .app-sp i::after{content:"";position:absolute;left:12px;top:1px;width:9px;height:2px;background:#9ff3df}
 .app-wires{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .app-wires path{--wk:clamp(0, calc((var(--w) - var(--k) * .12) * 2.2), 1);fill:none;stroke:#ffffffcc;stroke-width:2;stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--wk))}
-.app-key{--kk:clamp(0, calc((var(--kt) - var(--k) * .08) * 1.6), 1);position:absolute;left:calc(280px + (var(--x) - 280px) * var(--kk));top:calc(238px + 134px * var(--kk));width:12px;height:12px;border-radius:50%;translate:-50% -50%;background:#9ff3df;box-shadow:0 0 14px #9ff3df;opacity:calc(clamp(0, calc(var(--kk) * 20), 1) * clamp(0, calc((1 - var(--kk)) * 8), 1))}
+.app-key{--kk:clamp(0, calc((var(--kt) - var(--k) * .08) * 1.6), 1);position:absolute;left:0;top:0;width:12px;height:12px;border-radius:50%;offset-distance:calc(var(--kk) * 100%);offset-rotate:0deg;offset-anchor:50% 50%;background:#9ff3df;box-shadow:0 0 14px #9ff3df;opacity:calc(clamp(0, calc(var(--kk) * 20), 1) * clamp(0, calc((1 - var(--kk)) * 8), 1))}
 .app-res{position:absolute;left:14px;right:14px;top:372px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .app-res div{--r:clamp(0, calc((var(--w) - var(--k) * .12) * 2.2), 1);display:grid;gap:4px;padding:12px 10px;border-radius:12px;background:color-mix(in srgb,#0f2d2acc,#0f2d2af0 calc(var(--r) * 100%));color:#fff;text-align:center;opacity:calc(.35 + .65 * var(--r));box-shadow:0 0 0 calc(clamp(0, calc((var(--kt) - var(--k) * .08) * 1.6 - .9) * 10, 1) * 2px) #9ff3df}
 .app-res b{font-size:14px;line-height:1.25}.app-res small{font-size:12.5px;color:#cfe6dc}

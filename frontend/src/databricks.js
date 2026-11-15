@@ -18,6 +18,9 @@ const num = (from, to, start, span, digits = 0) => `<b data-scrub="${from},${to}
 /* ml/PROGRESS.md, v2 smoothing sweep on the 3 tuning surgeries (model fa3903c8), six-tool event F1. */
 const SWEEP = [['0:1', .0872], ['1:1', .1246], ['2:2', .1816], ['3:3', .1717], ['5:3', .1680], ['10:5', .1501]];
 
+/* The Apps scene's wires, in the scene's 560×540 box. Each key travels its own wire (CSS offset-path). */
+const APP_WIRES = [76, 212, 348, 484].map(x => `M280 238C280 300 ${x} 292 ${x} 372`);
+
 const CHAPTERS = [
   {
     id: 'volumes', name: 'Unity Catalog Volume',
@@ -97,8 +100,8 @@ const CHAPTERS = [
         <div class="app-head">${DATABRICKS_MARK}${DATABRICKS_WORD}<b>Apps</b></div>
         <div class="app-parts"><span>Web app</span><span>FastAPI backend</span></div>
         <div class="app-sp"><i aria-hidden="true"></i>Service principal</div></div>
-      <svg class="app-wires" viewBox="0 0 560 540" aria-hidden="true">${[76, 212, 348, 484].map((x, k) => `<path style="--k:${k}" pathLength="1" d="M280 238C280 300 ${x} 292 ${x} 372"/>`).join('')}</svg>
-      ${[76, 212, 348, 484].map((x, k) => `<span class="app-key" style="--k:${k};--x:${x}px"></span>`).join('')}
+      <svg class="app-wires" viewBox="0 0 560 540" aria-hidden="true">${APP_WIRES.map((d, k) => `<path style="--k:${k}" pathLength="1" d="${d}"/>`).join('')}</svg>
+      ${APP_WIRES.map((d, k) => `<span class="app-key" style="--k:${k};offset-path:path('${d}')"></span>`).join('')}
       <div class="app-res">${[['SQL warehouse', 'Search'], ['Genie space', 'Free-form questions'], ['Llama 3.3 70B', 'Chat routing'], ['Unity Catalog Volume', 'Features, models, videos']].map(([t, d], k) => `<div style="--k:${k}"><b>${t}</b><small>${d}</small></div>`).join('')}</div>
     </div>`,
   },
