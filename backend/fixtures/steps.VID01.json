@@ -1,0 +1,55 @@
+{
+  "case_id": "VID01",
+  "source": "cholec80_phase",
+  "steps": [
+    {
+      "order": 1,
+      "key": "Preparation",
+      "label": "Preparation",
+      "start_sec": 0.0,
+      "end_sec": 21.0
+    },
+    {
+      "order": 2,
+      "key": "CalotTriangleDissection",
+      "label": "Calot's triangle dissection",
+      "start_sec": 21.0,
+      "end_sec": 673.0
+    },
+    {
+      "order": 3,
+      "key": "ClippingCutting",
+      "label": "Clipping and cutting",
+      "start_sec": 673.0,
+      "end_sec": 887.0
+    },
+    {
+      "order": 4,
+      "key": "GallbladderDissection",
+      "label": "Gallbladder dissection",
+      "start_sec": 887.0,
+      "end_sec": 1470.0
+    },
+    {
+      "order": 5,
+      "key": "GallbladderPackaging",
+      "label": "Gallbladder packaging",
+      "start_sec": 1470.0,
+      "end_sec": 1568.0
+    },
+    {
+      "order": 6,
+      "key": "CleaningCoagulation",
+      "label": "Cleaning and coagulation",
+      "start_sec": 1568.0,
+      "end_sec": 1641.0
+    },
+    {
+      "order": 7,
+      "key": "GallbladderRetraction",
+      "label": "Gallbladder removal",
+      "start_sec": 1641.0,
+      "end_sec": 1733.04
+    }
+  ]
+}

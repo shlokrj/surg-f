@@ -18,6 +18,7 @@ from .quiz import QuizBank, QuizService
 from .repository import ClipRepository, DatabricksClipRepository, FixtureClipRepository
 from .routes import router
 from .service import SearchService, TimelineService
+from .steps import StepsService
 
 access_log = logging.getLogger("surgf.access")
 
@@ -92,6 +93,7 @@ def create_app(
     app.state.timeline_service = TimelineService(repository)
     app.state.quiz_service = QuizService(QuizBank.load(settings.quiz_bank_file))
     app.state.interpret_service = InterpretService(genie)
+    app.state.steps_service = StepsService(settings.fixtures_dir)
     app.include_router(router)
 
     @app.middleware("http")
