@@ -202,7 +202,7 @@ class InterpretResponse(BaseModel):
 
 # --- chat (one typed message -> one action with its data) ---------------------
 
-ChatAction = Literal["search", "quiz", "timeline", "answer", "none"]
+ChatAction = Literal["search", "quiz", "timeline", "answer", "model", "none"]
 ChatRouter = Literal["llm", "rules", "genie"]
 
 
@@ -221,6 +221,21 @@ class ChatRequest(BaseModel):
     )
 
 
+class ModelData(BaseModel):
+    """Which step the 3D model should open at, for the `model` action."""
+
+    case_id: str = Field(description="The video the request was about.", examples=["VID01"])
+    step_key: str | None = Field(
+        description="Phase name of the step to show (as in GET /cases/{case_id}/steps), or "
+        "null to keep the step the video is on.",
+        examples=["ClippingCutting"],
+    )
+    step_label: str | None = Field(
+        description="Plain-language name of that step, or null.",
+        examples=["Clipping and cutting"],
+    )
+
+
 class AnswerData(BaseModel):
     """A small result table for the `answer` action, computed here or by Genie."""
 
@@ -236,9 +251,10 @@ class ChatResponse(BaseModel):
         "video. quiz: `data` is a GET /quiz payload. timeline: `data` is a "
         "GET /cases/{case_id}/timeline payload. answer: `data` is a small result table (or "
         "null), computed by the backend or by Genie. "
+        "model: open the 3D model; `data` says which step to show. "
         "none: nothing to render besides `reply`; `data` is null."
     )
-    data: SearchResponse | QuizResponse | TimelineResponse | AnswerData | None = Field(
+    data: SearchResponse | QuizResponse | TimelineResponse | AnswerData | ModelData | None = Field(
         description="The payload for `action`, or null."
     )
     router: ChatRouter = Field(

@@ -109,6 +109,7 @@ def create_app(
         app.state.search_service,
         app.state.timeline_service,
         app.state.quiz_service,
+        steps=app.state.steps_service,
         llm=llm,
         genie=genie,
         llm_timeout_sec=settings.chat_timeout_sec,
