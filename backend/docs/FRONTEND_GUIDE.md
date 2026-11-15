@@ -588,8 +588,10 @@ type AnswerTable = { columns: string[]; rows: unknown[][]; sql: string | null };
 ```
 
 **Things to know:**
-- **Live timeline data has extra labels.** On 2026-11-14 the live VID01 timeline returned 24 labels (226 segments): the six instruments plus verbs and targets such as `grasp` and `gallbladder`. Keep filtering to the six instrument labels, as `main.js` already does. The saved fixture has only the six.
-- **`/interpret` still works** and is unchanged. `/chat` reuses its keyword rules. `/interpret` returns a list of actions and the requests to make; `/chat` returns one action with the data attached.
+- **The timeline returns the six instruments only.** The live clip table also holds verb and target labels such as `grasp` and `gallbladder`. Since 2026-11-14 `GET /cases/{case_id}/timeline` and the chat `timeline` action leave them out, so live VID01 matches the saved fixture again (70 segments, 6 labels). Your existing filter to the six labels in `main.js` is harmless and can stay.
+- **Which endpoint for which input (decided 2026-11-14, Rohan):** use `POST /chat` for free-typed chat messages. Keep `GET /interpret` for the search bar's slash commands, because it can return several actions at once (`/quiz /chart`) and `/chat` returns exactly one. `/interpret` is not being retired.
+- **Chat search is narrower than `GET /search`:** it returns annotation rows for the open video only, which is what the matching-moments list shows. Call `GET /search` directly when you need every video or model predictions.
+- **`/interpret` is unchanged.** `/chat` reuses its keyword rules. `/interpret` returns a list of actions and the requests to make; `/chat` returns one action with the data attached.
 - **Slash commands work as messages:** `/quiz`, `/chart`, `/timestamp clipper`. `/model` returns `none` with a "no 3D model yet" reply.
 - **CORS** now allows `POST` from the default dev origins.
 

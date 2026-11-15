@@ -4,7 +4,7 @@ Status: **proposal, 2026-11-14 (Rohan).** The backend serves these endpoints on 
 
 ## Text to append to agent-kit/CONTRACTS.md
 
-> Timeline API: `GET /cases/VID01/timeline` with optional `source=annotation|prediction` (default `annotation`). Return `case_id`, `source`, `segments` ordered by `start_sec` then `label`, and a per-label `summary` ordered by `total_sec` descending. Build segments and summary from the same rows as search; exclude fixture rows. An unknown case returns 404 with `{"detail": "Unknown case_id: <id>"}`. A known case with no rows for the chosen source returns empty lists.
+> Timeline API: `GET /cases/VID01/timeline` with optional `source=annotation|prediction` (default `annotation`). Include only the six instrument labels (grasper, hook, irrigator, bipolar, clipper, scissors); leave out verb and target rows. Return `case_id`, `source`, `segments` ordered by `start_sec` then `label`, and a per-label `summary` ordered by `total_sec` descending. Build segments and summary from the same rows as search; exclude fixture rows. An unknown case returns 404 with `{"detail": "Unknown case_id: <id>"}`. A known case with no rows for the chosen source returns empty lists.
 >
 > ```json
 > {"case_id":"VID01","source":"annotation","segments":[{"label":"clipper","start_sec":674,"end_sec":690}],"summary":[{"label":"clipper","count":5,"total_sec":102,"first_sec":674}]}
@@ -39,8 +39,15 @@ Status: **proposal, 2026-11-14 (Rohan).** The backend serves these endpoints on 
 
 ## Open points for agreement
 
-- **Chat (added 2026-11-14):** should the chat box move from `GET /interpret` to `POST /chat`, and should `/interpret` then be retired? Is the `answer` table shape acceptable, given that it has no matching GET endpoint? Examples: `backend/fixtures/chat.examples.json`.
-- **Timeline labels (added 2026-11-14):** the live table now holds verb and target labels as `annotation` rows (VID01: 24 labels, 226 segments), with no column that separates them from instruments. Should `/cases/{case_id}/timeline` return only the six instruments, or should the table gain a category column?
+**Decided by Rohan on 2026-11-14 so the demo can proceed. Each is a backend default the team can overturn:**
+
+- **Timeline labels:** the live table now holds verb and target labels as `annotation` rows (VID01 had 24 labels and 226 segments), with no column that separates them from instruments. `GET /cases/{case_id}/timeline` now returns the six instruments only, which restores the documented response (VID01: 70 segments, 6 labels, identical to the saved fixture). Search is unchanged, so `GET /search?q=grasp` still finds verb rows. A category column in the table would be the cleaner long-term fix; that is Data's call.
+- **Chat versus interpret:** `POST /chat` is for free-typed chat messages. `GET /interpret` stays for slash commands, because it can return several actions at once. Neither is retired.
+- **`answer` data shape:** `{"columns": [], "rows": [], "sql": null}` or null. It has no matching GET endpoint because Genie tables have no fixed columns. Examples: `backend/fixtures/chat.examples.json`.
+- **Chat search scope:** annotation rows for the requested case only. `GET /search` keeps returning every case and both sources.
+
+**Still open:**
+
 - Should `/search` keep mixing `annotation` and `prediction` rows (current behavior), or take the same `source` filter as the timeline? Changing it would be a contract change.
 - Is `case_id` case-sensitive (current behavior, `VID01` only), or should `vid01` also work?
 - Should the frontend's `VITE_USE_FIXTURE` mode use these fixtures, or call the backend's fixture mode instead?
