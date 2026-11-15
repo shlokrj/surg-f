@@ -1,5 +1,12 @@
 # Surg+F progress
 
+## Frontend v2 revision after design review (2026-11-14)
+
+Shlok rejected the first visual direction. On `feat/shlok-frontend-v2`, replaced the reticle/cursor with deterministic plus-sign dither, lowercase light-teal surg+f using the magnifier-plus mark, a white inset rounded frame that expands on scroll, and less copy. Updated `frontend/docs/DESIGN.md` and `ANTI_SLOP.md` with the explicit rejected patterns and screenshot-based requirements. Local commits only; no push or main merge.
+
+Verification: frontend tests pass 9 cases and production build passes. Native Chrome accessibility inspection confirmed updated branding/actions; a Hangar screenshot confirmed the reference composition. Browser scroll verification then failed with `noWindowsAvailable`; the revised local motion/layout is not claimed visually verified. Next: Shlok reviews the hot-reloaded page at port 5180.
+
+
 ## Shlok frontend v2 homepage (2026-11-14)
 
 On `feat/shlok-frontend-v2`, Shlok implemented a minimal surgical-green/white homepage with centered Surg+F, self-hosted Inclusive Sans, native-scroll title/geometry motion, immediate case entry, real filtered VID01 preview and local-video entry. Design and anti-slop criteria live in `frontend/docs/`; the references and accessibility/content guidance are linked there. Changes are local commits only; do not push or merge this design round without instruction. Mihir's spatial behavior is unchanged.

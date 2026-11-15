@@ -15,7 +15,7 @@ This is a project editing rubric, not a scientific classification of AI-generate
 ## Visual checks
 
 - No default three-card feature grid, gradient blobs, glass panels or decorative dashboards unless they explain this product.
-- No random icons beside every heading. Crosshair geometry is decorative, sparse and hidden from assistive technology; it is not a clinical measurement.
+- No random icons beside every heading. Use only the requested plus-sign dither, hidden from assistive technology. Circular reticles and crosshair axes were rejected.
 - Whitespace and typography provide hierarchy. Do not fill an empty area with invented content.
 - Motion must respond to a meaningful action and remain optional. No scroll hijacking, cursor replacement, infinite marquee or flashing attention cue.
 - Review narrow screens, keyboard focus and reduced-motion behavior. Screenshots and actual interactions are evidence; a successful build is not visual verification.
@@ -27,3 +27,7 @@ Can a new visitor explain what the product does and open a case? Does every visi
 ## Research behind the rubric
 
 [GOV.UK content design](https://guidance.publishing.service.gov.uk/writing-to-gov-uk-standards/plan-manage-content/understand-content-design/) grounds content in user needs and plain English. [NHS content guidance](https://digital.nhs.uk/about-nhs-digital/corporate-information-and-documents/our-style-guidelines/content-style-guide/creating-content) emphasizes meaningful headings and reducing clutter for readers. [W3C animation guidance](https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html) explains why nonessential motion should respect user preferences. The specific banned patterns above are our product choices, not rules claimed by these sources.
+
+## Feedback from the first review
+
+Shlok rejected the first implementation as generic. Avoid adding branding metaphors as captions: no “A familiar shortcut”, “A different kind of footage” or “Less scrubbing. More finding.” The lowercase wordmark/icon carries the reference; explain only the real action. Minimal must mean fewer competing elements, not a sparse generic template. Follow the provided rounded-frame/zoom composition rather than inventing a different scrolling effect.
