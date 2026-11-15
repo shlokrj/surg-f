@@ -115,6 +115,18 @@ def predictions_for(model, samples, device):
     return output
 
 
+def skip_nonfinite(loss_is_finite, targets):
+    """Torchvision's ROI-head losses can be NaN when no image in the batch has a box.
+
+    Only such all-negative batches may be skipped; any other nonfinite loss is an error.
+    """
+    if loss_is_finite:
+        return False
+    if all(len(target['boxes']) == 0 for target in targets):
+        return True
+    raise ValueError('nonfinite training loss')
+
+
 def atomic_torch_save(torch, value, path):
     temporary = path.with_name(path.name + '.part')
     torch.save(value, temporary)
@@ -181,13 +193,14 @@ def main():
     else:
         baseline = evaluate(subsets['val'], predictions_for(model, val, args.device))
     for epoch in range(start, args.epochs):
-        model.train(); losses = []
-        for pixels, targets, _ in loader:
+        model.train(); losses = []; skipped = []
+        for pixels, targets, images in loader:
             terms = model([x.to(args.device) for x in pixels],
                           [{k: v.to(args.device) for k, v in target.items()} for target in targets])
             loss = sum(terms.values())
-            if not torch.isfinite(loss):
-                raise ValueError('nonfinite training loss')
+            if skip_nonfinite(bool(torch.isfinite(loss)), targets):
+                skipped.append([image['file_name'] for image in images])
+                continue
             optimizer.zero_grad(); loss.backward()
             if args.grad_clip is not None:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
@@ -196,7 +209,8 @@ def main():
         predictions = predictions_for(model, val, args.device)
         metrics = evaluate(subsets['val'], predictions)
         ap = metrics['ap'] if metrics['ap'] is not None else -1.0
-        history.append(dict(epoch=epoch, mean_loss=sum(losses)/len(losses), validation=metrics))
+        history.append(dict(epoch=epoch, mean_loss=sum(losses)/len(losses), validation=metrics,
+                            skipped_all_negative_batches=skipped))
         improved = epoch == 0 or ap > best_ap
         if improved:
             best_ap = ap

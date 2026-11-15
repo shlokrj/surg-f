@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from PIL import Image
-from train_anatomy import CATEGORIES, ready_data
+from train_anatomy import CATEGORIES, ready_data, skip_nonfinite
 
 
 class ReadinessTests(unittest.TestCase):
@@ -37,6 +37,15 @@ class ReadinessTests(unittest.TestCase):
             (root / 'val' / '121_1.png').write_bytes(b'changed')
             with self.assertRaises(ValueError):
                 ready_data(root)
+
+
+class NonfiniteLossTests(unittest.TestCase):
+    def test_only_all_negative_batches_are_skipped(self):
+        empty, boxed = dict(boxes=[]), dict(boxes=[[1, 1, 2, 2]])
+        self.assertFalse(skip_nonfinite(True, [empty, empty]))
+        self.assertTrue(skip_nonfinite(False, [empty, empty]))
+        with self.assertRaises(ValueError):
+            skip_nonfinite(False, [empty, boxed])
 
 
 if __name__ == '__main__':
