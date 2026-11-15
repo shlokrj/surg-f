@@ -397,7 +397,7 @@ type ChatResponse =
   | { reply: string; action: "search";   data: SearchResponse;   router: Router }
   | { reply: string; action: "quiz";     data: QuizResponse;     router: Router }
   | { reply: string; action: "timeline"; data: TimelineResponse; router: Router }
-  | { reply: string; action: "answer";   data: AnswerTable | null; router: "genie" }
+  | { reply: string; action: "answer";   data: AnswerTable | null; router: Router }
   | { reply: string; action: "none";     data: null;             router: Router };
 
 type Router = "llm" | "rules" | "genie";   // which path decided; for debugging and the demo
@@ -411,15 +411,15 @@ type AnswerTable = { columns: string[]; rows: unknown[][]; sql: string | null };
 | `search` | Same shape as `GET /search`, already limited to the open video and to annotation rows | The "Matching moments" list. Clicking a result seeks the player to `start_sec`. An empty `results` list is possible; `reply` then says nothing was found |
 | `quiz` | Same as `GET /quiz` | The quiz card |
 | `timeline` | Same as `GET /cases/{case_id}/timeline` | The instrument chart (`summary`) and timeline track (`segments`) |
-| `answer` | A small table from Databricks Genie, or `null` | The reply text, plus an optional plain table of `columns` and `rows`. Only appears when the backend has `DATABRICKS_GENIE_SPACE_ID` set |
+| `answer` | A small table, or `null`. For rankings and usage questions the backend computes it, with columns `label`, `count`, `total_sec`, `first_sec` and `sql: null`. From Genie the columns vary | The reply text, plus an optional plain table of `columns` and `rows`. `reply` already states the answer in words |
 | `none` | `null` | Only the reply. Used for medical-advice and off-topic messages, an unknown video, and a data outage |
 
 **How the backend decides (you don't need to handle any of this):**
-1. A Databricks chat model picks one of the features, with a hard 8-second limit. It never writes the reply and never answers from its own knowledge; the backend writes every reply.
+1. A Databricks chat model picks one of the features, with a hard 8-second limit. It never writes the reply and never answers from its own knowledge; the backend writes every reply. Besides search, quiz and timeline, it can pick four data tools that the backend computes itself from the timeline rows: an instrument inside a time window ("hook after minute 10", returned as `search`), a ranking ("used the longest", `answer`), one instrument's usage ("how long was the clipper used", `answer`), and two instruments visible together (`search`, with labels such as `grasper + hook`). Genie is only asked when none of these fits.
 2. Keyword rules answer when the model is not configured, is slow, fails, or picks something invalid. In fixture mode (no credentials) the rules always answer.
 3. `/chat` returns 200 for every valid request, including when routing or the data store fails. The only error is 422 for a blank or too-long `message` or a bad `case_id`.
 
-**Latency (measured 2026-11-14, live Databricks):** 0.6 to 1.7 s through the model, 0.3 to 1.0 s through the rules, and 11 to 14 s when Genie answers an open-ended data question (`router: genie`). The first data request after the SQL warehouse has slept can take much longer, so keep a loading state.
+**Latency (measured 2026-11-14, live Databricks):** 0.5 to 1.7 s through the model, including the data questions that used to take 11 to 14 s through Genie, and 0.3 to 1.0 s through the rules. Only a question that no tool covers still goes to Genie (`router: genie`, about 12 s), for example "what is the average length of a grasper interval?". The first data request after the SQL warehouse has slept can take much longer, so keep a loading state.
 
 **Real example per action** (also in [fixtures/chat.examples.json](../fixtures/chat.examples.json), with full lists):
 
