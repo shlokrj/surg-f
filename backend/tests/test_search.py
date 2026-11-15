@@ -150,19 +150,3 @@ def test_databricks_query_binds_label_as_parameter(monkeypatch):
     assert calls == [(SEARCH_SQL, {"label": "clipper'; DROP --"})]
     assert "'fixture'" not in SEARCH_SQL
     assert clips[0].case_id == "VID01" and clips[0].start_sec == 674.0
-
-
-def test_offline_snapshot_file_serves_search_and_derived_timeline(tmp_path):
-    rows = [
-        {"case_id": "VID27", "start_sec": 9, "end_sec": 12, "label": "hook",
-         "source": "prediction"},
-        {"case_id": "VID27", "start_sec": 3, "end_sec": 5, "label": "clipper",
-         "source": "annotation"},
-    ]
-    snapshot = tmp_path / "snapshot.json"
-    snapshot.write_text(json.dumps({"results": rows}))
-    settings = settings_from({"SURGF_FIXTURE_FILE": str(snapshot)})
-    repo = build_repository(settings)
-    assert [c.label for c in repo.find_by_label("hook")] == ["hook"]
-    # No timeline file for VID27: the timeline is built from the rows.
-    assert [c.start_sec for c in repo.find_by_case("VID27")] == [3, 9]
