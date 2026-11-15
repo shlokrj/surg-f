@@ -98,9 +98,10 @@ class GenieClient:
             time.sleep(self._poll_sec)
 
         answer = GenieAnswer(conversation_id=conversation_id)
+        texts = []
         for attachment in message.get("attachments") or []:
             if attachment.get("text", {}).get("content"):
-                answer.text = attachment["text"]["content"]
+                texts.append(attachment["text"]["content"])
             query = attachment.get("query")
             if query and query.get("query") and answer.sql is None:
                 answer.sql = query["query"]
@@ -118,4 +119,11 @@ class GenieClient:
                     [_cast(value, type_name) for value, type_name in zip(row, types, strict=False)]
                     for row in data[:MAX_ROWS]
                 ]
+        # Genie often adds a suggested follow-up question as a text attachment. Prefer a
+        # statement; keep a question only when there is no result table to show instead.
+        statements = [t for t in texts if not t.strip().endswith("?")]
+        if statements:
+            answer.text = statements[0]
+        elif texts and not answer.rows:
+            answer.text = texts[0]
         return answer

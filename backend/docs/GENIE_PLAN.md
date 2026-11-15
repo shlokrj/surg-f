@@ -1,6 +1,6 @@
 # Genie plan: from typed text to an action
 
-Status: **backend built and tested; Genie space not created yet (2026-11-14, Rohan).** The backend works without Genie today and starts using it as soon as a space ID is in `.env`.
+Status: **working end to end (2026-11-14, Rohan).** The Genie space `Surgical Workspace Clip Manager` (ID `01f1e08655eb17c1931c9dbb6cd4750b`) now uses `workspace.default.surgf_clips` with the instructions and four example queries below. It was first attached to `workspace.surgf.clips` and answered that the clipper was never used; it was repointed through the Genie API. Because the table also holds verb and target labels, its instructions add one rule to the text below: for questions about instruments in general, filter `label IN ('grasper','hook','irrigator','bipolar','clipper','scissors')`, and match labels with exact equality. All four checks under Verify passed: clipper first at 674–690, grasper longest at 1141 s, six hook rows all starting after 600 s, and the critical-view question declined. Through `POST /chat`, Genie answered three open-ended questions in 11 to 14 s each. To use it, add `DATABRICKS_GENIE_SPACE_ID=01f1e08655eb17c1931c9dbb6cd4750b` to the repo-root `.env`. The backend works without Genie today and starts using it as soon as a space ID is in `.env`.
 
 ## What Genie is, and what it is not
 
@@ -144,5 +144,7 @@ The grasper total comes from the verified VID01 timeline (`backend/fixtures/time
 - **No follow-ups yet:** each question starts a new Genie conversation. Follow-up questions would need the frontend to send back `genie.conversation_id`.
 
 ## Not chosen
+
+**Update 2026-11-14:** a language-model router now exists as `POST /chat` (frontend guide, section 7). It uses a Databricks Foundation Model endpoint to pick a feature, and offers Genie to the model as an `ask_data` tool only when `DATABRICKS_GENIE_SPACE_ID` is set. `/interpret` is unchanged. The original note follows.
 
 If the team wants a language model to classify intent for every message, Databricks Foundation Model APIs fit that job better than Genie. The rules cover the four commands today, so that isn't needed for the demo.
