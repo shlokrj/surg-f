@@ -13,6 +13,8 @@ import './sources.css';
 let disposeHome = () => {};
 let renderedPage = null;
 /* What the last render showed, so only what is new animates in (see render). */
+/* Where the homepage was scrolled when you left it, so coming back from a case lands in the same place. */
+let homeScroll = 0;
 let renderedView = null, renderedPanels = new Set(), renderedMessages = 0, renderedCaseKey = '', renderedSearch = '';
 // Page load-in runs only after a real page change (home <-> case), never on re-renders from case
 // switches or commands. Re-renders inside the window continue the animation via a negative delay.
@@ -82,6 +84,7 @@ function render() {
   const oldVideo = document.querySelector('#player');
   const keepVideo = state.page === 'dash' && oldVideo?.dataset.src === state.videoUrl;
   const wasPlaying = keepVideo && !oldVideo.paused;
+  if (renderedView === 'home' && state.page !== 'home') homeScroll = window.scrollY;
 
   app.innerHTML = `<header class="topbar"><button type="button" class="logo-link" id="home-link" aria-label="surg+f home">${logo}</button>
     <span class="top-spacer"></span>${state.page === 'dash' ? '<button type="button" class="top-action" id="open-local">Open your own video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>' : '<nav class="home-nav" aria-label="Main"><a href="#case-preview">The demo</a><a href="#local-heading">Your video ↗</a></nav>'}</header>
@@ -100,7 +103,7 @@ function render() {
   app.classList.toggle('page-enter', entering);
   app.style.setProperty('--enter-offset', entering ? `-${Math.round(elapsed)}ms` : '0ms');
   if (state.page === 'dash') markNew();
-  if (renderedView !== view) window.scrollTo({top:0, behavior:'instant'});
+  if (renderedView !== view) window.scrollTo({top: view === 'home' ? homeScroll : 0, behavior:'instant'});
   if (state.page === 'dash') animateNew(entering || renderedView !== view);
   renderedView = view;
   renderedPage = state.page;
@@ -620,7 +623,11 @@ function closePanel(mode) {
 
 function wire() {
   wirePanels();
-  const goHome = () => { state.page = 'home'; state.error = ''; render(); };
+  /* From a case: back to where the homepage was. On the homepage: back to the top. */
+  const goHome = () => {
+    if (state.page === 'home') { homeScroll = 0; window.scrollTo({top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); return; }
+    state.page = 'home'; state.error = ''; render();
+  };
   document.querySelector('#home-link')?.addEventListener('click', goHome);
   document.querySelector('#open-local')?.addEventListener('click', () => document.querySelector('#file-input')?.click());
   document.querySelectorAll('[data-filter-toggle]').forEach(button => button.addEventListener('click', () => {
