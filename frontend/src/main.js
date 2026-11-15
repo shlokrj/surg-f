@@ -18,11 +18,14 @@ let enterStart = -Infinity;
 import { searchClips, getTimeline, getQuiz, getSteps, interpretQuery, chatMessage, getActionRows, instrumentLabels } from './api.js';
 import { quizCard, wireQuiz } from './quiz.js';
 import { timelinePanel, timelineTick } from './timeline.js';
-import { avatar, greeting, switched, localVideoNote, errorReply, reply, STEP_NOTES } from './lildoc.js';
+import { avatar, greeting, switched, localVideoNote, errorReply, reply, STEP_NOTES, localDemoRecognized, localOnlyPractice, practiceBusy, practiceOffer, practiceStarted, practiceCancelled, practiceNotAuthored } from './lildoc.js';
 import { videoForCase, videoAssetForCase } from './cases.js';
 import { mountOverlays } from './overlays.js';
 import { modelPanel, mountModel, modelTick, disposeModel } from './model/panel.js';
 import { stepIndexAt } from './model/steps.js';
+import { EXERCISES, STEP_LABELS, parsePracticeIntent, findExercise, exerciseById } from './practice/catalog.js';
+import { fingerprintFile, checkEligibility, matchesFingerprint } from './practice/eligibility.js';
+import { practiceSection, mountPractice, startPractice, disposePractice, preloadPractice, disposePreload, practiceTick } from './practice/workspace.js';
 import homeSteps from '../../backend/fixtures/steps.VID01.json';
 import homeTimeline from '../../backend/fixtures/timeline.VID01.json';
 import homeQuiz from '../../backend/fixtures/quiz.seed-1.json';
@@ -38,7 +41,11 @@ const state = {
   outputs: [], results: [], queryLabel: '', steps: null, stepsError: false,
   timeline: null, quiz: null, quizAnswers: {}, quizSubmitted: false, chartRequest: null, actionRows: [],
   error: '',
+  // Practice: the open session ({ exerciseId, surface }) or null, and the uploaded file's fingerprint.
+  practice: null, upload: null, // upload = { promise, fingerprint, error }
 };
+// A reference clip being played in Practice stops at this video time.
+let practiceStopAt = null;
 const COMMANDS = ['/timestamp', '/quiz', '/chart', '/model'];
 const formatTime = seconds => {
   const n = Math.floor(Number(seconds) || 0);
@@ -57,7 +64,9 @@ const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)'
 function render() {
   disposeHome();
   disposeOverlays();
-  if (state.page !== 'dash') disposeModel();
+  // A closed or replaced study model is discarded, not kept alive off-screen.
+  if (state.page !== 'dash' || state.practice || !state.outputs.includes('model')) disposeModel();
+  if (state.page !== 'dash') { if (state.practice) endPractice({ quiet: true }); disposePreload(); }
   const input = document.querySelector('#query');
   if (input) state.draft = input.value;
   const hadFocus = input && document.activeElement === input;
@@ -196,17 +205,27 @@ function studyQuizCard() {
 }
 
 function chatPanel() {
+  // A practice offer carries Start / Cancel until one is chosen; afterwards it shows what happened.
+  const offer = (message, index) => {
+    const status = message.offer.status;
+    const actions = status === 'open'
+      ? `<div class="offer-actions" role="group" aria-label="Practice"><button type="button" class="btn-primary offer-start" data-offer-start="${index}">Start practice</button><button type="button" class="btn-secondary" data-offer-cancel="${index}">Cancel</button></div>`
+      : `<p class="offer-status">${{ started: 'Started', cancelled: 'Cancelled', expired: 'No longer available' }[status] ?? ''}</p>`;
+    return `<div class="msg msg-doc msg-offer">${avatar}<div class="offer"><p>${escapeHtml(message.text)}</p>${actions}</div></div>`;
+  };
   const bubble = (message, index) => message.role === 'user'
     ? `<div class="msg msg-user"><button type="button" data-history="${index}" title="Ask again and show matching moments">${escapeHtml(message.text)}</button></div>`
-    : `<div class="msg msg-doc">${avatar}<p>${escapeHtml(message.text)}</p></div>`;
+    : message.offer ? offer(message, index) : `<div class="msg msg-doc">${avatar}<p>${escapeHtml(message.text)}</p></div>`;
+  const form = placeholder => `<form id="search-form"><label class="sr-only" for="query">${placeholder}</label>
+         <input id="query" name="q" value="${escapeHtml(state.draft)}" placeholder="${placeholder}" autocomplete="off" required>
+         <button type="submit" aria-label="Send" ${state.loading ? 'disabled' : ''}>→</button></form>`;
   const typing = state.loading
     ? `<div class="msg msg-doc">${avatar}<p><span class="typing" aria-hidden="true"><i></i><i></i><i></i></span><span class="sr-only">Lil Doc is thinking</span></p></div>` : '';
+  // An uploaded video cannot be searched, but Lil Doc can still take a practice request for it.
   const compose = state.localVideo
-    ? '<button type="button" class="btn-primary" id="open-sample">Open the indexed demo</button>'
+    ? `${form('Ask Lil Doc to practice a step')}<button type="button" class="btn-secondary compose-demo" id="open-sample">Open the indexed demo</button>`
     : `<div class="suggestions" role="group" aria-label="Commands">${COMMANDS.map(command => `<button type="button" data-prompt="${command}">${command}</button>`).join('')}</div>
-       <form id="search-form"><label class="sr-only" for="query">Ask Lil Doc about this video</label>
-         <input id="query" name="q" value="${escapeHtml(state.draft)}" placeholder="Ask Lil Doc about this video" autocomplete="off" required>
-         <button type="submit" aria-label="Send" ${state.loading ? 'disabled' : ''}>→</button></form>`;
+       ${form('Ask Lil Doc about this video')}`;
   return `<aside class="chat" aria-label="Chat with Lil Doc">
     <div class="chat-head">${avatar}<div><strong>Lil Doc</strong><span>Your surgery study buddy</span></div></div>
     <div class="chat-thread" id="chat-thread" role="log" aria-label="Conversation" tabindex="0">${state.messages.map(bubble).join('')}${typing}</div>
@@ -215,7 +234,26 @@ function chatPanel() {
 }
 
 function dashboard() {
+  if (state.practice) {
+    // Practice takeover: compact video and the larger practice model side by side, Lil Doc
+    // unchanged on the right. Timeline, charts, quiz and the study model are closed.
+    const surface = state.practice.surface;
+    return `<main class="dash is-practice"><div class="dash-main practice-main">
+      <div class="pr-surface" role="group" aria-label="Show">
+        ${['video', 'model'].map(id => `<button type="button" data-surface="${id}" aria-pressed="${surface === id}">${id === 'video' ? 'Video' : 'Practice model'}</button>`).join('')}
+      </div>
+      <div class="practice-grid" data-surface="${surface}">${videoSection()}${practiceSection()}</div>
+    </div>${chatPanel()}</main>`;
+  }
   return `<main class="dash"><div class="dash-main">
+    ${videoSection()}
+    ${timelinePanel(state, STEP_NOTES)}
+    ${outputSections()}
+  </div>${chatPanel()}</main>`;
+}
+
+function videoSection() {
+  return `
     <section class="video-section" aria-labelledby="video-title">
       <div class="video-head case-head"><canvas class="sky-dither" data-horizon=".5" data-ceiling="3.2" data-ramp=".45" aria-hidden="true"></canvas><h1 id="video-title">${caseTitle()}</h1>
         <div class="video-actions"><div class="case-switch" role="group" aria-label="Demo video">${['VID01', 'VID02'].map(id => `<button type="button" data-case="${id}" aria-pressed="${state.caseId === id}">${id}</button>`).join('')}</div></div></div>
@@ -225,14 +263,16 @@ function dashboard() {
         <div class="video-controls" role="group" aria-label="Video controls"><button type="button" id="video-play" aria-label="Play video">▶</button><span id="video-time">00:00 / --:--</span><input id="video-seek" type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek video"><button type="button" id="video-mute" aria-label="Mute video">♬</button><input id="video-volume" type="range" min="0" max="1" value="1" step="0.05" aria-label="Volume"><select id="video-speed" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select><button type="button" id="video-fullscreen" aria-label="Enter fullscreen">⛶</button></div>
       </div>
       <div class="overlay-controls" id="overlay-controls"></div>
-      ${state.localVideo ? '<p class="local-note">Local video playback only. This file has no indexed annotations.</p>' : ''}
-    </section>
-    ${timelinePanel(state, STEP_NOTES)}
-    ${outputSections()}
-  </div>${chatPanel()}</main>`;
+      ${state.localVideo && !state.practice ? '<p class="local-note">Local video playback only. This file has no indexed annotations.</p>' : ''}
+    </section>`;
 }
 
 function resetCase(caseId, title, videoUrl, localVideo) {
+  // A different video ends any practice session and voids offers made for the old one.
+  if (state.practice) endPractice({ quiet: true });
+  disposePreload();
+  for (const message of state.messages) if (message.offer?.status === 'open') message.offer.status = 'expired';
+  state.upload = null;
   Object.assign(state, {
     page: 'dash', caseId, title, videoUrl, localVideo, filterOn: true, videoError: false, pendingSeek: null, duration: 0,
     outputs: [], results: [], queryLabel: '', steps: null, stepsError: false, timeline: null, quiz: null,
@@ -256,7 +296,91 @@ function openFile(file) {
   state.localUrl = URL.createObjectURL(file);
   resetCase('Local video', file.name, state.localUrl, true);
   state.messages = [{ role: 'doc', text: localVideoNote }];
+  // Fingerprint the upload off the main thread, to see whether it is the demonstration asset
+  // an exercise is bound to. Nothing changes on the page except one note when it matches.
+  const upload = { promise: null, fingerprint: null, error: false };
+  upload.promise = fingerprintFile(file)
+    .then(fingerprint => {
+      upload.fingerprint = fingerprint;
+      const exercise = EXERCISES.find(item => matchesFingerprint(item, fingerprint));
+      if (exercise && state.upload === upload) { state.messages.push({ role: 'doc', text: localDemoRecognized(exercise.eligible_video.case_id) }); render(); }
+    })
+    .catch(() => { upload.error = true; });
+  state.upload = upload;
   render();
+}
+
+// --- practice ------------------------------------------------------------------
+
+function videoFacts() {
+  const video = document.querySelector('#player');
+  return {
+    localVideo: state.localVideo, caseId: state.caseId, videoError: state.videoError,
+    fingerprint: state.upload?.fingerprint ?? null, fingerprintError: Boolean(state.upload?.error),
+    duration: Number.isFinite(video?.duration) ? video.duration : state.duration,
+  };
+}
+
+// Lil Doc's answer to a practice request: an offer with Start / Cancel, or why it cannot start.
+// Nothing on the page changes until Start.
+async function answerPractice(intent) {
+  const exercise = findExercise(intent.step_key);
+  const available = EXERCISES.map(item => STEP_LABELS[item.step_key]).join(' and ');
+  if (!exercise) return { role: 'doc', text: practiceNotAuthored(STEP_LABELS[intent.step_key] ?? 'that step', available) };
+  if (state.localVideo && state.upload && !state.upload.fingerprint && !state.upload.error) await state.upload.promise.catch(() => {});
+  const verdict = checkEligibility(exercise, videoFacts());
+  if (!verdict.ok) return { role: 'doc', text: verdict.message };
+  preloadPractice(exercise); // load the model and tools while the resident decides
+  return { role: 'doc', text: practiceOffer(exercise), offer: { exerciseId: exercise.exercise_id, status: 'open' } };
+}
+
+function beginPractice(index) {
+  const message = state.messages[index];
+  const exercise = message?.offer && exerciseById(message.offer.exerciseId);
+  if (!exercise || message.offer.status !== 'open') return;
+  const verdict = checkEligibility(exercise, videoFacts());
+  if (!verdict.ok) { message.offer.status = 'expired'; state.messages.push({ role: 'doc', text: verdict.message }); render(); return; }
+  message.offer.status = 'started';
+  // Take over the workspace: close every assistant-opened panel and discard its state.
+  Object.assign(state, { outputs: [], results: [], queryLabel: '', quiz: null, quizAnswers: {}, quizSubmitted: false, chartRequest: null, studyQuiz: null, actionRows: [] });
+  state.practice = { exerciseId: exercise.exercise_id, surface: 'model' };
+  startPractice(exercise, { seek: practiceSeek, playRange: practicePlayRange, onExit: () => endPractice() });
+  state.messages.push({ role: 'doc', text: practiceStarted });
+  render();
+  document.querySelector('#pr-stage')?.focus({ preventScroll: true });
+}
+
+function cancelPractice(index) {
+  const message = state.messages[index];
+  if (message?.offer?.status !== 'open') return;
+  message.offer.status = 'cancelled';
+  disposePreload();
+  state.messages.push({ role: 'doc', text: practiceCancelled });
+  render();
+}
+
+// Exit or close: discard the session and restore the ordinary page with the video still loaded.
+function endPractice({ quiet = false } = {}) {
+  disposePractice();
+  state.practice = null;
+  practiceStopAt = null;
+  if (!quiet) render();
+}
+
+// Practice seeks pause at the reference moment, so normal playback never moves the exercise on.
+function practiceSeek(seconds) {
+  practiceStopAt = null;
+  const video = document.querySelector('#player');
+  if (!video) return;
+  state.pendingSeek = seconds;
+  if (video.readyState >= 1) video.currentTime = seconds;
+  video.pause();
+  updateControls();
+}
+function practicePlayRange(start, end) {
+  practiceSeek(start);
+  practiceStopAt = end;
+  document.querySelector('#player')?.play().catch(() => {});
 }
 async function loadSteps() {
   const caseId = state.caseId;
@@ -285,7 +409,8 @@ function updateControls() {
   if (mute) { mute.textContent = video.muted ? '♪̸' : '♬'; mute.setAttribute('aria-label', video.muted ? 'Unmute video' : 'Mute video'); }
   if (speed) speed.value = String(video.playbackRate);
   timelineTick(video.currentTime, duration);
-  modelTick(state.steps?.steps, playTime());
+  if (state.practice) practiceTick(video.currentTime, duration);
+  else modelTick(state.steps?.steps, playTime());
 }
 // The time the page should treat as "now": a seek that has not landed yet wins, so the steps
 // and the 3D model still move when the video file is missing or still loading.
@@ -297,6 +422,11 @@ function wireVideo(video) {
   if (!video || video.dataset.wired) return;
   video.dataset.wired = 'true';
   ['timeupdate', 'play', 'pause', 'volumechange', 'ratechange', 'seeked'].forEach(name => video.addEventListener(name, updateControls));
+  // A Practice reference clip stops at its end.
+  video.addEventListener('timeupdate', () => {
+    if (practiceStopAt != null && video.currentTime >= practiceStopAt) { practiceStopAt = null; video.pause(); }
+  });
+  video.addEventListener('seeking', () => { if (practiceStopAt != null && state.pendingSeek == null) practiceStopAt = null; });
   video.addEventListener('seeked', () => {
     if (state.pendingSeek != null && Math.abs(video.currentTime - state.pendingSeek) < 1) state.pendingSeek = null;
   });
@@ -359,7 +489,28 @@ function wirePanels() {
     });
     head.append(button);
     sync();
+    // Panels Lil Doc opened can also be closed; only Lil Doc brings them back.
+    const mode = CLOSABLE[panel.id];
+    if (!mode) return;
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'panel-close';
+    close.textContent = '×';
+    close.title = 'Close';
+    close.setAttribute('aria-label', `Close ${title}`);
+    close.addEventListener('click', () => closePanel(mode));
+    head.append(close);
   });
+}
+const CLOSABLE = { 'sec-chart': 'chart', 'sec-quiz': 'quiz', 'sec-studyquiz': 'studyquiz', 'sec-model': 'model' };
+// Closing discards the panel's temporary state and restores the ordinary layout.
+function closePanel(mode) {
+  state.outputs = state.outputs.filter(item => item !== mode);
+  state.minimized.delete(`sec-${mode}`);
+  if (mode === 'quiz') Object.assign(state, { quiz: null, quizAnswers: {}, quizSubmitted: false });
+  if (mode === 'studyquiz') state.studyQuiz = null;
+  if (mode === 'chart') Object.assign(state, { chartRequest: null, actionRows: [] });
+  render(); // render() disposes the study model once it is no longer listed
 }
 
 function wire() {
@@ -447,6 +598,15 @@ function wire() {
     queryInput.focus();
     queryInput.setSelectionRange(queryInput.value.length, queryInput.value.length);
   }));
+  document.querySelectorAll('[data-offer-start]').forEach(el => el.addEventListener('click', () => beginPractice(Number(el.dataset.offerStart))));
+  document.querySelectorAll('[data-offer-cancel]').forEach(el => el.addEventListener('click', () => cancelPractice(Number(el.dataset.offerCancel))));
+  // Narrow screens show the video or the practice model; both stay mounted.
+  document.querySelectorAll('[data-surface]').forEach(el => el.addEventListener('click', () => {
+    if (!state.practice) return;
+    state.practice.surface = el.dataset.surface;
+    document.querySelector('.practice-grid')?.setAttribute('data-surface', state.practice.surface);
+    document.querySelectorAll('[data-surface]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.surface === state.practice.surface)));
+  }));
   document.querySelectorAll('[data-history]').forEach(el => el.addEventListener('click', () => {
     const question = state.messages[Number(el.dataset.history)]?.text;
     if (question) runSearch(question);
@@ -479,7 +639,8 @@ function wire() {
   });
   syncFullscreenButton();
   if (video && state.pendingSeek != null && video.readyState >= 1 && !video.seeking) video.currentTime = state.pendingSeek;
-  mountModel({ steps: state.steps?.steps, time: playTime() });
+  if (state.practice) mountPractice();
+  else mountModel({ steps: state.steps?.steps, time: playTime() });
   updateControls();
 }
 
@@ -527,7 +688,22 @@ function planFromChat(chat, caseId) {
 // "watch" links, so the graded quiz stays where it is).
 async function runSearch(raw, { keepOutputs = false } = {}) {
   const query = String(raw ?? '').trim();
-  if (!query || state.localVideo || state.loading) return;
+  if (!query || state.loading) return;
+  // Practice requests are answered locally (no backend), on hosted and uploaded videos alike.
+  const practiceIntent = parsePracticeIntent(query);
+  if (practiceIntent || state.localVideo || state.practice) {
+    const caseId = state.caseId, upload = state.upload;
+    state.messages.push({ role: 'user', text: query });
+    state.loading = Boolean(practiceIntent);
+    render();
+    const answer = practiceIntent ? await answerPractice(practiceIntent).catch(() => ({ role: 'doc', text: errorReply }))
+      : { role: 'doc', text: state.practice ? practiceBusy : localOnlyPractice };
+    if (state.caseId !== caseId || state.upload !== upload) return;
+    state.loading = false;
+    state.messages.push(answer);
+    render();
+    return;
+  }
   const caseId = state.caseId;
   const local = detectRequest(query);
   state.loading = true; state.error = '';
