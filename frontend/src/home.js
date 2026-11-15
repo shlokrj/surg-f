@@ -259,26 +259,30 @@ export function mountHome(root) {
   window.addEventListener('resize', schedule);
   media.addEventListener('change', schedule);
   root.addEventListener('click', jump);
-  /* Hero keys: clicking presses both keys like a chord, then focuses the search box (the Ctrl+F idea).
-     Pointer only; the browser's own Ctrl+F is never intercepted. */
+  /* Hero keys: pressing a key sinks only that key; the click then puts the cursor at the end of the
+     search box (the Ctrl+F idea) without selecting its text. Pointer only; the browser's own Ctrl+F is
+     never intercepted. */
   const press = root.querySelector('.sf-press');
   let pressTimer = 0;
-  const onPress = () => {
-    const mark = press.querySelector('.sf-mark');
-    mark.classList.add('is-pressed');
+  const onDown = event => {
+    const key = event.target.closest?.('kbd');
+    if (!key) return;
+    key.classList.add('is-pressed');
     clearTimeout(pressTimer);
-    pressTimer = setTimeout(() => {
-      mark.classList.remove('is-pressed');
-      const input = root.querySelector('#hero-q');
-      input?.focus({preventScroll: true});
-      input?.select();
-    }, 160);
+    pressTimer = setTimeout(() => key.classList.remove('is-pressed'), 140);
   };
+  const onPress = () => {
+    const input = root.querySelector('#hero-q');
+    if (!input) return;
+    input.focus({preventScroll: true});
+    input.setSelectionRange(input.value.length, input.value.length);
+  };
+  press?.addEventListener('pointerdown', onDown);
   press?.addEventListener('click', onPress);
   const video = root.querySelector('video');
   const unavailable = () => { root.querySelector('.preview-unavailable').hidden = false; };
   video.addEventListener('error', unavailable);
   update();
   root.ownerDocument?.fonts?.ready?.then(() => { footerCache.size = null; schedule(); });
-  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); press?.removeEventListener('click', onPress); clearTimeout(pressTimer); video.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
+  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); press?.removeEventListener('pointerdown', onDown); press?.removeEventListener('click', onPress); clearTimeout(pressTimer); video.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
 }
