@@ -8,6 +8,7 @@ import './modelnotes.css';
 import './databricks.css';
 import './problem.css';
 import './solution.css';
+import './future.css';
 let disposeHome = () => {};
 let renderedPage = null;
 // Page load-in runs only after a real page change (home <-> case), never on re-renders from case

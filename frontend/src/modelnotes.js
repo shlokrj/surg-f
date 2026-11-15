@@ -90,7 +90,7 @@ const CHAPTERS = [
 ];
 
 export function modelSection() {
-  return `<section class="dig dig-model" id="model-notes" aria-labelledby="model-heading" data-intro="0" data-per="1.2" style="--travel:6;--nav:1">
+  return `<section class="dig dig-model" id="model-notes" aria-labelledby="model-heading" data-intro="0" data-per="2" style="--travel:10;--nav:1">
     <div class="dig-pin">
       <h2 class="mn-heading" id="model-heading">How well the model sees.</h2>
       <div class="dig-map"><ol class="dig-labels" aria-label="Model notes">${CHAPTERS.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>

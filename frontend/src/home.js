@@ -3,6 +3,7 @@ import { modelSection } from './modelnotes.js';
 import { databricksSection } from './databricks.js';
 import { problemSection } from './problem.js';
 import { solutionSection } from './solution.js';
+import { futureSection } from './future.js';
 
 /* Brand: "surg" and "f" as keycaps joined by "+", read like the Ctrl+F shortcut. Same markup in the hero
    and the small lockup; colors follow currentColor, so it works white-on-teal and teal-on-light.
@@ -188,8 +189,8 @@ const feature = ({id, title, body, action, command, horizon, preview, index}) =>
 </section>`;
 
 /* Two versions of the homepage. `public`: the product. `demo` (/demo or ?demo, used to present the
-   project): problem, solution (in place of "Find the clip"), features, the stack, model notes and the
-   Databricks section. */
+   project): problem, solution (in place of "Find the clip"), features, the stack, model notes, the
+   Databricks section and what's next (in place of "Open your own video"). */
 export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}, mode = 'public'}) {
   const demo = mode === 'demo';
   const findClip = `    <section class="case-section" id="case-preview" aria-labelledby="case-heading">
@@ -222,13 +223,13 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
     ${features}
     ${architectureSection()}
     ${modelSection()}
-    ${demo ? databricksSection() : ''}
-    <section class="local-section" aria-labelledby="local-heading"><div><h2 id="local-heading">Open your own video.</h2><p>MP4 and MOV files open for local playback. Indexed search covers the demo cases.</p></div><button type="button" id="drop-zone" class="btn-secondary local-open" aria-label="Open a local MP4 or MOV for playback only">Open a video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>${error ? `<p class="home-error" role="alert">${error}</p>` : ''}</section>
+    ${demo ? `${databricksSection()}\n${futureSection()}` : ''}
+    ${demo ? '' : `    <section class="local-section" aria-labelledby="local-heading"><div><h2 id="local-heading">Open your own video.</h2><p>MP4 and MOV files open for local playback. Indexed search covers the demo cases.</p></div><button type="button" id="drop-zone" class="btn-secondary local-open" aria-label="Open a local MP4 or MOV for playback only">Open a video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>${error ? `<p class="home-error" role="alert">${error}</p>` : ''}</section>`}
     <footer class="site-footer" aria-label="About surg+f">
       <div class="footer-sticky">
         <div class="footer-top">
           <div class="footer-identity"><p>Search surgical video.</p></div>
-          <nav class="footer-links" aria-label="Footer">${demo ? '<a href="#problem">The problem</a><a href="#solution">The solution</a>' : '<a href="#case-preview">The demo</a>'}<a href="#architecture">The stack</a><a href="#model-notes">Model</a>${demo ? '<a href="#databricks">Databricks</a>' : ''}<a href="#top">Back to top</a></nav>
+          <nav class="footer-links" aria-label="Footer">${demo ? '<a href="#problem">The problem</a><a href="#solution">The solution</a>' : '<a href="#case-preview">The demo</a>'}<a href="#architecture">The stack</a><a href="#model-notes">Model</a>${demo ? '<a href="#databricks">Databricks</a><a href="#future">What’s next</a>' : ''}<a href="#top">Back to top</a></nav>
         </div>
         <canvas class="footer-word" aria-hidden="true"></canvas>
         <div class="footer-legal"><span>Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>
@@ -280,7 +281,7 @@ export function mountHome(root) {
     const dig = event.target.closest?.('[data-dig]');
     if (dig) {
       const top = digScrollTop(dig.closest('.dig'), Number(dig.dataset.dig));
-      if (top !== null) window.scrollTo({top, behavior: media.matches ? 'auto' : 'smooth'});
+      if (top !== null) { if (media.matches) window.scrollTo(0, top); else glideTo(Math.round(top)); }
       return;
     }
     const link = event.target.closest?.('a[href^="#"]');
@@ -304,20 +305,38 @@ export function mountHome(root) {
   };
   root.addEventListener('focusin', reveal);
   /* Presenter shortcut (deliberately not shown on the page): Left and Right arrows step to the previous or
-     next chapter of the pinned stages (problem, solution, the stack, model notes, Databricks), with the top
-     of the page as the first stop. Ignored while typing or with a modifier held. */
+     next chapter of the pinned stages, with the top of the page as the first stop. The page glides there
+     slowly enough to watch the chapter's animation play. A press during a glide counts from where the
+     glide is headed, so every press moves one chapter. Ignored while typing or with a modifier held; a
+     wheel, touch or click cancels the glide. */
+  let glide = 0, aim = null;
+  const stopGlide = () => { cancelAnimationFrame(glide); glide = 0; aim = null; };
+  const glideTo = target => {
+    cancelAnimationFrame(glide);
+    const from = window.scrollY, dist = target - from, start = performance.now();
+    const ms = Math.min(3400, Math.max(1300, 900 + Math.abs(dist) / window.innerHeight * 700));
+    aim = target;
+    const tick = now => {
+      const t = Math.min(1, (now - start) / ms), e = t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      window.scrollTo(0, from + dist * e);
+      if (t < 1) glide = requestAnimationFrame(tick); else { glide = 0; aim = null; }
+    };
+    glide = requestAnimationFrame(tick);
+  };
   const step = event => {
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.defaultPrevented) return;
     if (event.target.closest?.('input, textarea, select, [contenteditable="true"], video')) return;
     const stops = [0, ...[...root.querySelectorAll('.dig')].flatMap(section => [...section.querySelectorAll('.layer')].map((_, i) => digScrollTop(section, i)))]
       .filter(top => top !== null).map(top => Math.round(Math.max(0, top))).sort((a, b) => a - b);
-    const y = window.scrollY, forward = event.key === 'ArrowRight';
+    const y = aim ?? window.scrollY, forward = event.key === 'ArrowRight';
     const target = forward ? stops.find(top => top > y + 4) : [...stops].reverse().find(top => top < y - 4);
-    if (target === undefined) return;
     event.preventDefault();
-    window.scrollTo({top: target, behavior: media.matches ? 'auto' : 'smooth'});
+    if (target === undefined) return;
+    if (media.matches) { stopGlide(); window.scrollTo(0, target); return; }
+    glideTo(target);
   };
+  ['wheel', 'touchstart', 'mousedown'].forEach(type => window.addEventListener(type, stopGlide, {passive: true}));
   window.addEventListener('keydown', step);
   /* Hero keys: pressing a key sinks only that key, like a real keycap. Purely visual: it does not move
      focus or touch the search box, and the browser's own Ctrl+F is never intercepted. */
@@ -336,5 +355,5 @@ export function mountHome(root) {
   video?.addEventListener('error', unavailable); // the demo version has no preview video
   update();
   root.ownerDocument?.fonts?.ready?.then(() => { footerCache.size = null; schedule(); });
-  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); window.removeEventListener('keydown', step); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video?.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
+  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); window.removeEventListener('keydown', step); stopGlide(); ['wheel', 'touchstart', 'mousedown'].forEach(type => window.removeEventListener(type, stopGlide)); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video?.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
 }

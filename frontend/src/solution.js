@@ -47,7 +47,7 @@ const CHAPTERS = [
 ];
 
 export function solutionSection() {
-  return `<section class="dig dig-model dig-solution" id="solution" aria-labelledby="solution-heading" data-intro="0" data-per="1.2" style="--travel:3.6;--nav:1">
+  return `<section class="dig dig-model dig-solution" id="solution" aria-labelledby="solution-heading" data-intro="0" data-per="2" style="--travel:6;--nav:1">
     <div class="dig-pin">
       <div class="mn-heading"><h2 id="solution-heading">Ask, and jump to it.</h2></div>
       <div class="dig-map"><ol class="dig-labels" aria-label="The solution">${CHAPTERS.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>

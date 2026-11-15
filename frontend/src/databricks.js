@@ -89,7 +89,7 @@ const CHAPTERS = [
 ];
 
 export function databricksSection() {
-  return `<section class="dig dig-model dig-db" id="databricks" aria-labelledby="db-heading" data-intro="0" data-per="1.2" style="--travel:6;--nav:1">
+  return `<section class="dig dig-model dig-db" id="databricks" aria-labelledby="db-heading" data-intro="0" data-per="2" style="--travel:10;--nav:1">
     <div class="dig-pin">
       <div class="mn-heading db-heading"><h2 id="db-heading"><span>Built on</span>${DATABRICKS_LOGO}</h2><p>Everything below the player runs on Databricks.</p></div>
       <div class="dig-map"><ol class="dig-labels" aria-label="Databricks">${CHAPTERS.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>

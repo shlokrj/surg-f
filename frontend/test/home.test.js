@@ -112,13 +112,18 @@ test('databricks section covers the real Databricks work, with the mark and chec
 test('public and demo versions: demo runs problem, solution, features, stack, model, Databricks',()=>{
  const order=mode=>[...new JSDOM(markup(mode)).window.document.querySelectorAll('main > section, main > div.feature-stack')].map(el=>el.id||el.className.split(' ')[0]);
  assert.deepEqual(order('public'),['landing-intro','case-preview','feature-stack','architecture','model-notes','local-section']);
- assert.deepEqual(order('demo'),['landing-intro','problem','solution','feature-stack','architecture','model-notes','databricks','local-section']);
+ assert.deepEqual(order('demo'),['landing-intro','problem','solution','feature-stack','architecture','model-notes','databricks','future']);
  const pub=new JSDOM(markup('public')).window.document,demo=new JSDOM(markup('demo')).window.document;
  assert.equal(pub.querySelector('#databricks'),null,'no Databricks section in the public version');
  assert.equal(pub.querySelector('#problem'),null);
  assert.equal(pub.querySelector('.footer-links a[href="#databricks"]'),null);
  assert.ok(demo.querySelector('.footer-links a[href="#problem"]'));
- for(const id of ['sample','sample-event','open-sample','drop-zone','file-input'])assert.ok(demo.getElementById(id),id);
+ for(const id of ['sample','sample-event','open-sample'])assert.ok(demo.getElementById(id),id);
+ assert.equal(demo.querySelector('#drop-zone'),null,'no Open your own video in the demo');
+ const fut=demo.querySelector('#future');
+ assert.deepEqual([...fut.querySelectorAll('.layer')].map(l=>l.id),['future-counsel','future-ledger','future-watch','future-pal']);
+ assert.match(fut.textContent,/not built yet/);
+ assert.equal(fut.querySelectorAll('.fu-doc .doc-avatar').length,4,'Lil Doc in every chapter');
  const p=demo.querySelector('#problem');
  assert.equal(p.querySelectorAll('.pb-length .pb-tile').length,24,'24 real VID01 frames');
  assert.match(p.textContent,/14:20 to 14:37, 17 s of 1,728 s/);
