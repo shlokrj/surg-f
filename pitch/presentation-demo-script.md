@@ -6,7 +6,7 @@ Speaker assignments follow who built each part (see `agent-kit/PROGRESS.md`). Sw
 
 | # | Segment | Speaker | Time | Scenes |
 |---|---|---|---|---|
-| 1 | Hook and problem | Shlok | 0:00–1:05 | hero, 3 problem scenes |
+| 1 | Hook and problem | Shlok | 0:00–1:15 | hero, 4 problem scenes |
 | 2 | Solution and features | Mihir | 1:05–2:25 | 5 solution scenes, 3 feature cards |
 | 3 | How it works | Rohan | 2:25–3:20 | the block, 6 stack layers |
 | 4 | Model and Databricks | Aadhitya | 3:20–4:40 | 4 model scenes, 6 Databricks scenes |
@@ -16,7 +16,7 @@ About 690 spoken words at roughly 140 words a minute. If you run long, cut the l
 
 ---
 
-## 1. Hook and problem: Shlok (0:00–1:05)
+## 1. Hook and problem: Shlok (0:00–1:15)
 
 **On screen: the hero, "surg + f".**
 
@@ -29,6 +29,10 @@ About 690 spoken words at roughly 140 words a minute. If you run long, cut the l
 **→ Writing it down** (an operative record fills in by hand)
 
 > And someone has to write all of this down. Every operation is documented: each step, the instruments, and when. Done by hand, it's slow, it has to be exact, and gaps in the record turn into delays and billing questions.
+
+**→ Learning is costly** (four cited figures count up)
+
+> And learning surgery is slow and expensive. A general surgery resident needs 850 operations over five years. With a resident operating, this very operation takes about 37% longer, at around $58 for every operating-room minute. And 98.6% of residents prepare by watching video, mostly YouTube, that no one can search.
 
 **→ Who needs it** (four people, each tied to a real moment)
 

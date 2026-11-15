@@ -154,7 +154,7 @@ test('presentation and video demos: their own sections and chapters; the origina
  const demo=doc('demo'),pres=doc('presentation-demo'),video=doc('video-demo');
  assert.deepEqual(chapters(demo).slice(0,7),['problem-length','problem-needle','problem-uses','problem-index','solution-label','solution-ask','solution-jump']);
  assert.deepEqual(order(pres),['landing-intro','problem','solution','feature-stack','architecture','model-notes','databricks','future','sources']);
- assert.deepEqual(chapters(pres).filter(id=>/^(problem|solution|model)-/.test(id)),['problem-needle','problem-docs','problem-uses','solution-label','solution-ask','solution-jump','solution-record','solution-practice','model-test','model-instruments','model-versions','model-boxes']);
+ assert.deepEqual(chapters(pres).filter(id=>/^(problem|solution|model)-/.test(id)),['problem-needle','problem-docs','problem-learning','problem-uses','solution-label','solution-ask','solution-jump','solution-record','solution-practice','model-test','model-instruments','model-versions','model-boxes']);
  assert.deepEqual(order(video),['landing-intro','problem','solution','databricks','sources']);
  assert.deepEqual(chapters(video),['problem-needle','problem-learning','solution-ask','solution-jump','solution-practice','db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai','db-apps']);
  assert.equal(video.querySelector('#problem').dataset.per,'1.6');
@@ -193,5 +193,6 @@ test('video demo problem: footage length, then the cost of learning with recent 
  const hrefs=[...l.querySelectorAll('.lv-sources a')].map(a=>a.href);
  for(const u of ['https://doi.org/10.1007/s00464-020-07780-5','https://doi.org/10.1001/jamasurg.2026.2355','https://doi.org/10.1016/j.euros.2024.07.108'])assert.ok(hrefs.includes(u),u);
  assert.ok(hrefs.some(h=>h.startsWith('https://www.acgme.org/')));
- assert.equal(new JSDOM(markup('presentation-demo')).window.document.querySelector('#problem-learning'),null,'only the video demo');
+ assert.ok(new JSDOM(markup('presentation-demo')).window.document.querySelector('#problem-learning'),'also in the presentation demo');
+ assert.equal(new JSDOM(markup('demo')).window.document.querySelector('#problem-learning'),null,'the original demo is unchanged');
 });

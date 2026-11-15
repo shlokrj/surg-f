@@ -15,7 +15,7 @@ Locally, add the path to the dev server URL, for example `http://localhost:5173/
 
 **Presentation demo:**
 
-1. Problem, 3 scenes: 17 seconds in a half-hour video; writing it all down; who needs it.
+1. Problem, 4 scenes: 17 seconds in a half-hour video; writing it all down; learning is costly (cited: ACGME 2024, Shin 2021, Ashrafi 2026, van der Leun 2024); who needs it.
 2. Solution, 5 scenes: label every second; ask in plain words; jump to the moment; the labels are the record; practice in 3D.
 3. Features, 3 cards: step timeline, instrument chart, quiz.
 4. The stack: the block, then 6 layers.

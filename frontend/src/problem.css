@@ -36,8 +36,10 @@
 .pb-mark[style*="--k:3"],.pb-use[style*="--k:3"]{--c:#b3a6ff}
 .pb-use{--u:clamp(0, calc((var(--p) - .08 - var(--k) * .17) / .12), 1);position:absolute;width:262px;display:grid;gap:4px;padding:14px 16px 14px 20px;border-radius:14px;background:#0f2d2ae8;color:#e6f3ee;box-shadow:0 18px 40px #052a2640;opacity:var(--u);transform:translateY(calc((1 - var(--u)) * 24px)) scale(calc(.96 + .04 * var(--u)))}
 .pb-use b{font-size:17px;color:#fff}.pb-use span{font-size:15px;line-height:1.35}.pb-use em{font:600 13px var(--mono);font-style:normal;color:var(--c)}
-.pb-use[style*="--k:0"]{left:14px;top:160px}.pb-use[style*="--k:1"]{left:284px;top:160px}
-.pb-use[style*="--k:2"]{left:14px;top:312px}.pb-use[style*="--k:3"]{left:284px;top:312px}
+/* Four boxes of one height in a 2×2 grid. */
+.pb-use{height:132px;box-sizing:border-box;align-content:start}
+.pb-use[style*="--k:0"]{left:14px;top:150px}.pb-use[style*="--k:1"]{left:284px;top:150px}
+.pb-use[style*="--k:2"]{left:14px;top:298px}.pb-use[style*="--k:3"]{left:284px;top:298px}
 
 /* 4. No index: a pen sweeps the strip while the surgeons' lanes are drawn in behind it, and the
    hand-labeled clip count climbs. */

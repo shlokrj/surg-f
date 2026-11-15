@@ -204,7 +204,7 @@ const VERSIONS = {
     ['features'], ['architecture'], ['model'], ['databricks'], ['future'], ['sources'],
   ]},
   'presentation-demo': {sections: [
-    ['problem', {only: ['needle', 'docs', 'uses']}], ['solution', {only: ['label', 'ask', 'jump', 'record', 'practice']}],
+    ['problem', {only: ['needle', 'docs', 'learning', 'uses']}], ['solution', {only: ['label', 'ask', 'jump', 'record', 'practice']}],
     ['features'], ['architecture'], ['model', {only: ['test', 'instruments', 'versions', 'boxes']}], ['databricks'], ['future'], ['sources'],
   ]},
   'video-demo': {sections: [

@@ -29,7 +29,7 @@ const USES = [
   {who: 'Residents', what: 'Watch the cystic duct being clipped', when: '11:38 to 12:27', at: [[698, 747]]},
   {who: 'Surgeons', what: 'Review the gallbladder dissection before a case', when: '9:21 to 10:58', at: [[561, 658]]},
   {who: 'Educators', what: 'Cut the duct division into a lesson', when: '14:20 to 14:37', at: [[860, 877]]},
-  {who: 'Researchers', what: 'Compare clipping across operations', when: '154 clipper clips in 50 surgeries', at: [[674, 690], [698, 747], [749, 758], [815, 844]]},
+  {who: 'Researchers', what: 'Compare clipping across operations', when: '154 clips, 50 surgeries', at: [[674, 690], [698, 747], [749, 758], [815, 844]]},
 ];
 
 const CHAPTERS = [
