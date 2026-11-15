@@ -31,7 +31,7 @@ test('wordmark keeps the real plus with the lens around it, and the plus dither 
  const title=doc.querySelector('h1');
  assert.equal(title.textContent,'surg+f');
  assert.deepEqual([...title.querySelectorAll('kbd')].map(k=>k.textContent),['surg','f'],'surg and f sit on keycaps');
- assert.equal(title.querySelector('.sf-press').tagName,'BUTTON','hero keys are a real button');
+ assert.equal(title.querySelector('button'),null,'hero keys are decorative, not a control');
  const brand=doc.querySelector('.small-brand .sf-mark');
  assert.equal(brand.textContent,'surg+f');
  assert.equal(brand.querySelectorAll('kbd').length,2);

@@ -188,7 +188,7 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
         <div class="hero-frame">
           <canvas class="sky-dither hero-dither" aria-hidden="true"></canvas>
           <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><button type="button" id="open-sample" class="nav-case">Open a case</button></nav>
-          <div class="intro-copy"><h1 id="landing-title"><button type="button" class="sf-press" title="Search the demo">${wordmark('sf-hero')}</button></h1><p>Search surgical video.</p><a class="hero-demo-link" href="#case-preview">See the demo <span aria-hidden="true">↓</span></a></div>
+          <div class="intro-copy"><h1 id="landing-title">${wordmark('sf-hero')}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="#case-preview">See the demo <span aria-hidden="true">↓</span></a></div>
           <form class="hero-search" id="hero-search" role="search">
             <label class="sr-only" for="hero-q">Ask about the VID01 demo case</label>
             ${searchGlyph}<input id="hero-q" name="q" value="${DEMO_QUESTION}" placeholder="Ask about the VID01 demo case" autocomplete="off" spellcheck="false" required>
@@ -259,26 +259,22 @@ export function mountHome(root) {
   window.addEventListener('resize', schedule);
   media.addEventListener('change', schedule);
   root.addEventListener('click', jump);
-  /* Hero keys: clicking presses both keys like a chord, then focuses the search box (the Ctrl+F idea).
-     Pointer only; the browser's own Ctrl+F is never intercepted. */
-  const press = root.querySelector('.sf-press');
+  /* Hero keys: pressing a key sinks only that key, like a real keycap. Purely visual: it does not move
+     focus or touch the search box, and the browser's own Ctrl+F is never intercepted. */
+  const press = root.querySelector('.sf-hero');
   let pressTimer = 0;
-  const onPress = () => {
-    const mark = press.querySelector('.sf-mark');
-    mark.classList.add('is-pressed');
+  const onDown = event => {
+    const key = event.target.closest?.('kbd');
+    if (!key) return;
+    key.classList.add('is-pressed');
     clearTimeout(pressTimer);
-    pressTimer = setTimeout(() => {
-      mark.classList.remove('is-pressed');
-      const input = root.querySelector('#hero-q');
-      input?.focus({preventScroll: true});
-      input?.select();
-    }, 160);
+    pressTimer = setTimeout(() => key.classList.remove('is-pressed'), 140);
   };
-  press?.addEventListener('click', onPress);
+  press?.addEventListener('pointerdown', onDown);
   const video = root.querySelector('video');
   const unavailable = () => { root.querySelector('.preview-unavailable').hidden = false; };
   video.addEventListener('error', unavailable);
   update();
   root.ownerDocument?.fonts?.ready?.then(() => { footerCache.size = null; schedule(); });
-  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); press?.removeEventListener('click', onPress); clearTimeout(pressTimer); video.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
+  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
 }
