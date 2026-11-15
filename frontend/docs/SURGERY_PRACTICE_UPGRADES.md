@@ -1,6 +1,6 @@
 # Surgery practice upgrades: Easy and Hard mode
 
-Status: proposal (2026-11-15, Rohan). Nothing here is built yet. It extends the shipped v1 described in [SURGERY_PRACTICE_PLAN.md](SURGERY_PRACTICE_PLAN.md) and the [README's Practice section](../README.md#practice-3d-surgery-practice).
+Status (2026-11-15, Rohan): **built** on `feat/practice-hard-mode`, including sections 1–6 and the cut-line extras (instrument-stand tray, hidden structure names, failed marker). Not built: the room picture-in-picture inset (section 5 stretch). Two refinements made while building: releasing a tool on the stage's own structure but off the right spot fails as a **placement** error (not "wrong tissue"), and in the removal stage the camera pulls back so all four ports are visible while the gallbladder is carried. Original status: proposal. It extends the shipped v1 described in [SURGERY_PRACTICE_PLAN.md](SURGERY_PRACTICE_PLAN.md) and the [README's Practice section](../README.md#practice-3d-surgery-practice).
 
 ## Why
 

@@ -69,7 +69,17 @@ Every case-page panel (Timeline, 3D model, Quiz, Charts) has a minimize button a
 
 ## Practice (3D surgery practice)
 
-Design: [docs/SURGERY_PRACTICE_PLAN.md](docs/SURGERY_PRACTICE_PLAN.md). v1 has one exercise, **clipping and cutting the cystic duct**, with four one-action stages. Its content is a **draft that no clinician has reviewed**, and the UI says so.
+Design: [docs/SURGERY_PRACTICE_PLAN.md](docs/SURGERY_PRACTICE_PLAN.md) and [docs/SURGERY_PRACTICE_UPGRADES.md](docs/SURGERY_PRACTICE_UPGRADES.md). There is one exercise, **clipping, cutting and removing the gallbladder**, with six one-action stages: expose the duct, two clips, divide the duct, free the gallbladder from the liver (hook, 894 s), and bag it and take it out through the navel port (grasper, 1658 s). Its content is a **draft that no clinician has reviewed**, and Lil Doc's offer says so.
+
+**Easy and Hard.** Lil Doc's offer has **Start (Easy)** and **Start (Hard)**; a prompt with "hard" (for example `/practice hard`) highlights Hard.
+- **Easy:** place a tool and press and hold.
+- **Hard:**
+  - It opens on a 3-second **operating-room shot** (the patient face up on a table, draped, ports in place; skippable) and flies in through the navel port to a dark, laparoscope-style **inside view**.
+  - It is **strict**: releasing a tool on the wrong tissue, a wrong tool, structure or spot, a slanted jaw, leaving the dissection line or the wrong port all **fail the stage**. The stage resets and the failure is counted; a red "Stage failed" marker shows.
+  - **Aim the jaws** (clip applier and scissors): placed jaws start turned away. Turn them across the duct with the scroll wheel or Q / E, within 25°.
+  - **Trace the dissection** (hook): hold to switch it on and drag along the dashed line where the gallbladder meets the liver. Leaving a 0.4 cm corridor fails.
+  - **Take it out**: after grasping, the view pulls back to show the four ports. Drag the gallbladder to the navel port.
+  - Structure names are hidden on hover. Keyboard: Q / E to aim, Space to burn along the line, arrows and Enter to choose a port.
 
 **How to try it (demo).** Open the VID01 case page, select the **/practice** command chip (next to /timestamp, /quiz, /chart and /model) and send it, or type "Let me practice clipping and cutting." Lil Doc offers Start and Cancel. Cancel changes nothing. Start closes the timeline and the other panels and shows the compact video, the practice model and Lil Doc side by side. The chip only fills in the chat input like the other commands, so Lil Doc is still the only way in: there is no separate Practice button or route.
 

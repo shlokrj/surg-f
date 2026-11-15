@@ -9,6 +9,33 @@ Mihir continues spatial work on `feat/spatial-overlays`, retaining the scoped ev
 The earlier integrated `frontend/dev` work reached `main` through `6d468dd`. Further unfinished spatial work remains on `feat/spatial-overlays` until explicitly published. The frontend lane row below records current verification and remaining model/data limits.
 
 
+## Practice Easy / Hard mode (2026-11-15, Rohan)
+
+**Status:** built on `feat/practice-hard-mode`, following [SURGERY_PRACTICE_UPGRADES.md](../frontend/docs/SURGERY_PRACTICE_UPGRADES.md). Not on `main` yet.
+
+**What changed:**
+- **Easy** is the previous exercise, with **two new final stages** in both modes: free the gallbladder from the liver (hook, VID01 894–921 s) and bag it and take it out through the navel port (grasper, VID01 1658–1666 s).
+- **Hard** adds the operating-room opening shot and laparoscope view, strict failure, aiming the jaws, tracing the dissection, and choosing the port.
+- Exercise content is now revision 0.2.0, still a draft.
+- **Files:** `practice/controller.js` (modes and failure rules), `practice/exercises/*.json` (stages, hard rules), `model/interaction.js` (contact, aim, trace, carry, room), `model/viewer.js` (`setScene`, specimen), `practice/workspace.js`, `main.js` / `lildoc.js` (Easy/Hard offer), `practice.css`.
+
+**Checks:**
+- `node --test frontend/test/*.test.js`: 58 passed, including 9 new Hard-mode rule tests. `npm --prefix frontend run build`: passed.
+- Headless Chrome Easy walkthrough: 57/57, covering all six stages, the recap of six, and the earlier checks.
+- New headless Hard walkthrough: 26/26, no page errors:
+  - "/practice hard" highlights Hard; the room shot plays (camera up = +z), then the laparoscope view;
+  - grasping the portal vein fails with a red marker; no structure names on hover;
+  - a slanted clip fails; Q and the scroll wheel aim it; straight clips pass;
+  - dragging off the dissection line fails; following it frees the gallbladder;
+  - the wrong port fails; the navel passes; the recap counts failures per stage; Skip works.
+
+**Next:**
+- Clinical review of the new stages and the Hard rules.
+- Touch and visible-browser check.
+- **Shlok:** the new styles live in `practice.css`.
+- Rohan to decide on publishing to `main`.
+
+
 ## 3D surgery practice v1 (2026-11-15, Rohan)
 
 **Status:** implemented on `feat/surgery-practice` (branched from `main` at `b64845f`, then merged with `origin/main` through `26ed6ba`). **Published to `main` by fast-forward at Rohan's request (2026-11-15).** Teammates: pull `main`. The content is still a draft until the clinical review below. Plan: [frontend/docs/SURGERY_PRACTICE_PLAN.md](../frontend/docs/SURGERY_PRACTICE_PLAN.md). Demo steps and file map: [frontend README, Practice](../frontend/README.md#practice-3d-surgery-practice).
