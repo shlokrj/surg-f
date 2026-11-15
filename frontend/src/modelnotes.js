@@ -1,7 +1,7 @@
 /* "How well the model sees": the homepage model notes as a pinned stage (same mechanics as "Dig into
    the stack", see architecture.js). Six chapters, each with a scroll-driven scene. Every number comes
    from frontend/public/model-evals.md: the label model (Aadhi, final MLflow run 9d18d20a, F1 on 4
-   held-out surgeries) and the box detector (Mihir, v3 on 409 Endoscapes test frames, IoU 0.5).
+   held-out surgeries) and the box detectors (Mihir: v3 anatomy and v4 instruments on 409 Endoscapes test frames, IoU 0.5).
    The smoothing strip is an illustration of the rule, not model output. */
 import { onStage, pickChapters } from './architecture.js';
 

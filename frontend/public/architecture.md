@@ -139,7 +139,7 @@ A typed message goes through three layers, each a fallback for the one before it
 - **Timeline / chart:** instrument usage and surgical phases.
 - **Quiz:** for studying.
 - **Chat:** the assistant from ⑧.
-- **Experimental overlays:** gallbladder and cystic duct boxes every 0.24 s across VID01 from a Faster R-CNN fine-tuned on Endoscapes (validation AP 0.38; gallbladder about 0.93 precision and recall, cystic duct weaker). No instrument boxes. Not yet validated on VID01 itself.
+- **Experimental overlays:** boxes every 0.24 s across VID01 and VID02 from Faster R-CNN detectors fine-tuned on Endoscapes: gallbladder (about 0.93 precision and recall), cystic duct (weaker: 0.69 precision, 0.39 recall) and instruments (0.89 precision, 0.83 recall for any instrument). Instrument names come from the surgeons' per-second labels, shown only when exactly one instrument is listed. Not yet validated on VID01 or VID02 themselves.
 
 ---
 

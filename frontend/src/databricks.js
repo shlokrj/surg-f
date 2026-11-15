@@ -25,7 +25,7 @@ const CHAPTERS = [
   {
     id: 'volumes', name: 'Unity Catalog Volume',
     title: 'One Volume for every file.',
-    body: 'A Unity Catalog Volume holds everything too big for a table: SurgVLP features for all 50 surgeries, the 29-label file, every trained model, the predicted clips, and the two demo videos.',
+    body: 'A Unity Catalog Volume holds everything too big for a table: SurgVLP features for all 50 surgeries, the 29-label file, every trained model, the predicted clips, the two demo videos, and the box detector’s training images, checkpoint and video exports.',
     stack: [['Unity Catalog Volumes', 'https://docs.databricks.com/aws/en/volumes/'], ['Unity Catalog', 'https://docs.databricks.com/aws/en/data-governance/unity-catalog/']],
     note: 'The team Volume, /Volumes/workspace/default/surgf. One square per surgery’s feature bundle.',
     scene: () => `<div class="sc db-vol"><div class="db-win">
@@ -41,7 +41,7 @@ const CHAPTERS = [
   {
     id: 'jobs', name: 'Serverless jobs',
     title: 'Every heavy step is a job.',
-    body: 'Feature extraction, training, the smoothing sweep, the final test and clip export all ran as Databricks jobs on serverless CPU, launched from scripts in the repo. Serverless CPU started in under a minute, so nobody waited on a cluster.',
+    body: 'Feature extraction, training, the smoothing sweep, the final test and clip export all ran as Databricks jobs on serverless CPU, launched from scripts in the repo. The bounding-box export ran as four parallel jobs and matched the local run. Serverless CPU started in under a minute, so nobody waited on a cluster.',
     stack: [['Serverless compute', 'https://docs.databricks.com/aws/en/compute/serverless/'], ['Lakeflow Jobs', 'https://docs.databricks.com/aws/en/jobs/']],
     note: 'The jobs behind the demo model, in order. Counts are from the team’s run log.',
     scene: () => `<div class="sc db-jobs"><span class="rail"><i></i></span>

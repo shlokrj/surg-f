@@ -1,5 +1,9 @@
 # Team handoffs
 
+## Instrument boxes published; page copy updated (2026-11-15, Mihir)
+
+`main` was fast-forwarded to `feat/spatial-overlays` at `026ba65` with the instrument boxes (Mihir's request). Follow-up page sweep for all versions (`/`, `/demo`, `/presentation-demo`, `/video-demo`, `/evals.html`): **Databricks section** (`frontend/src/databricks.js`): the Volume chapter now lists the box detector's training images, checkpoint and exports, and the jobs chapter says the bounding-box export ran as four parallel Databricks jobs that matched the local run (run-log scene numbers untouched). **`frontend/public/architecture.md`** (the "How it works" page, Aadhitya's): overlay line now covers VID02 and instruments with the current numbers. Everything else (model notes, stack scene, evals page, README, pitch) was already current. **Shlok / Aadhitya:** your files; reword freely. `docs/images/model.jpg` in the README predates the Box detectors chapter if you want a fresh screenshot.
+
 ## Instrument boxes added to VID01 and VID02 (2026-11-15, Mihir)
 
 **What changed:** both overlay files now include **named instrument boxes** (purple) next to the v3 anatomy boxes; the Instruments filter is active again.
