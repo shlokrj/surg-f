@@ -1,3 +1,5 @@
+import { architectureSection, updateArchitecture } from './architecture.js';
+
 /* Brand: "surg" and "f" as keycaps joined by "+", read like the Ctrl+F shortcut. Same markup in the hero
    and the small lockup; colors follow currentColor, so it works white-on-teal and teal-on-light.
    The text content is "surg+f". The favicon (public/favicon.svg) is a teal plus with a mini plus in each quadrant. */
@@ -181,46 +183,6 @@ const feature = ({id, title, body, action, command, horizon, preview, index}) =>
   <div class="feature-visual"><canvas class="sky-dither" data-horizon="${horizon}" data-ceiling="7.2" aria-hidden="true"></canvas>${preview}</div>
 </section>`;
 
-/* How it works. Facts from README.md, agent-kit/SPEC.md, DATABRICKS.md, backend/README.md and
-   frontend/public/model-evals.md (Aadhi). A pinned scroll scene steps through the pipeline. */
-const ARCH = [
-  {title: 'Surgery video', body: 'CholecT50: 50 real gallbladder surgeries, labeled second by second by surgeons. VID01 and VID02 play here at 25 fps.'},
-  {title: 'Frame features', body: 'SurgVLP, a vision model pretrained on surgical video, turns every frame into 768 numbers. Extraction runs as Databricks serverless jobs.'},
-  {title: 'Label model', body: 'A small network we trained reads five seconds of features and predicts 29 labels at once: 6 instruments, 9 actions and 14 targets. Every run is logged in MLflow.'},
-  {title: 'Clip index', body: 'Surgeon labels and model predictions become timestamped clips in one Delta table, rebuilt by a Lakeflow job.'},
-  {title: 'Search and chat', body: 'A FastAPI backend searches the clips with Databricks SQL. Free-form questions are answered with Databricks Genie.'},
-  {title: 'The moment', body: 'Pick a result and the player jumps straight to that second.'},
-];
-const INSTRUMENTS = ['grasper', 'hook', 'bipolar', 'clipper', 'irrigator', 'scissors'];
-const ACTIONS = ['grasp', 'retract', 'dissect', 'coagulate', 'clip', 'cut', 'aspirate', 'irrigate', 'pack'];
-const TARGETS = ['gallbladder', 'cystic plate', 'cystic duct', 'cystic artery', 'cystic pedicle', 'blood vessel', 'fluid', 'abdominal wall', 'liver', 'adhesion', 'omentum', 'peritoneum', 'gut', 'specimen bag'];
-const chips = (list, cls) => list.map(t => `<span class="chip ${cls}">${t}</span>`).join('');
-/* Each step's card uses only project data: case list, feature shapes (agent-kit/PROGRESS.md), the
-   CholecT50 label set, real clip rows, and a live /search and Genie answer checked on 2026-11-14. */
-const ARCH_ART = [
-  `<div class="art-cases">${Array.from({length: 50}, (_, i) => `<span class="${i < 2 ? 'is-live' : ''}"></span>`).join('')}</div><p class="art-cap"><strong>50</strong> labeled surgeries. <strong>VID01</strong> and <strong>VID02</strong> are playable here.</p>`,
-  `<div class="art-matrix"><div><span>VID01</span><code>1,734 × 768</code></div><div><span>VID02</span><code>2,840 × 768</code></div></div><p class="art-cap">One row per second of video, 768 numbers per frame.</p>`,
-  `<div class="art-labels"><div>${chips(INSTRUMENTS, 'is-tool')}</div><div>${chips(ACTIONS, 'is-verb')}</div><div>${chips(TARGETS, 'is-target')}</div></div><p class="art-cap">6 instruments, 9 actions and 14 targets, predicted together.</p>`,
-  `<table class="art-table"><thead><tr><th>case</th><th>start</th><th>end</th><th>label</th></tr></thead><tbody><tr><td>VID01</td><td>674</td><td>690</td><td>clipper</td></tr><tr><td>VID01</td><td>698</td><td>747</td><td>clipper</td></tr><tr><td>VID01</td><td>860</td><td>877</td><td>scissors</td></tr></tbody></table><p class="art-cap">Clip rows in <code>workspace.default.surgf_clips</code>.</p>`,
-  `<div class="art-io"><code>GET /search?q=clipper</code><span>161 clips</span></div><div class="art-io"><code>When is the cystic duct cut?</code><span>860–877 s, from Genie</span></div><p class="art-cap">Live answers from the backend, checked on 14 Nov 2026.</p>`,
-  `<div class="art-player"><div class="art-bar"><span class="art-played"></span><span class="art-mark"></span></div><div class="art-times"><span>14:20</span><span>28:53</span></div></div><p class="art-cap">The cystic duct cut in VID01 starts at 14:20.</p>`,
-];
-function architectureSection() {
-  return `<section class="arch" id="architecture" aria-labelledby="arch-heading" style="--steps:${ARCH.length}">
-    <div class="arch-sticky">
-      <div class="arch-head"><h2 id="arch-heading">How it works.</h2><p>From labeled surgery video to the second you need.</p></div>
-      <div class="arch-stage">
-        <canvas class="sky-dither" data-horizon=".7" data-ceiling="4.6" aria-hidden="true"></canvas>
-        <div class="arch-rail">
-          <div class="arch-track" aria-hidden="true"><span class="arch-fill"></span><span class="arch-runner">+</span></div>
-          <ol class="arch-nodes">${ARCH.map((step, i) => `<li class="arch-node" data-step="${i}"><span class="arch-num">${i + 1}</span><span class="arch-title">${step.title}</span></li>`).join('')}</ol>
-        </div>
-      </div>
-      <div class="arch-details">${ARCH.map((step, i) => `<div class="arch-detail" data-step="${i}"><div class="arch-text"><h3>${step.title}</h3><p>${step.body}</p></div><div class="arch-art">${ARCH_ART[i]}</div></div>`).join('')}</div>
-    </div>
-  </section>`;
-}
-
 /* Model notes: numbers from frontend/public/model-evals.md (Aadhi), final model MLflow run 9d18d20a,
    F1 on 4 held-out surgeries. */
 const F1 = {
@@ -290,7 +252,7 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
       <div class="footer-sticky">
         <div class="footer-top">
           <div class="footer-identity">${wordmark()}<p>Search surgical video.</p></div>
-          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#architecture">How it works</a><a href="#model-notes">Model</a><a href="#top">Back to top</a><button type="button" class="btn-primary" data-open-sample>Open a case</button></nav>
+          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#architecture">The stack</a><a href="#model-notes">Model</a><a href="#top">Back to top</a><button type="button" class="btn-primary" data-open-sample>Open a case</button></nav>
         </div>
         <canvas class="footer-word" aria-hidden="true"></canvas>
         <div class="footer-legal"><span>Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>
@@ -319,8 +281,6 @@ export function mountHome(root) {
   const canvases = [...root.querySelectorAll('.sky-dither')];
   const footer = root.querySelector('.site-footer');
   const stack = [...root.querySelectorAll('.stack-card')];
-  const arch = root.querySelector('.arch');
-  const archNodes = arch ? [...arch.querySelectorAll('[data-step]')] : [];
   const model = root.querySelector('.model');
   let modelShown = false;
   const footerWord = root.querySelector('.footer-word');
@@ -343,17 +303,10 @@ export function mountHome(root) {
     stack.forEach((card, i) => {
       const next = stack[i + 1];
       const cover = !next || media.matches ? 0 : Math.max(0, Math.min(1, (vh - next.getBoundingClientRect().top) / (vh - card.getBoundingClientRect().top || 1)));
+      // Cards keep their size (like Hangar's stack); only the covered card's content dims.
       card.style.setProperty('--cover', cover.toFixed(3));
     });
-    /* How it works: progress through the pinned scene picks the active step. */
-    if (arch) {
-      const span = Math.max(1, arch.offsetHeight - vh);
-      const p = media.matches ? 1 : Math.max(0, Math.min(1, -arch.getBoundingClientRect().top / span));
-      const steps = ARCH.length, active = media.matches ? -1 : Math.min(steps - 1, Math.floor(p * steps));
-      arch.style.setProperty('--fill', Math.max(0, Math.min(1, (p * steps - .5) / (steps - 1))).toFixed(4));
-      archNodes.forEach(node => node.classList.toggle('is-active', media.matches || Number(node.dataset.step) === active));
-      archNodes.forEach(node => node.classList.toggle('is-done', !media.matches && Number(node.dataset.step) < active));
-    }
+    updateArchitecture(root, media.matches);
     /* Model notes: bars grow and numbers count up once, when the section comes into view. */
     if (model && !modelShown && (media.matches || model.getBoundingClientRect().top < vh * .78)) {
       modelShown = true;
