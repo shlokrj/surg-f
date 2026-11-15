@@ -2,6 +2,10 @@
 
 
 
+
+## Aadhitya now works on main (2026-11-14)
+
+At Aadhitya's request, all of `ml-dev` is merged into `main` (nothing on `ml-dev` is missing from `main` as of `a1e1d40`), and Aadhitya's work now goes straight to `main` so teammates only need `git pull` on `main`. `ml-dev` is no longer updated; Shlok can switch to `main` too. Agents committing to `main`: run `git pull --ff-only` before editing and again before pushing, never force-push, and record changes here and in PROGRESS.md as before.
 ## 3D fade toggle and panel minimize published to main (2026-11-14)
 
 At Aadhitya's request, `ml-dev` was merged with `main` (homepage Databricks section included) and `main` fast-forwarded. The changes: clicking a faded organ in the 3D model brings it back, **Reset view** also restores every faded organ, and each case-page panel (Timeline, 3D model, Quiz, Charts) has a minimize button. Checks at the merge: 22 frontend tests and the build passed, backend `pytest -q` 226 passed, and headless Chrome confirmed fade/unfade/reset and minimize/expand, with the 3D viewer intact after re-expanding. **Shlok:** the minimize button styles are in `frontend/src/case.css` (`.panel-min`); restyle as needed.
