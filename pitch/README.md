@@ -13,34 +13,33 @@ Locally, add the path to the dev server URL, for example `http://localhost:5173/
 
 ## What each demo shows
 
-**Presentation demo** (about 33 arrow presses):
+**Presentation demo:**
 
 1. Problem, 3 scenes: 17 seconds in a half-hour video; writing it all down; who needs it.
 2. Solution, 5 scenes: label every second; ask in plain words; jump to the moment; the labels are the record; practice in 3D.
 3. Features, 3 cards: step timeline, instrument chart, quiz.
 4. The stack: the block, then 6 layers.
 5. Model, 4 scenes: held-out test; instruments; v1 to v2; boxes on the video.
-6. Databricks, 5 scenes: Volume; serverless jobs; MLflow; Lakeflow and Delta; SQL, Genie and Llama.
+6. Databricks, 6 scenes: Volume; serverless jobs; MLflow; Lakeflow and Delta; SQL, Genie and Llama; next, Databricks Apps.
 7. What's next, 4 scenes: Lil Counsel, Lil Ledger, Lil Watch, Lil Pal.
 
-**Video demo** (10 arrow presses, faster pace):
+**Video demo** (faster pace):
 
 1. Problem, 2 scenes: 17 seconds; writing it all down.
 2. Solution, 3 scenes: ask; jump; practice in 3D.
-3. Databricks, all 5 scenes.
+3. Databricks, all 6 scenes.
 
 ## Driving the page
 
-- **Right arrow:** moves quickly into the next scene, then plays its animation slowly (5 s on the presentation demo, 3.8 s on the video demo). If you scrolled partway into a scene, Right finishes it. **Left arrow:** rewinds the current scene, then goes back to the previous one. A press during a glide moves one more scene; holding the key does not repeat. Scrolling or clicking takes over at any time. This is not shown on the page.
-- Clicking a chapter name on the right plays that scene the same way.
-- Scrolling with a trackpad also works, but arrows give an even pace.
+- **Scroll** at an easy pace. Each scene plays as you scroll through it and holds once it has played, so pause where you want to talk. Scrolling back plays it in reverse.
+- **Chapter names** on the right jump straight to a chapter.
 - **Eye button** (top right): blurs or shows every surgery frame on the page. It starts blurred. Click it once before you present if the room is fine with surgical footage.
 
 ## Before you present or record
 
 1. `git pull`, then start the backend and the frontend (see [frontend/README.md](../frontend/README.md#run)). The 3D captures and frame animations need `frontend/public/videos/VID01.mp4`: run `python scripts/fetch_videos.py VID01` from the repo root.
 2. Open the version in a full-screen browser window at 1440×900 or larger. Smaller windows still work but scale the scenes down.
-3. Press **Right** once all the way through to warm the frame cache (the real VID01 frames load the first time each scene appears), then reload the page.
+3. Scroll once all the way through to warm the frame cache (the real VID01 frames load the first time each scene appears), then reload the page.
 4. Decide on the eye button.
 5. For the live part of the video, check that `/chat` reaches Genie (the backend log shows `router=genie`). A cold SQL warehouse can take a minute to wake up.
 
@@ -72,4 +71,5 @@ Every version ends with a **Sources** section listing the papers, datasets and t
 - **"The labels are the record"** shows that our labels hold what a record needs. Surg+F does not write clinical notes yet.
 - **Your own video** opens for playback today. Search and the model's labels cover the indexed demo cases; indexing uploads is next.
 - **What's next agents** are concepts. The page says they are not built yet.
+- **Databricks Apps** is planned, not deployed. The chapter says "Next" and "Planned"; say "we're moving to", not "we host on".
 - **Cadaver cost and documentation time:** these are our framing from research. We do not show a number for either, so do not quote one unless you have a source to point to.
