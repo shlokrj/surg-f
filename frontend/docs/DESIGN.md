@@ -41,9 +41,13 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
   - The player scene should switch to a stronger real detection once stage 3 localization works.
   - Every link was checked on 2026-11-14. The classifier is scikit-learn `MLPClassifier`, not PyTorch; PyTorch runs SurgVLP extraction and the detector only.
   - Phones drop the pin: intro, block, then each layer's copy and scene in reading order, each scene playing as it crosses the viewport. Reduced motion shows each layer in its final state and swaps layers without movement.
-- **Model notes:** Aadhi's held-out F1 scores (final model, MLflow `9d18d20a`).
-  - Instrument, best action and best target bars grow, and their numbers count up, once in view.
-  - A v1→v2 comparison, three reading notes, and a link to the full `model-evals.md`.
+- **Layer map:** once the block becomes the map, the stage drops its perspective, so the slabs stack straight up with even gaps and the labels line up evenly. The map keeps its shape while you scroll; only the current layer's slab and label are highlighted.
+- **Model notes** (`src/modelnotes.js`, `src/modelnotes.css`): the same pinned stage as the stack (shared code in `architecture.js`, `onStage` hooks), with a persistent heading and a chapter list on a rail that fills as you go. All numbers come from Aadhi's `public/model-evals.md` (final model, MLflow `9d18d20a`).
+  1. Held-out test: 49 tiles sort from one grid into 42 trained, 3 tuned and 4 tested, and the test tiles lift.
+  2. Instruments and 3. Actions and targets: dark panels tilt into place. Bars and their numbers follow the scroll, reliable labels glow, and a dashed line marks the 0.34 average.
+  4. From seconds to clips: per-second calls scan in, gaps of 2 s or less fill, lone seconds drop, and clips form above surgeon labels. The pattern is an illustration; the rule is the real one.
+  5. v1 to v2: v1 stays as a dashed outline while v2 grows past it (12 → 42 surgeries, 0.30 → 0.34, scissors 0.07 → 0.29).
+- **Pinned nav:** the logo and "Open a case" stay fixed at the top of the homepage. Over the hero they are white; past it they switch to a frosted logo and a teal button. The footer no longer repeats them.
 
 ## Case page
 
