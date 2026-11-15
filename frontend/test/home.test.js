@@ -48,7 +48,7 @@ test('feature sections show fixture data and open the demo with a real command',
  assert.match(doc.querySelector('#feature-steps').closest('section').textContent,/Clipping and cutting/);
  assert.match(doc.querySelector('#feature-chart').closest('section').textContent,/1:42/);
  assert.match(doc.querySelector('#feature-quiz').closest('section').textContent,/Not yet clinically reviewed/);
- assert.deepEqual([...doc.querySelectorAll('[data-open-sample]')].map(b=>b.dataset.command??''),['','/chart instruments','/quiz']);
+ assert.deepEqual([...doc.querySelectorAll('[data-open-sample]')].map(b=>b.dataset.command??''),['','/chart instruments','/quiz','']);
  assert.ok(doc.querySelector('.hero-search'),'hero search sits inside the frame');
 });
 test('logo and back-to-top scroll only the window, never the clipped hero layers',()=>{
