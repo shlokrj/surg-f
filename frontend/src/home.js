@@ -1,4 +1,5 @@
 import { architectureSection, updateArchitecture, digScrollTop } from './architecture.js';
+import { modelSection } from './modelnotes.js';
 
 /* Brand: "surg" and "f" as keycaps joined by "+", read like the Ctrl+F shortcut. Same markup in the hero
    and the small lockup; colors follow currentColor, so it works white-on-teal and teal-on-light.
@@ -183,48 +184,13 @@ const feature = ({id, title, body, action, command, horizon, preview, index}) =>
   <div class="feature-visual"><canvas class="sky-dither" data-horizon="${horizon}" data-ceiling="7.2" aria-hidden="true"></canvas>${preview}</div>
 </section>`;
 
-/* Model notes: numbers from frontend/public/model-evals.md (Aadhi), final model MLflow run 9d18d20a,
-   F1 on 4 held-out surgeries. */
-const F1 = {
-  instruments: [['Grasper', .89], ['Hook', .83], ['Bipolar', .52], ['Scissors', .29], ['Irrigator', .26], ['Clipper', .19]],
-  actions: [['Retract', .86], ['Dissect', .78], ['Coagulate', .46], ['Grasp', .40]],
-  targets: [['Gallbladder', .88], ['Specimen bag', .75], ['Liver', .51], ['Omentum', .21]],
-};
-const f1Bars = rows => `<ul class="f1-bars">${rows.map(([label, v]) => `<li><span>${label}</span><span class="f1-track"><span style="--v:${v}"></span></span><span class="f1-num" data-count="${v}" data-digits="2">${v.toFixed(2)}</span></li>`).join('')}</ul>`;
-function modelSection() {
-  return `<section class="model" id="model-notes" aria-labelledby="model-heading">
-    <div class="model-head">
-      <div><h2 id="model-heading">How well the model sees.</h2><p>Scored on 4 surgeries it never saw in training. F1 runs from 0 to 1 and is measured second by second.</p></div>
-      <div class="model-avg"><span class="model-avg-num" data-count=".34" data-digits="2">0.34</span><span>average F1 across all 29 labels</span></div>
-    </div>
-    <div class="model-grid">
-      <div class="m-card m-wide"><h3>Instruments</h3>${f1Bars(F1.instruments)}</div>
-      <div class="m-card"><h3>Best actions</h3>${f1Bars(F1.actions)}</div>
-      <div class="m-card"><h3>Best targets</h3>${f1Bars(F1.targets)}</div>
-      <div class="m-card m-wide m-compare"><h3>From v1 to v2</h3>
-        <dl>
-          <div><dt>Training surgeries</dt><dd><span>12</span><span aria-hidden="true">→</span><strong data-count="42" data-digits="0">42</strong></dd></div>
-          <div><dt>Average F1</dt><dd><span>0.30</span><span aria-hidden="true">→</span><strong data-count=".34" data-digits="2">0.34</strong></dd></div>
-          <div><dt>Scissors F1</dt><dd><span>0.07</span><span aria-hidden="true">→</span><strong data-count=".29" data-digits="2">0.29</strong></dd></div>
-        </dl>
-      </div>
-    </div>
-    <ul class="model-notes">
-      <li><strong>Labeled clips</strong> come from surgeons. Treat them as ground truth.</li>
-      <li><strong>AI-predicted clips</strong> are suggested moments. They land in the right part of the video, but start and end times are approximate.</li>
-      <li><strong>Common events are reliable:</strong> grasper, hook, retract, dissect, gallbladder and specimen bag. Rare labels are not.</li>
-    </ul>
-    <p class="model-source">Test surgeries were never used for training or tuning. Final model: MLflow run <code>9d18d20a</code>. <a href="/model-evals.md">Read the full evaluation</a></p>
-  </section>`;
-}
-
 export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}}) {
   return `<main class="landing" id="main-content">
+    <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><button type="button" id="open-sample" class="nav-case">Open a case</button></nav>
     <section class="landing-intro" aria-labelledby="landing-title">
       <div class="intro-sticky">
         <div class="hero-frame">
           <canvas class="sky-dither hero-dither" aria-hidden="true"></canvas>
-          <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><button type="button" id="open-sample" class="nav-case">Open a case</button></nav>
           <div class="intro-copy"><h1 id="landing-title">${wordmark('sf-hero')}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="#case-preview">See the demo <span aria-hidden="true">↓</span></a></div>
           <form class="hero-search" id="hero-search" role="search">
             <label class="sr-only" for="hero-q">Ask about the VID01 demo case</label>
@@ -251,8 +217,8 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
     <footer class="site-footer" aria-label="About surg+f">
       <div class="footer-sticky">
         <div class="footer-top">
-          <div class="footer-identity">${wordmark()}<p>Search surgical video.</p></div>
-          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#architecture">The stack</a><a href="#model-notes">Model</a><a href="#top">Back to top</a><button type="button" class="btn-primary" data-open-sample>Open a case</button></nav>
+          <div class="footer-identity"><p>Search surgical video.</p></div>
+          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#architecture">The stack</a><a href="#model-notes">Model</a><a href="#top">Back to top</a></nav>
         </div>
         <canvas class="footer-word" aria-hidden="true"></canvas>
         <div class="footer-legal"><span>Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>
@@ -261,28 +227,13 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
   </main>`;
 }
 
-function countUp(scope) {
-  const items = [...scope.querySelectorAll('[data-count]')];
-  const start = performance.now(), duration = 1100;
-  const tick = now => {
-    const t = Math.min(1, (now - start) / duration), eased = 1 - Math.pow(1 - t, 3);
-    for (const el of items) {
-      const target = Number(el.dataset.count), digits = Number(el.dataset.digits);
-      el.textContent = (target * eased).toFixed(digits);
-    }
-    if (t < 1) requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-}
-
 export function mountHome(root) {
   if (!root) return () => {};
   const intro = root.querySelector('.landing-intro');
   const canvases = [...root.querySelectorAll('.sky-dither')];
   const footer = root.querySelector('.site-footer');
   const stack = [...root.querySelectorAll('.stack-card')];
-  const model = root.querySelector('.model');
-  let modelShown = false;
+  const nav = root.querySelector('.hero-nav');
   const footerWord = root.querySelector('.footer-word');
   const footerCache = {};
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -307,12 +258,8 @@ export function mountHome(root) {
       card.style.setProperty('--cover', cover.toFixed(3));
     });
     updateArchitecture(root, media.matches);
-    /* Model notes: bars grow and numbers count up once, when the section comes into view. */
-    if (model && !modelShown && (media.matches || model.getBoundingClientRect().top < vh * .78)) {
-      modelShown = true;
-      model.classList.add('is-in');
-      if (!media.matches) countUp(model);
-    }
+    /* The logo and "Open a case" stay pinned; past the hero they switch to the light page style. */
+    nav?.classList.toggle('is-solid', intro.getBoundingClientRect().bottom < 80);
     canvases.forEach(paintDither);
   };
   const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
@@ -322,7 +269,7 @@ export function mountHome(root) {
     /* Layer map: each label digs straight to its layer. */
     const dig = event.target.closest?.('[data-dig]');
     if (dig) {
-      const top = digScrollTop(root, Number(dig.dataset.dig));
+      const top = digScrollTop(dig.closest('.dig'), Number(dig.dataset.dig));
       if (top !== null) window.scrollTo({top, behavior: media.matches ? 'auto' : 'smooth'});
       return;
     }
@@ -342,7 +289,7 @@ export function mountHome(root) {
   /* Keyboard focus on a hidden layer's link brings that layer into view. */
   const reveal = event => {
     const layer = event.target.closest?.('.layer:not(.is-on)');
-    const top = layer ? digScrollTop(root, Number(layer.dataset.layer)) : null;
+    const top = layer ? digScrollTop(layer.closest('.dig'), Number(layer.dataset.layer)) : null;
     if (top !== null) window.scrollTo({top, behavior: 'auto'});
   };
   root.addEventListener('focusin', reveal);

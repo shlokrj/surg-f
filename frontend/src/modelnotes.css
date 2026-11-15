@@ -1,0 +1,81 @@
+/* "How well the model sees": model notes as a pinned stage. Layout, pit and transitions come from
+   architecture.css (.dig, .layer, .pit, .fit). Here: the chapter list, the heading and five scenes. */
+.mn-heading{grid-area:copy;align-self:start;margin:max(13vh,96px) 0 0;font-size:clamp(34px,3.2vw,50px)}
+.dig-model .layer-copy h3{margin:0 0 14px;font-size:clamp(24px,2vw,30px);font-weight:500;letter-spacing:-.03em;line-height:1.15}
+.dig-model .layer-copy{align-self:center;margin-top:12vh}
+.mn-link{margin:0}.mn-link a{color:var(--brand-strong);font-size:16px;text-underline-offset:3px}
+.dig-model .pit{margin-right:270px}
+
+/* Chapter list: a fixed column with a rail that fills as you go. */
+.dig-model .dig-labels{inset:50% 0 auto auto;translate:0 -50%;width:250px;display:grid;gap:22px}
+.dig-model .dig-labels::before,.dig-model .dig-labels::after{content:"";position:absolute;left:20px;top:20px;width:2px;background:var(--line-strong);height:calc(100% - 40px)}
+.dig-model .dig-labels::after{background:var(--brand);height:calc((100% - 40px) * var(--depth));transition:height .1s linear}
+.dig-model .dig-labels li{position:relative;z-index:1;translate:none;opacity:1}
+.dig-model .dig-labels button{pointer-events:auto}
+
+/* 1. Held-out test: 49 tiles sort from one grid into trained, tuned and tested groups; the 4 test
+   surgeries lift out. */
+.mn-split{--lift:clamp(0, calc((var(--p) - .74) / .2), 1)}
+.tile{--mi:clamp(0, calc((var(--p) - .04 - var(--st)) / .4), 1);position:absolute;left:0;top:0;width:46px;height:46px;border-radius:9px;background:#ffffffd0;box-shadow:0 6px 14px #052a2630;transform:translate(calc(var(--x0) + (var(--x1) - var(--x0)) * var(--mi)), calc(var(--y0) + (var(--y1) - var(--y0)) * var(--mi)))}
+.t-train{background:color-mix(in srgb,#ffffffd0,#8bd5b7 calc(var(--mi) * 100%))}
+.t-tune{background:color-mix(in srgb,#ffffffd0,#ffffff4d calc(var(--mi) * 100%));box-shadow:inset 0 0 0 2px color-mix(in srgb,transparent,#fff calc(var(--mi) * 100%))}
+.t-test{background:color-mix(in srgb,#ffffffd0,var(--hit) calc(var(--mi) * 100%));transform:translate(calc(var(--x0) + (var(--x1) - var(--x0)) * var(--mi)), calc(var(--y0) + (var(--y1) - var(--y0)) * var(--mi) - var(--lift) * 12px)) scale(calc(1 + var(--lift) * .08));box-shadow:0 calc(6px + var(--lift) * 14px) calc(14px + var(--lift) * 20px) #052a2640,0 0 calc(var(--lift) * 24px) #f4c93a80}
+.grp{position:absolute;display:grid;gap:4px;color:#fff;font-size:15px;opacity:clamp(0, calc((var(--p) - .5) * 6), 1);transform:translateY(calc((1 - clamp(0, calc((var(--p) - .5) * 6), 1)) * 10px))}
+.grp b{font-size:34px;font-weight:600;line-height:1}
+
+/* 2–3. Score boards: panels tilt up into place, bars and numbers follow the scroll. */
+.mn-board{--in:clamp(0, calc(var(--p) / .16), 1);display:grid;align-content:center;gap:16px;padding:0 22px;perspective:1000px}
+.mn-panel{padding:20px 22px 18px;border-radius:16px;background:#0f2d2ae6;color:#e6f3ee;box-shadow:0 24px 60px #052a2650;transform-origin:bottom;transform:rotateX(calc(28deg * (1 - var(--in)))) translateY(calc((1 - var(--in)) * 30px));opacity:var(--in)}
+.mn-panel h4{margin:0 0 14px;color:#9fd9c6;font-size:15px;font-weight:600}
+.mn-rows{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.mn-rows li{display:grid;grid-template-columns:104px 1fr 46px;align-items:center;gap:12px;font-size:15px}
+.mn-rows b{font:600 15px var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.mn-track{position:relative;height:12px;border-radius:6px;background:#ffffff1a}
+.mn-track i{position:absolute;inset:0 auto 0 0;width:calc(var(--v) * 100%);border-radius:6px;background:#5fb7a9;transform-origin:left;transform:scaleX(var(--g))}
+.mn-rows li.is-good span:first-child{color:#fff;font-weight:600}
+.mn-rows li.is-good .mn-track i{background:#9ff3df;box-shadow:0 0 14px #9ff3df55}
+.axis{display:flex;justify-content:space-between;margin:10px 58px 0 116px;color:#9fd9c6;font:500 12.5px var(--mono)}
+.two .mn-track::after{content:"";position:absolute;left:34%;top:-6px;bottom:-6px;border-left:2px dashed var(--hit);opacity:clamp(0, calc((var(--p) - .55) * 6), 1)}
+.avg{display:flex;align-items:baseline;gap:12px;color:#fff;font-size:15px;opacity:clamp(0, calc((var(--p) - .5) * 6), 1)}
+.avg b{font-size:46px;font-weight:600;line-height:1;color:var(--hit);font-variant-numeric:tabular-nums}
+
+/* 4. From seconds to clips: per-second calls scan in, short gaps fill, lone seconds drop, the rest
+   merge into clips, and surgeon labels appear underneath for comparison. */
+.mn-smooth{--f:clamp(0, calc((var(--p) - .34) / .12), 1);--dr:clamp(0, calc((var(--p) - .5) / .12), 1);--cl:clamp(0, calc((var(--p) - .64) / .14), 1);--lb:clamp(0, calc((var(--p) - .8) / .12), 1)}
+.strip{position:absolute;left:18px;right:18px;display:grid;grid-template-columns:118px 1fr;align-items:center;gap:12px;color:#fff;font-size:15px}
+.s-raw{top:130px}.s-clip{top:240px;opacity:clamp(0, calc(var(--cl) * 3), 1)}.s-label{top:320px;opacity:var(--lb)}
+.cells{display:grid;grid-template-columns:repeat(40,1fr);gap:2px}
+.cells i{--r:clamp(0, calc((var(--p) - var(--i) * .0072) * 22), 1);height:40px;border-radius:2px;background:#ffffff1f}
+.cells i.on{background:color-mix(in srgb,#ffffff1f,#fff calc(var(--r) * 100%))}
+.cells i.fill{background:color-mix(in srgb,#ffffff1f,#9ff3df calc(var(--f) * 100%));box-shadow:0 0 calc(var(--f) * 10px) #9ff3df80}
+.cells i.drop{transform:translateY(calc(var(--dr) * 34px));opacity:calc(1 - var(--dr))}
+.lane{position:relative;height:26px;border-radius:5px;background:#ffffff14}
+.lane i{position:absolute;top:0;bottom:0;border-radius:5px;background:#fff;transform-origin:left;transform:scaleX(var(--cl))}
+.s-label .lane i{background:var(--hit);transform:none}
+.ticks{position:absolute;left:148px;right:18px;top:372px;display:flex;justify-content:space-between;color:#cfe6dc;font:500 13px var(--mono)}
+
+/* 5. v1 to v2: the v1 value stays as a dashed outline while v2 grows past it; numbers count with the scroll. */
+.mn-up{--vv:clamp(0, calc((var(--p) - .4) * 8), 1);display:grid;align-content:center;gap:24px;padding:0 26px;color:#fff}
+.ver{display:flex;gap:8px}
+.ver span{padding:6px 12px;border-radius:999px;font:600 14px var(--mono)}
+.ver .v1{background:color-mix(in srgb,#fff,#ffffff26 calc(var(--vv) * 100%));color:color-mix(in srgb,var(--brand-strong),#fff calc(var(--vv) * 100%))}
+.ver .v2{background:color-mix(in srgb,#ffffff26,#fff calc(var(--vv) * 100%));color:color-mix(in srgb,#fff,var(--brand-strong) calc(var(--vv) * 100%))}
+.up{display:grid;grid-template-columns:1fr 96px;align-items:center;gap:8px 16px}
+.up > span{grid-column:1/-1;color:#cfe6dc;font-size:15px}
+.up .bars{position:relative;height:30px;border-radius:7px;background:#ffffff14}
+.up .was,.up .now{position:absolute;top:0;bottom:0;left:0;border-radius:7px}
+.up .now{width:calc((var(--a) + (var(--b) - var(--a)) * var(--u)) * 100%);background:#fff}
+.up .was{z-index:1;width:calc(var(--a) * 100%);border:2px dashed #0f5a4f}
+.up b{font-size:36px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.run{justify-self:start;padding:6px 10px;border-radius:8px;background:#0f2d2acc;color:#cfe6dc;font-size:14px}
+
+@media(max-width:860px){
+  .mn-heading{margin:0 0 8px}
+  .dig-model .layer-copy{margin-top:0}
+  .dig-model .pit{margin-right:0}
+}
+.mn-board.two{gap:12px}
+.two .mn-panel{padding:14px 20px 14px}
+.two .mn-panel h4{margin-bottom:10px}
+.two .mn-rows{gap:9px}
+.two .avg b{font-size:40px}

@@ -4,6 +4,7 @@ import './home.css';
 import { homePage, mountHome, wordmark, paintDither, DEMO_QUESTION, DEMO_SEEK } from './home.js';
 import './case.css';
 import './architecture.css';
+import './modelnotes.css';
 let disposeHome = () => {};
 let renderedPage = null;
 // Page load-in runs only after a real page change (home <-> case), never on re-renders from case
