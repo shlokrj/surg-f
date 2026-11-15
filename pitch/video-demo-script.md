@@ -6,7 +6,7 @@ The voiceover is split across the four of us by topic. Record each part separate
 
 | # | Segment | Voice | Time | On screen |
 |---|---|---|---|---|
-| 1 | Problem | Shlok | 0:00–0:25 | hero, 2 problem scenes |
+| 1 | Problem | Shlok | 0:00–0:25 | hero; footage length; cost of learning |
 | 2 | Solution | Mihir | 0:25–1:00 | 3 solution scenes |
 | 3 | Databricks: storage, compute, tracking | Aadhitya | 1:00–1:50 | Volume, serverless jobs, MLflow |
 | 4 | Databricks: data, serving and hosting | Rohan | 1:50–2:35 | Lakeflow and Delta; SQL, Genie and Llama; Databricks Apps |
@@ -37,11 +37,11 @@ Name each one while its scene is on screen. Judges are scoring how many we used 
 
 **→ 17 seconds**
 
-> A real gallbladder removal runs 28 minutes. The moment a student needs, the cystic duct being cut, lasts 17 seconds.
+> A real gallbladder removal runs almost 29 minutes. The moment a student needs, the cystic duct being cut, lasts 17 seconds.
 
-**→ Writing it down**
+**→ Learning is costly**
 
-> And every step and instrument has to be documented by hand, which is slow and has to be exact.
+> And learning surgery is slow and expensive. A resident needs 850 operations over five years, teaching adds 23 minutes to this very operation, and almost every learner prepares by watching video that no one can search.
 
 ## 2. Solution: Mihir (0:25–1:00)
 

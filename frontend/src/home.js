@@ -208,7 +208,7 @@ const VERSIONS = {
     ['features'], ['architecture'], ['model', {only: ['test', 'instruments', 'versions', 'boxes']}], ['databricks'], ['future'], ['sources'],
   ]},
   'video-demo': {sections: [
-    ['problem', {only: ['needle', 'docs'], per: 1.6}], ['solution', {only: ['ask', 'jump', 'practice'], per: 1.6}],
+    ['problem', {only: ['needle', 'learning'], per: 1.6}], ['solution', {only: ['ask', 'jump', 'practice'], per: 1.6}],
     ['databricks', {per: 1.6}], ['sources'],
   ]},
 };
