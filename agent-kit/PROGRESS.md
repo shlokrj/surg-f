@@ -11,7 +11,7 @@ The earlier integrated `frontend/dev` work reached `main` through `6d468dd`. Fur
 
 ## 3D surgery practice v1 (2026-11-15, Rohan)
 
-**Status:** implemented on `feat/surgery-practice` (branched from `main` at `b64845f`). Local commits only; not pushed. Plan: [frontend/docs/SURGERY_PRACTICE_PLAN.md](../frontend/docs/SURGERY_PRACTICE_PLAN.md). Demo steps and file map: [frontend README, Practice](../frontend/README.md#practice-3d-surgery-practice).
+**Status:** implemented on `feat/surgery-practice` (branched from `main` at `b64845f`, then merged with `origin/main` at `d8bf82c`). Pushed for review as a PR; not merged to `main`. Plan: [frontend/docs/SURGERY_PRACTICE_PLAN.md](../frontend/docs/SURGERY_PRACTICE_PLAN.md). Demo steps and file map: [frontend README, Practice](../frontend/README.md#practice-3d-surgery-practice).
 
 **What exists:** Lil Doc takes a practice request ("Let me practice clipping and cutting"), checks that the open video is an **upload** matching VID01 (bytes, sampled SHA-256 from a Web Worker, 1733.04 s), and offers Start and Cancel. Start takes over the case page: compact video, 3D practice model, Lil Doc unchanged. There are four one-action stages (grasp at 670 s, clip at 698 s, clip at 815 s, cut at 860 s), each tied to a VID01 annotation interval. The resident uses a 3D tool tray with drag/tap placement, snap preview, press-and-hold gestures and keyboard equivalents. Feedback is formative (instrument, structure, spot, gesture), with opt-in guidance, reset stage, restart, exit and a recap. The model, chart and quiz panels now have a × close that discards their state. No backend change; nothing is persisted.
 
@@ -33,6 +33,16 @@ The earlier integrated `frontend/dev` work reached `main` through `6d468dd`. Fur
 - (4) **Shlok** to review the presentation, since this touches `main.js`, the chat bubbles and panel heads; **Mihir** to confirm the overlay panel still behaves inside the compact practice video column.
 - (5) Practice lane owner still to be confirmed, per the plan.
 
+## UI updated from the eval docs (2026-11-15, Mihir, at Mihir's request)
+
+Mihir asked for these UI changes explicitly; they touch Shlok's files, kept small and in his existing patterns. Both `/` and `/demo` are affected, because the stack and model notes render in both.
+
+- **Case page:** removed the purple "Experimental" badge next to **Bounding boxes** (`frontend/src/overlays.js`). The player status line still reads "Experimental model predictions · … no tracking or action recognition".
+- **Model notes** (`frontend/src/modelnotes.js`): new 6th chapter "Boxes on the video" with the v3 numbers from `model-evals.md` (gallbladder precision/recall 0.93/0.93, cystic duct 0.69/0.39, COCO AP 0.38 up from 0.35) and the honest caveat that VID01 itself is unchecked. It reuses the instrument-panel styles (no CSS changes) and leaves out the 0.34 F1 average line, which does not apply to boxes. "Read the full evaluation" now opens the rendered `/evals.html` (chapter 6 jumps to the bounding-box section; `evals.js` now scrolls to `#` targets after rendering).
+- **The stack** (`frontend/src/architecture.js`): the "real detector output" box at 14:20 now uses the deployed v3 values (gallbladder 0.998, box `[0.3147, 0, 0.6913, 0.4779]`).
+- **Tests** (`frontend/test/home.test.js`): expects 6 model chapters, checks the box numbers and the evals links, and the 14:20 scene is now checked against the deployed `VID01.json` instead of a hardcoded score, so it stays correct when the model changes. `frontend/docs/DESIGN.md` lists chapter 6.
+- **Checks:** `node --test frontend/test/*.test.js` 29 passed; build passed. Headless Chrome 157 on `/` and `/demo`: 6 chapters; after scrolling, chapter 6 shows 0.93/0.93/0.69/0.39 and 0.38; the 14:20 scene shows gallbladder 0.998; the evals link lands on the bounding-box section; no page errors; no horizontal overflow at 390 px; the case toggle reads just "Bounding boxes".
+- **Shlok:** restyle or reword anything above as you like; the numbers must stay in step with `model-evals.md`.
 
 ## VID01 overlay switched to v3 (2026-11-15, Mihir)
 

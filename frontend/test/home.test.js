@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
@@ -79,7 +80,9 @@ test('dig into the stack and model notes render real, cited project data',()=>{
  const scenes=[...doc.querySelectorAll('#architecture .layer')];
  assert.deepEqual(scenes.map(s=>s.id),['layer-player','layer-search','layer-index','layer-model','layer-features','layer-video']);
  assert.deepEqual([...doc.querySelectorAll('#architecture .dig-labels button')].map(b=>b.dataset.dig),['0','1','2','3','4','5'],'every layer label is a button');
- assert.match(doc.querySelector('#layer-player').textContent,/gallbladder 0\.997/,'real VID01 overlay prediction at 860 s');
+ const overlay=JSON.parse(fs.readFileSync(new URL('../public/overlays/VID01.json',import.meta.url),'utf8'));
+ const at860=overlay.frames.find(f=>Math.abs(f.timestamp_sec-860.16)<1e-6).detections[0];
+ assert.ok(doc.querySelector('#layer-player').textContent.includes(`${at860.label} ${at860.score.toFixed(3)}`),'scene shows the deployed overlay prediction at 860 s');
  const links=[...doc.querySelectorAll('#architecture .layer-copy a')].map(a=>a.href);
  for (const url of ['https://arxiv.org/abs/2109.03223','https://arxiv.org/abs/1602.03012','https://arxiv.org/abs/2307.15220','https://github.com/CAMMA-public/SurgVLP','https://fastapi.tiangolo.com/','https://mlflow.org/','https://delta.io/']) assert.ok(links.includes(url),url);
  assert.ok([...doc.querySelectorAll('#architecture .layer-copy a')].every(a=>a.rel.includes('noopener')));
@@ -90,7 +93,10 @@ test('dig into the stack and model notes render real, cited project data',()=>{
  const model=doc.querySelector('#model-notes');
  assert.match(model.textContent,/9d18d20a/);
  assert.deepEqual([...model.querySelectorAll('#model-instruments [data-f1]')].map(n=>n.dataset.v),['0.89','0.83','0.52','0.29','0.26','0.19']);
- assert.deepEqual([...model.querySelectorAll('[data-dig]')].map(b=>b.dataset.dig),['0','1','2','3','4'],'every model chapter is a button');
+ assert.deepEqual([...model.querySelectorAll('[data-dig]')].map(b=>b.dataset.dig),['0','1','2','3','4','5'],'every model chapter is a button');
+ assert.deepEqual([...model.querySelectorAll('#model-boxes [data-f1]')].map(n=>n.dataset.v),['0.93','0.93','0.69','0.39'],'box precision/recall from model-evals.md');
+ assert.equal(model.querySelector('#model-boxes [data-avg]').dataset.avg,'0.38');
+ assert.ok([...model.querySelectorAll('.mn-link a')].every(a=>a.getAttribute('href').startsWith('/evals.html')),'links open the rendered evaluation');
  assert.equal(model.querySelectorAll('.tile').length,49,'42 trained, 3 tuned, 4 tested');
  assert.equal(model.querySelectorAll('.t-test').length,4);
  assert.equal(doc.querySelectorAll('.stack-card').length,3);
@@ -126,7 +132,7 @@ test('public and demo versions: demo runs problem, solution, features, stack, mo
  assert.equal(fut.querySelectorAll('.fu-doc .doc-avatar').length,4,'Lil Doc in every chapter');
  const p=demo.querySelector('#problem');
  assert.equal(p.querySelectorAll('.pb-length .pb-tile').length,24,'24 real VID01 frames');
- assert.match(p.textContent,/14:20 to 14:37, 17 s of 1,728 s/);
+ assert.match(p.textContent,/14:20 to 14:37, 17 s of 1,733 s/);
  assert.equal(p.querySelectorAll('.pb-use').length,4,'four use cases');
  assert.equal(demo.querySelector('#case-preview'),null,'the solution replaces Find the clip in the demo');
  assert.ok(demo.querySelector('#solution #sample-event'));
@@ -140,4 +146,22 @@ test('one eye in the pinned nav blurs every surgery picture on the homepage',()=
   const off=new JSDOM(homePage({videoUrl:'/v.mp4',filterOn:false,filterButton:'',error:'',showcase,mode})).window.document;
   assert.equal(off.querySelector('main.landing.is-blurred'),null,mode);
  }
+});
+test('presentation and video demos: their own sections and chapters; the original demo is unchanged',()=>{
+ const doc=mode=>new JSDOM(markup(mode)).window.document;
+ const order=d=>[...d.querySelectorAll('main > section, main > div.feature-stack')].map(el=>el.id||el.className.split(' ')[0]);
+ const chapters=d=>[...d.querySelectorAll('.dig .layer')].map(l=>l.id);
+ const demo=doc('demo'),pres=doc('presentation-demo'),video=doc('video-demo');
+ assert.deepEqual(chapters(demo).slice(0,7),['problem-length','problem-needle','problem-uses','problem-index','solution-label','solution-ask','solution-jump']);
+ assert.deepEqual(order(pres),['landing-intro','problem','solution','feature-stack','architecture','model-notes','databricks','future']);
+ assert.deepEqual(chapters(pres).filter(id=>/^(problem|solution|model)-/.test(id)),['problem-needle','problem-docs','problem-uses','solution-label','solution-ask','solution-jump','solution-record','solution-practice','model-test','model-instruments','model-versions','model-boxes']);
+ assert.deepEqual(order(video),['landing-intro','problem','solution','databricks']);
+ assert.deepEqual(chapters(video),['problem-needle','problem-docs','solution-ask','solution-jump','solution-practice','db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai']);
+ assert.equal(video.querySelector('main').dataset.playMs,'2300','the video demo plays faster');
+ assert.equal(video.querySelector('#problem').dataset.per,'1.6');
+ assert.equal(pres.querySelectorAll('#problem-docs .pb-form-row').length,7,'the seven VID01 steps');
+ assert.match(pres.querySelector('#solution-record').textContent,/does not write clinical notes yet/);
+ assert.equal(pres.querySelectorAll('#solution-practice img[src^="/screens/model-step"]').length,3);
+ assert.match(pres.querySelector('#solution-practice').textContent,/not yet medically reviewed/);
+ assert.equal(doc('public').querySelector('#problem'),null,'the product page is unchanged');
 });

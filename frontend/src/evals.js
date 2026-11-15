@@ -22,6 +22,7 @@ async function main() {
     if (!response.ok || /^\s*<!doctype html/i.test(text)) return fail('This page is not available yet.');
     article.innerHTML = renderMarkdown(text);
     article.removeAttribute('aria-busy');
+    if (location.hash) document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
   } catch {
     fail('Could not load this page. Check your connection and try again.');
   }

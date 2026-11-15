@@ -1,8 +1,8 @@
 /* "Finding one moment": the problem statement for the demo version of the homepage. A pinned stage
    (same mechanics as architecture.js) in three chapters, drawn from real VID01 frames and data:
-   VID01 runs 1,728 s (28:48); the cystic duct is cut at 860–877 s (shared/triplets.annotation.csv);
+   VID01 runs 1,733 s (28:53); the cystic duct is cut at 860–877 s (shared/triplets.annotation.csv);
    instrument lanes are the surgeons' annotations (architecture.js TRACKS). */
-import { onStage, paintFrames, cachedFrame, TRACKS, VID01_LEN } from './architecture.js';
+import { onStage, paintFrames, cachedFrame, TRACKS, VID01_LEN, layerP, pickChapters } from './architecture.js';
 
 const CUT = [860, 877];
 const SAMPLES = Array.from({length: 24}, (_, i) => 36 + i * 72); // one frame every 72 s across VID01
@@ -12,6 +12,17 @@ const frame = (t, w = 160, h = 90) => `<canvas class="vf" data-t="${t}" width="$
 export const frameStrip = () => `<div class="pb-strip">${SAMPLES.map(t => `<span>${frame(t)}</span>`).join('')}</div>`;
 /* Where the scrubber looks while you hunt for the cut, then where it lands (fractions of the video). */
 const HUNT = [.1, .74, .3, .62, .41, .55, CUT[0] / VID01_LEN];
+/* VID01 steps (backend/fixtures/steps.VID01.json, Cholec80 phases) with the instruments annotated in each
+   (shared/triplets.annotation.csv). */
+export const RECORD = [
+  ['Preparation', 0, 21, 'grasper, hook'],
+  ['Calot’s triangle dissection', 21, 673, 'grasper, hook, bipolar, irrigator'],
+  ['Clipping and cutting', 673, 887, 'grasper, clipper, scissors'],
+  ['Gallbladder dissection', 887, 1470, 'grasper, hook, bipolar, irrigator'],
+  ['Gallbladder packaging', 1470, 1568, 'grasper'],
+  ['Cleaning and coagulation', 1568, 1641, 'grasper, irrigator'],
+  ['Gallbladder removal', 1641, 1733, 'grasper'],
+];
 /* Who needs one moment, each pinned to a real VID01 interval (shared/triplets.annotation.csv). The clipper
    count is the surgeon-labeled clipper clips across all 50 surgeries (agent-kit/PROGRESS.md). */
 const USES = [
@@ -25,14 +36,14 @@ const CHAPTERS = [
   {
     id: 'length', name: 'Half an hour',
     title: 'A surgery is half an hour of video.',
-    body: 'VID01, one gallbladder removal from the CholecT50 dataset, is a single recording of 28 minutes 48 seconds. The dataset has 50 recordings like it.',
+    body: 'VID01, one gallbladder removal from the CholecT50 dataset, is a single recording of 28 minutes 53 seconds. The dataset has 50 recordings like it.',
     note: 'Real VID01 frames, one every 72 seconds, folding into its time line.',
     scene: () => `<div class="sc pb-length">${SAMPLES.map((t, i) => {
       const c = i % 6, r = Math.floor(i / 6);
       return `<span class="pb-tile" style="--x0:${14 + c * 90}px;--y0:${96 + r * 56}px;--x1:${14 + i * 532 / 24}px;--w1:${(532 / 24).toFixed(2)}px;--st:${((c + r) * .02).toFixed(3)}">${frame(t)}</span>`;
     }).join('')}
       <div class="pb-total"><b data-clock="${VID01_LEN}">0:00</b><span>VID01, start to finish</span></div>
-      <div class="pb-ticks"><span>0:00</span><span>14:24</span><span>28:48</span></div></div>`,
+      <div class="pb-ticks"><span>0:00</span><span>14:26</span><span>28:53</span></div></div>`,
   },
   {
     id: 'needle', name: '17 seconds',
@@ -42,7 +53,19 @@ const CHAPTERS = [
     scene: () => `<div class="sc pb-needle" style="--cx:${pct(CUT[0] / VID01_LEN)};--cw:${pct((CUT[1] - CUT[0]) / VID01_LEN)}">
       <div class="pb-preview"><canvas class="pv" width="854" height="480" aria-hidden="true"></canvas><span class="pv-time" data-hunt>0:00</span><canvas class="vf" data-t="860.16" width="2" height="2" hidden></canvas></div>
       <div class="pb-bar">${frameStrip()}<span class="pb-cut"></span><span class="pb-knob"></span></div>
-      <div class="pb-callout"><b>Cystic duct cut</b><span>14:20 to 14:37, 17 s of 1,728 s</span></div></div>`,
+      <div class="pb-callout"><b>Cystic duct cut</b><span>14:20 to 14:37, 17 s of 1,733 s</span></div></div>`,
+  },
+  {
+    id: 'docs', name: 'Writing it down',
+    title: 'Then someone has to write it all down.',
+    body: 'Every operation is documented: each step, the instruments used, and when. Done by hand, it takes time and has to be exact, and gaps in the record turn into delays and billing questions.',
+    note: 'Rows are VID01’s real steps (Cholec80 phases) and the instruments annotated in each.',
+    scene: () => `<div class="sc pb-docs"><div class="pb-form">
+      <div class="pb-form-head"><b>Operative record</b><span>VID01, laparoscopic cholecystectomy</span></div>
+      <div class="pb-form-cols"><span>Step</span><span>Time</span><span>Instruments</span></div>
+      ${RECORD.map(([step, a, b, tools], k) => `<div class="pb-form-row" style="--k:${k}"><span>${step}</span><span>${clock(a)}–${clock(b)}</span><span>${tools}</span></div>`).join('')}
+      </div>
+      <div class="pb-review"><b data-review="${VID01_LEN}">0:00</b><span>of 28:53 reviewed, by hand</span></div></div>`,
   },
   {
     id: 'uses', name: 'Who needs it',
@@ -64,12 +87,13 @@ const CHAPTERS = [
   },
 ];
 
-export function problemSection() {
-  return `<section class="dig dig-model dig-problem" id="problem" aria-labelledby="problem-heading" data-intro="0" data-per="2" style="--travel:8;--nav:1">
+export function problemSection({only, per = 2} = {}) {
+  const chapters = pickChapters(CHAPTERS, only);
+  return `<section class="dig dig-model dig-problem" id="problem" aria-labelledby="problem-heading" data-intro="0" data-per="${per}" style="--travel:${chapters.length * per};--nav:1">
     <div class="dig-pin">
       <div class="mn-heading"><h2 id="problem-heading">Finding one moment.</h2></div>
-      <div class="dig-map"><ol class="dig-labels" aria-label="The problem">${CHAPTERS.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>
-      ${CHAPTERS.map((c, i) => `<div class="layer" id="problem-${c.id}" data-layer="${i}" style="--p:0;--s:1">
+      <div class="dig-map"><ol class="dig-labels" aria-label="The problem">${chapters.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>
+      ${chapters.map((c, i) => `<div class="layer" id="problem-${c.id}" data-layer="${i}" style="--p:0;--s:1">
         <div class="dig-copy layer-copy"><h3>${c.title}</h3><p>${c.body}</p></div>
         <div class="pit" style="--k:${i}" role="img" aria-label="${c.name} animation"><canvas class="sky-dither" data-horizon=".72" data-ceiling="4.6" aria-hidden="true"></canvas><div class="fit">${c.scene()}</div><p class="v-cap">${c.note}</p></div>
       </div>`).join('')}
@@ -90,20 +114,26 @@ let shown = null;
 onStage((section, ps) => {
   if (section.id !== 'problem') return;
   paintFrames(section);
-  const clockEl = section.querySelector('[data-clock]');
-  setText(clockEl, clock(Number(clockEl.dataset.clock) * ease(clamp((ps[0] - .3) / .45))));
+  const pLen = layerP(section, ps, 'problem-length');
+  if (pLen !== null) { const el = section.querySelector('[data-clock]'); setText(el, clock(Number(el.dataset.clock) * ease(clamp((pLen - .3) / .45)))); }
   /* Hunting scrubber: the knob, the timestamp and the preview frame follow the scroll. */
-  const needle = section.querySelector('.pb-needle');
-  const x = huntAt(ps[1]);
-  needle.style.setProperty('--hx', x.toFixed(4));
-  const t = x * VID01_LEN;
-  setText(section.querySelector('[data-hunt]'), clock(t));
-  const landed = Math.abs(t - CUT[0]) < 1;
-  const nearest = landed ? 860.16 : SAMPLES.reduce((a, b) => Math.abs(b - t) < Math.abs(a - t) ? b : a);
-  const src = cachedFrame(nearest);
-  const pv = section.querySelector('.pv');
-  if (src && shown !== nearest) { pv.getContext('2d')?.drawImage(src, 0, 0, pv.width, pv.height); pv.classList.add('is-painted'); shown = nearest; }
+  const pNeedle = layerP(section, ps, 'problem-needle');
+  if (pNeedle !== null) {
+    const needle = section.querySelector('.pb-needle');
+    const x = huntAt(pNeedle);
+    needle.style.setProperty('--hx', x.toFixed(4));
+    const t = x * VID01_LEN;
+    setText(section.querySelector('[data-hunt]'), clock(t));
+    const landed = Math.abs(t - CUT[0]) < 1;
+    const nearest = landed ? 860.16 : SAMPLES.reduce((a, b) => Math.abs(b - t) < Math.abs(a - t) ? b : a);
+    const src = cachedFrame(nearest);
+    const pv = section.querySelector('.pv');
+    if (src && shown !== nearest) { pv.getContext('2d')?.drawImage(src, 0, 0, pv.width, pv.height); pv.classList.add('is-painted'); shown = nearest; }
+  }
+  /* Writing it down: the review clock runs as the rows are typed in. */
+  const pDocs = layerP(section, ps, 'problem-docs');
+  if (pDocs !== null) { const el = section.querySelector('[data-review]'); setText(el, clock(Number(el.dataset.review) * clamp((pDocs - .08) / .7))); }
   /* Hand-labeled clips count up as the lanes are drawn. */
-  const count = section.querySelector('[data-count]');
-  setText(count, Math.round(Number(count.dataset.count) * ease(clamp((ps[3] - .3) / .4))).toLocaleString('en-US'));
+  const pIndex = layerP(section, ps, 'problem-index');
+  if (pIndex !== null) { const el = section.querySelector('[data-count]'); setText(el, Math.round(Number(el.dataset.count) * ease(clamp((pIndex - .3) / .4))).toLocaleString('en-US')); }
 });
