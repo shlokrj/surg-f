@@ -67,9 +67,42 @@ def ready_data(root, max_train=None, max_val=None):
     return subsets, signature
 
 
+ARCHITECTURES = ('mobilenet_v3_320', 'mobilenet_v3_hires')
+
+
+def build_model(architecture='mobilenet_v3_320', pretrained=True):
+    """Two-class anatomy Faster R-CNN; returns (model, pretrained weights enum or None).
+
+    mobilenet_v3_320 resizes frames to a 320-pixel short side; mobilenet_v3_hires keeps
+    the native 854x480 Endoscapes/Cholec80 resolution, which matters for thin structures.
+    """
+    from torchvision.models.detection import (fasterrcnn_mobilenet_v3_large_320_fpn, fasterrcnn_mobilenet_v3_large_fpn,
+        FasterRCNN_MobileNet_V3_Large_320_FPN_Weights, FasterRCNN_MobileNet_V3_Large_FPN_Weights)
+    from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+    if architecture == 'mobilenet_v3_320':
+        weights = FasterRCNN_MobileNet_V3_Large_320_FPN_Weights.COCO_V1 if pretrained else None
+        model = fasterrcnn_mobilenet_v3_large_320_fpn(weights=weights, weights_backbone=None)
+    elif architecture == 'mobilenet_v3_hires':
+        weights = FasterRCNN_MobileNet_V3_Large_FPN_Weights.COCO_V1 if pretrained else None
+        model = fasterrcnn_mobilenet_v3_large_fpn(weights=weights, weights_backbone=None, min_size=480, max_size=854)
+    else:
+        raise ValueError(f'unknown architecture: {architecture}')
+    model.roi_heads.box_predictor = FastRCNNPredictor(model.roi_heads.box_predictor.cls_score.in_features, 3)
+    return model, weights
+
+
+def flip_horizontal(pixels, boxes, width):
+    """Mirror a CHW image tensor and its pixel xyxy boxes."""
+    flipped = boxes.clone()
+    if len(boxes):
+        flipped[:, 0], flipped[:, 2] = width - boxes[:, 2], width - boxes[:, 0]
+    return pixels.flip(-1), flipped
+
+
 class Images:
-    def __init__(self, root, partition, data):
+    def __init__(self, root, partition, data, hflip=False):
         self.root = Path(root) / partition
+        self.hflip = hflip
         self.images = data['images']
         rows = {}
         for annotation in data['annotations']:
@@ -89,6 +122,8 @@ class Images:
         boxes = [[x, y, x+w, y+h] for x, y, w, h in (a['bbox'] for a in annotations)]
         target = dict(boxes=torch.tensor(boxes, dtype=torch.float32).reshape(-1, 4),
                       labels=torch.tensor([a['category_id'] for a in annotations], dtype=torch.int64))
+        if self.hflip and torch.rand(()) < .5:  # torch RNG, so --resume restores the augmentation stream
+            pixels, target['boxes'] = flip_horizontal(pixels, target['boxes'], image['width'])
         return pixels, target, image
 
 
@@ -142,6 +177,8 @@ def main():
     parser.add_argument('--learning-rate', type=float, default=0.001)
     parser.add_argument('--seed', type=int, default=17)
     parser.add_argument('--device', default='cpu')
+    parser.add_argument('--architecture', choices=ARCHITECTURES, default='mobilenet_v3_320')
+    parser.add_argument('--hflip', action='store_true', help='Random horizontal flip augmentation (training only)')
     parser.add_argument('--grad-clip', type=float, help='Clip total gradient norm (guards against divergence)')
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--max-train-images', type=int, help='Bounded pipeline check; not an accuracy run')
@@ -154,32 +191,32 @@ def main():
     import torch
     import torchvision
     from torch.utils.data import DataLoader
-    from torchvision.models.detection import fasterrcnn_mobilenet_v3_large_320_fpn, FasterRCNN_MobileNet_V3_Large_320_FPN_Weights
-    from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
     subsets, signature = ready_data(args.data_dir, args.max_train_images, args.max_val_images)
     out = Path(args.output_dir)
     if out.exists() and not args.resume:
         raise FileExistsError(out)
     out.mkdir(parents=True, exist_ok=True)
     random.seed(args.seed); torch.manual_seed(args.seed); torch.set_num_threads(4)
-    train = Images(args.data_dir, 'train', subsets['train'])
+    train = Images(args.data_dir, 'train', subsets['train'], hflip=args.hflip)
     val = Images(args.data_dir, 'val', subsets['val'])
     loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=0,
                         collate_fn=lambda batch: tuple(zip(*batch)), generator=torch.Generator().manual_seed(args.seed))
-    weights = FasterRCNN_MobileNet_V3_Large_320_FPN_Weights.COCO_V1
-    model = fasterrcnn_mobilenet_v3_large_320_fpn(weights=weights)
+    model, weights = build_model(args.architecture)
     weight_file = Path(torch.hub.get_dir()) / 'checkpoints' / Path(urlparse(weights.url).path).name
     weights_sha256 = sha(weight_file)
     expected_prefix = weight_file.stem.rsplit('-', 1)[-1]
     if not weights_sha256.startswith(expected_prefix):
         raise ValueError('cached pretrained weights fail published hash prefix')
-    model.roi_heads.box_predictor = FastRCNNPredictor(model.roi_heads.box_predictor.cls_score.in_features, 3)
     model.to(args.device)
     optimizer = torch.optim.SGD([p for p in model.parameters() if p.requires_grad], lr=args.learning_rate, momentum=.9)
     config = dict(batch_size=args.batch_size, learning_rate=args.learning_rate, device=args.device,
                   weights_sha256=weights_sha256)
     if args.grad_clip is not None:  # only recorded when used, so earlier checkpoints still resume
         config['grad_clip'] = args.grad_clip
+    if args.architecture != 'mobilenet_v3_320':
+        config['architecture'] = args.architecture
+    if args.hflip:
+        config['hflip'] = True
     start, best_ap, history = 0, -1.0, []
     if args.resume:
         previous = torch.load(out / 'last.pt', map_location=args.device, weights_only=False)
@@ -216,7 +253,7 @@ def main():
             best_ap = ap
         checkpoint = dict(model=model.state_dict(), optimizer=optimizer.state_dict(), epoch=epoch,
                           best_ap=best_ap, history=history, baseline_validation=baseline,
-                          data_signature=signature,
+                          data_signature=signature, architecture=args.architecture,
                           seed=args.seed, config=config, torch_rng_state=torch.get_rng_state(),
                           loader_rng_state=loader.generator.get_state())
         atomic_torch_save(torch, checkpoint, out / 'last.pt')
@@ -224,7 +261,7 @@ def main():
             atomic_torch_save(torch, checkpoint, out / 'best.pt')
             (out / 'best-predictions.json').write_text(json.dumps(predictions))
         report = dict(status='bounded pipeline check' if args.max_train_images or args.max_val_images else 'full validation run',
-                      architecture='fasterrcnn_mobilenet_v3_large_320_fpn', initial_weights=weights.name,
+                      architecture=args.architecture, hflip=args.hflip, initial_weights=weights.name,
                       initial_weights_sha256=weights_sha256,
                       categories=CATEGORIES, seed=args.seed, device=args.device, epochs_requested=args.epochs,
                       learning_rate=args.learning_rate, batch_size=args.batch_size, grad_clip=args.grad_clip,

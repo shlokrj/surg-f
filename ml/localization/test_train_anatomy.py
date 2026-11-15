@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from PIL import Image
-from train_anatomy import CATEGORIES, ready_data, skip_nonfinite
+from train_anatomy import CATEGORIES, build_model, flip_horizontal, ready_data, skip_nonfinite
 
 
 class ReadinessTests(unittest.TestCase):
@@ -46,6 +46,26 @@ class NonfiniteLossTests(unittest.TestCase):
         self.assertTrue(skip_nonfinite(False, [empty, empty]))
         with self.assertRaises(ValueError):
             skip_nonfinite(False, [empty, boxed])
+
+
+class ModelAndAugmentationTests(unittest.TestCase):
+    def test_horizontal_flip_mirrors_boxes(self):
+        import torch
+        pixels = torch.arange(12, dtype=torch.float32).reshape(1, 2, 6)
+        flipped, boxes = flip_horizontal(pixels, torch.tensor([[1., 0., 3., 2.]]), 6)
+        self.assertEqual(flipped[0, 0].tolist(), [5., 4., 3., 2., 1., 0.])
+        self.assertEqual(boxes.tolist(), [[3., 0., 5., 2.]])
+        _, empty = flip_horizontal(pixels, torch.zeros((0, 4)), 6)
+        self.assertEqual(tuple(empty.shape), (0, 4))
+
+    def test_architectures_build_three_class_heads(self):
+        for name in ('mobilenet_v3_320', 'mobilenet_v3_hires'):
+            model, weights = build_model(name, pretrained=False)
+            self.assertIsNone(weights)
+            self.assertEqual(model.roi_heads.box_predictor.cls_score.out_features, 3)
+        self.assertEqual(build_model('mobilenet_v3_hires', pretrained=False)[0].transform.min_size, (480,))
+        with self.assertRaises(ValueError):
+            build_model('resnet9000', pretrained=False)
 
 
 if __name__ == '__main__':

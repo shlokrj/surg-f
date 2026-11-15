@@ -16,7 +16,7 @@ import subprocess
 from PIL import Image
 
 from artifact import validate
-from train_anatomy import CATEGORIES
+from train_anatomy import CATEGORIES, build_model
 
 NAMES = {c['id']: c['name'] for c in CATEGORIES}
 
@@ -171,8 +171,6 @@ def main():
     if output.exists():
         parser.error(f'refusing to overwrite {output}')
     import torch
-    from torchvision.models.detection import fasterrcnn_mobilenet_v3_large_320_fpn
-    from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
     stream = probe_video(args.ffmpeg, args.video)
     if args.every_sec is not None:
         end = stream['start_sec'] + stream['duration_sec'] - 1/args.fps if args.end is None else args.end
@@ -180,12 +178,12 @@ def main():
         seconds = [args.start + i*args.every_sec for i in range(count)]
     else:
         seconds = args.seconds
-    model = fasterrcnn_mobilenet_v3_large_320_fpn(weights=None, weights_backbone=None)
-    model.roi_heads.box_predictor = FastRCNNPredictor(model.roi_heads.box_predictor.cls_score.in_features, 3)
     checkpoint = torch.load(args.checkpoint, map_location='cpu', weights_only=False)
+    architecture = checkpoint.get('architecture', 'mobilenet_v3_320')  # checkpoints before the option were 320
+    model, _ = build_model(architecture, pretrained=False)
     model.load_state_dict(checkpoint['model'])
     report = Path(args.checkpoint).parent / 'report.json'
-    provenance = dict(checkpoint_sha256=sha(args.checkpoint), checkpoint_epoch=checkpoint.get('epoch'),
+    provenance = dict(checkpoint_sha256=sha(args.checkpoint), checkpoint_epoch=checkpoint.get('epoch'), architecture=architecture,
                       data_signature=checkpoint['data_signature'],
                       training_report_sha256=sha(report) if report.exists() else None,
                       validation_status=json.loads(report.read_text()).get('status') if report.exists() else 'unknown',
