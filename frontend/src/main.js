@@ -10,6 +10,9 @@ import { timelinePanel, timelineTick } from './timeline.js';
 import { avatar, greeting, switched, localVideoNote, errorReply, reply, STEP_NOTES } from './lildoc.js';
 import { videoForCase, videoAssetForCase } from './cases.js';
 import { mountOverlays } from './overlays.js';
+import homeSteps from '../../backend/fixtures/steps.VID01.json';
+import homeTimeline from '../../backend/fixtures/timeline.VID01.json';
+import homeQuiz from '../../backend/fixtures/quiz.seed-1.json';
 let disposeOverlays = () => {};
 let boxesEnabled = false;
 
@@ -71,7 +74,7 @@ function filterButton() {
 }
 
 function home() {
-  return homePage({videoUrl: escapeHtml(videoForCase('VID01')), filterOn: state.filterOn, filterButton: filterButton(), error: escapeHtml(state.error)});
+  return homePage({videoUrl: escapeHtml(videoForCase('VID01')), filterOn: state.filterOn, filterButton: filterButton(), error: escapeHtml(state.error), showcase: {steps: homeSteps, timeline: homeTimeline, quiz: homeQuiz}});
 }
 
 function detectRequest(input) {
@@ -282,6 +285,10 @@ function wire() {
   document.querySelector('#sample')?.addEventListener('click', () => openSample());
   document.querySelector('#sample-event')?.addEventListener('click', () => openSample(674));
   document.querySelector('#open-sample')?.addEventListener('click', () => openSample());
+  document.querySelectorAll('[data-open-sample]').forEach(button => button.addEventListener('click', () => {
+    openSample();
+    if (button.dataset.command) runSearch(button.dataset.command);
+  }));
   const zone = document.querySelector('#drop-zone');
   const fileInput = document.querySelector('#file-input');
   zone?.addEventListener('click', () => fileInput.click());
