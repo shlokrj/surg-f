@@ -51,6 +51,7 @@ export function startPractice(exercise, hooks) {
   preloadPractice(exercise); // reuses what was loaded while Start / Cancel was showing
   session = {
     exercise, hooks, preload, state: createSession(exercise), element: buildElement(exercise),
+    side: buildSide(), // checklist and video reference, shown under the video
     viewer: null, practice: null, nearLabel: '', progress: 0, failure: '', positionLabel: '',
   };
   const current = session;
@@ -75,6 +76,7 @@ export function startPractice(exercise, hooks) {
 export function disposePractice() {
   if (!session) return;
   session.element.remove();
+  session.side.remove();
   session.viewer?.dispose();
   if (preload === session.preload) preload = null;
   session = null;
@@ -86,10 +88,16 @@ export const practiceActive = () => Boolean(session);
 export function practiceSection() {
   return '<section class="panel practice-panel" id="sec-practice" aria-label="Practice"><div id="practice-root"></div></section>';
 }
+// Slot under the video for the stage checklist and the video reference.
+export function practiceSideSlot() {
+  return '<div class="practice-side" id="practice-side-root"></div>';
+}
 export function mountPractice() {
   const slot = document.querySelector('#practice-root');
   if (!slot || !session) return;
   if (session.element.parentElement !== slot) slot.append(session.element);
+  const side = document.querySelector('#practice-side-root');
+  if (side && session.side.parentElement !== side) side.append(session.side);
   attachViewer();
 }
 function attachViewer() {
@@ -100,7 +108,7 @@ function attachViewer() {
 
 // Called on every video time update: the compact time display only.
 export function practiceTick(time, duration) {
-  const node = session?.element.querySelector('#pr-time');
+  const node = session?.side.querySelector('#pr-time');
   if (node) node.textContent = `${formatTime(time)} / ${duration ? formatTime(duration) : '--:--'}`;
 }
 
@@ -239,7 +247,7 @@ function act(name) {
 
 function wireElement(current) {
   const { element } = current;
-  element.addEventListener('click', event => {
+  const onClick = event => {
     if (session !== current) return;
     const button = event.target.closest('button');
     if (!button || button.disabled) return;
@@ -250,7 +258,9 @@ function wireElement(current) {
     }
     if (button.dataset.zoom) { current.viewer?.zoom(Number(button.dataset.zoom)); return; }
     if (button.dataset.pr) act(button.dataset.pr);
-  });
+  };
+  element.addEventListener('click', onClick);
+  current.side.addEventListener('click', onClick); // Go to moment / Play clip under the video
   // Keyboard play on the focused model (there are no on-screen tool buttons):
   // 1-4 pick up a tray instrument, arrows move it, Enter places, Space uses it, Escape returns it.
   element.addEventListener('keydown', event => {
@@ -308,23 +318,30 @@ function buildElement(exercise) {
       <p class="sr-only" id="pr-keys">Drag an instrument from the tray onto the model, or tap it and then tap where it goes. Press and hold a placed instrument to use it. Drag empty space to rotate the view. With the model focused: number keys 1 to 4 pick up a tray instrument, arrow keys move it between positions, Enter places it, Space performs its gesture, Escape returns it to the tray.</p>
       <p class="pr-feedback" id="pr-feedback"></p>
       <p class="sr-only" id="pr-live" role="status" aria-live="polite"></p>
-      <div class="pr-lower">
-        <ul class="pr-check" id="pr-check" aria-label="What this stage checks"></ul>
-        <div class="pr-ref" id="pr-ref"></div>
-      </div>
       <div class="pr-actions" id="pr-actions"></div>
     </div>
     <section class="pr-recap" id="pr-recap" hidden aria-labelledby="pr-recap-title"></section>`;
   return element;
 }
 
+// The stage checklist and video reference, which sit under the video in the left column.
+function buildSide() {
+  const side = document.createElement('div');
+  side.className = 'pr-side';
+  side.innerHTML = `
+    <div class="pr-check-card"><p class="pr-side-label">This stage checks</p><ul class="pr-check" id="pr-check" aria-label="What this stage checks"></ul></div>
+    <div class="pr-ref" id="pr-ref"></div>`;
+  return side;
+}
+
 function paint() {
   if (!session) return;
-  const { exercise, state, element } = session;
+  const { exercise, state, element, side } = session;
   const stage = currentStage(exercise, state);
   const total = exercise.stages.length;
   const complete = state.phase === 'complete';
-  const $ = selector => element.querySelector(selector);
+  const $ = selector => element.querySelector(selector) ?? side.querySelector(selector);
+  side.hidden = complete; // the recap replaces the per-stage checklist
 
   // Stage rail: completed stages can replay; future stages reveal nothing.
   const done = new Map(state.records.map(record => [record.stageId, record]));

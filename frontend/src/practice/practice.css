@@ -76,7 +76,12 @@
 .pr-feedback.is-success { border-color: #b5dcc9; border-left-color: var(--brand); background: var(--brand-tint); }
 .pr-why { display: block; margin-top: 4px; color: var(--ink-muted); }
 
-.pr-lower { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; }
+/* Under the video (left column): the stage checklist, then the video reference. */
+.practice-side { margin-top: 14px; }
+.pr-side { display: grid; gap: 12px; }
+.pr-side[hidden] { display: none; }
+.pr-check-card { padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.pr-side-label { margin-bottom: 6px; font-size: var(--text-sm); font-weight: 600; }
 .pr-check { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: var(--text-sm); }
 .pr-check li { display: flex; gap: 8px; color: var(--ink-muted); }
 .pr-check li.is-done { color: var(--brand-strong); font-weight: 600; }
@@ -118,7 +123,6 @@
   .pr-head, .pr-rail, .pr-work, .pr-recap { padding-left: 14px; padding-right: 14px; }
   .pr-head { flex-direction: column; }
   .pr-stage { aspect-ratio: 4 / 5; max-height: 72vh; }
-  .pr-lower { grid-template-columns: 1fr; }
   .pr-actions { justify-content: stretch; }
   .pr-actions .btn-primary { flex: 1; }
 }

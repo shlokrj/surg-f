@@ -28,7 +28,7 @@ import { modelPanel, mountModel, modelTick, disposeModel } from './model/panel.j
 import { stepIndexAt } from './model/steps.js';
 import { EXERCISES, STEP_LABELS, parsePracticeIntent, findExercise, exerciseById } from './practice/catalog.js';
 import { fingerprintFile, checkEligibility, matchesFingerprint } from './practice/eligibility.js';
-import { practiceSection, mountPractice, startPractice, disposePractice, preloadPractice, disposePreload, practiceTick } from './practice/workspace.js';
+import { practiceSection, practiceSideSlot, mountPractice, startPractice, disposePractice, preloadPractice, disposePreload, practiceTick } from './practice/workspace.js';
 import homeSteps from '../../backend/fixtures/steps.VID01.json';
 import homeTimeline from '../../backend/fixtures/timeline.VID01.json';
 import homeQuiz from '../../backend/fixtures/quiz.seed-1.json';
@@ -298,7 +298,7 @@ function videoSection() {
         <div class="video-fallback" id="video-fallback" ${state.videoError ? '' : 'hidden'}><strong>Video unavailable</strong><span>The video for ${escapeHtml(state.caseId)} has not been downloaded or hosted yet.</span></div>
         <div class="video-controls" role="group" aria-label="Video controls"><button type="button" id="video-play" aria-label="Play video">▶</button><span id="video-time">00:00 / --:--</span><input id="video-seek" type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek video"><button type="button" id="video-mute" aria-label="Mute video">♬</button><input id="video-volume" type="range" min="0" max="1" value="1" step="0.05" aria-label="Volume"><select id="video-speed" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select><button type="button" id="video-fullscreen" aria-label="Enter fullscreen">⛶</button></div>
       </div>
-      <div class="overlay-controls" id="overlay-controls"></div>
+      ${state.practice ? practiceSideSlot() : '<div class="overlay-controls" id="overlay-controls"></div>'}
       ${state.localVideo && !state.practice ? '<p class="local-note">Local video playback only. This file has no indexed annotations.</p>' : ''}
     </section>`;
 }
@@ -676,7 +676,8 @@ function wire() {
   // Video controls are redrawn each time; they act on whichever <video> is in the page.
   const video = document.querySelector('#player');
   wireVideo(video);
-  if (video) disposeOverlays = mountOverlays({ video, host: video.parentElement, controls: document.querySelector('#overlay-controls'), caseId: state.caseId, assetId: state.localVideo ? null : videoAssetForCase(state.caseId), enabled: boxesEnabled, onToggle: value => { boxesEnabled = value; } });
+  // Practice has no bounding boxes: the space under the video holds the stage checklist instead.
+  if (video && !state.practice) disposeOverlays = mountOverlays({ video, host: video.parentElement, controls: document.querySelector('#overlay-controls'), caseId: state.caseId, assetId: state.localVideo ? null : videoAssetForCase(state.caseId), enabled: boxesEnabled, onToggle: value => { boxesEnabled = value; } });
   document.querySelector('#video-play')?.addEventListener('click', () => { if (video.paused) video.play().catch(() => {}); else video.pause(); });
   document.querySelector('#video-seek')?.addEventListener('input', event => { if (video?.readyState >= 1) video.currentTime = Number(event.target.value); });
   document.querySelector('#video-mute')?.addEventListener('click', () => { video.muted = !video.muted; });
