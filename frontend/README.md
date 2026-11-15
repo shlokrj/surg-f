@@ -1,6 +1,6 @@
 # Surg+F frontend
 
-Current ownership: **Shlok — general frontend design; Aadhi — spatial data/models/evaluation/export; Mihir — spatial player/browser verification.** Spatial work stays on `feat/spatial-overlays`. Shlok and Mihir coordinate shared frontend markup/styles. See [tasks and handoffs](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). Earlier owner notes below are historical.
+Current ownership: **Shlok — general frontend design; Aadhi — spatial data/models/evaluation/export; Mihir — spatial player/browser verification.** The integrated frontend is on `main` through `6d468dd`; new spatial work stays on `feat/spatial-overlays` until explicitly published. Shlok and Mihir coordinate shared frontend markup/styles. See [tasks and handoffs](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow). Earlier owner notes below are historical.
 
 The dashboard lets users switch between hosted VID01 and VID02. The video, operation steps, and requested outputs are on the left; Lil Doc and the chat input are on the right. Earlier user questions remain clickable in the conversation and rerun their query. Search results are scoped to the open case using the shared `GET /search?q=...` clip contract.
 

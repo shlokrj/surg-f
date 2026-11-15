@@ -6,7 +6,7 @@ Shlok now owns **general frontend design and presentation**, and is no longer as
 
 Spatial teammates continue on `feat/spatial-overlays`; Aadhi should retain the scoped evaluator already pushed in `78dfef0`. Shlok and Mihir must coordinate shared `frontend/src/main.js`, `style.css` and player markup: Shlok owns overall design, Mihir owns overlay behavior. Do not overwrite each other's edits. Full tasks and handoffs are in [the localization plan](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow).
 
-This request authorizes pushing these ownership docs to main only. Unfinished spatial code remains on its branch until a later explicit publication request. Documentation-only update; Markdown links and diff checked, no application changes or new training runs.
+The ownership change was initially documentation-only. Mihir later requested publication of the already integrated `frontend/dev` work; `main` now contains it through `6d468dd`. Further unfinished spatial work remains on `feat/spatial-overlays` until explicitly published. The frontend progress row records checks and the unresolved overlay dimension mismatch.
 
 
 ## Prior spatial team assignments (superseded 2026-11-14)
@@ -23,7 +23,7 @@ Read [the complete assignments](../ml/LOCALIZATION_PLAN.md#current-assignments-a
 
 ## Frontend merge to spatial owner (2026-11-14)
 
-Mihir merged the stage-3 player UI and the newer steps/Lil Doc layout into `frontend/dev`, keeping the custom controls, content filter, clickable prior questions, and home clipper seek. Local Chrome against the running backend reached `11:14 / 28:53` on VID01, showed five clipper moments across seven operation steps and only six tools in `/chart instruments`, and showed the overlay toggle. **Aadhi:** verify the source-to-playable-video pixel mapping for the downloaded VID01 MP4, which reports `854×484` in Chrome; `frontend/public/overlays/VID01.json` declares `854×480`. Enabling boxes reports “Overlay dimensions do not match this video,” so no box appears. Hand Mihir the verified frame-to-video transform and asset binding before changing the artifact dimensions or relaxing the guard. The DOM tests use simulated `854×480` video dimensions and do not catch this.
+Mihir merged the stage-3 player UI and the newer steps/Lil Doc layout into `frontend/dev` and then published the integration to `main`, keeping the custom controls, content filter, clickable prior questions, and home clipper seek. Local Chrome against the running backend reached `11:14 / 28:53` on VID01, showed five clipper moments across seven operation steps and only six tools in `/chart instruments`, and showed the overlay toggle. **Aadhi:** verify the source-to-playable-video pixel mapping for the downloaded VID01 MP4, which reports `854×484` in Chrome; `frontend/public/overlays/VID01.json` declares `854×480`. Enabling boxes reports “Overlay dimensions do not match this video,” so no box appears. Hand Mihir the verified frame-to-video transform and asset binding before changing the artifact dimensions or relaxing the guard. The DOM tests use simulated `854×480` video dimensions and do not catch this.
 
 ## Spatial work published to main (2026-11-14)
 
