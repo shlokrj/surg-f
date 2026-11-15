@@ -150,7 +150,7 @@ WHERE lower(label) = 'scissors'</code></pre>
 }
 
 export function architectureSection() {
-  return `<section class="dig" id="architecture" aria-labelledby="dig-heading" style="--e:0;--nav:0;--depth:0">
+  return `<section class="dig" id="architecture" aria-labelledby="dig-heading" data-intro="1.6" data-per="1.3" style="--e:0;--nav:0;--depth:0;--travel:9.4">
     <div class="dig-pin">
       <div class="dig-copy dig-intro-copy" data-copy="-1"><h2 id="dig-heading">Dig into the stack.</h2><p>Surg+F is six layers, from the player you use down to the surgery video underneath. Scroll to dig through them, or pick a layer.</p></div>
       <div class="dig-map">
@@ -170,86 +170,91 @@ export function architectureSection() {
   </section>`;
 }
 
-/* ---- Scroll mapping. The pinned stage travels INTRO viewport heights for the block, then PER for each
-   layer. Inside a layer, the scene plays over the first PLAY of its span; the rest digs to the next. ---- */
-const INTRO = 1.6, PER = 1.3, PLAY = .72, DIG = .2;
-const TRAVEL = INTRO + LAYERS.length * PER;
+/* ---- Scroll mapping, shared by every pinned stage (`.dig`): this one and the model notes. The stage
+   travels data-intro viewport heights before the first layer, then data-per for each layer. Inside a
+   layer, the scene plays over the first PLAY of its span; the rest digs to the next. ---- */
+const PLAY = .72, DIG = .2;
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 const smooth = v => v * v * (3 - 2 * v);
+const config = section => {
+  const intro = Number(section.dataset.intro) || 0, per = Number(section.dataset.per) || 1.3;
+  const n = section.querySelectorAll('.layer').length;
+  return {intro, per, n, travel: intro + n * per};
+};
 
-function digState(t) {
+function digState(t, {intro, per, n}) {
   const e = smooth(clamp((t - .05) / 1.05));
-  if (t < INTRO) return {e, d: -1 + smooth(clamp((t - (INTRO - .5)) / .5)), k: -1, u: 0};
-  const L = (t - INTRO) / PER, k = Math.min(LAYERS.length - 1, Math.floor(L)), u = clamp(L - k);
-  const d = k + (k < LAYERS.length - 1 ? smooth(clamp((u - (1 - DIG)) / DIG)) : 0);
+  if (t < intro) return {e, d: -1 + smooth(clamp((t - (intro - .5)) / .5)), k: -1, u: 0};
+  const L = (t - intro) / per, k = Math.min(n - 1, Math.floor(L)), u = clamp(L - k);
+  const d = k + (k < n - 1 ? smooth(clamp((u - (1 - DIG)) / DIG)) : 0);
   return {e, d, k, u};
 }
 
 const isStacked = () => window.matchMedia?.('(max-width: 860px)').matches;
 
-/* Scroll position that shows layer i with its scene mostly played. */
-export function digScrollTop(root, i) {
-  const section = root.querySelector('.dig');
+/* Scroll position that shows layer i of a pinned stage with its scene mostly played. */
+export function digScrollTop(section, i) {
   if (!section) return null;
   if (isStacked()) {
-    const el = section.querySelector(`[data-layer="${i}"]`);
-    return el.getBoundingClientRect().top + window.scrollY - 72;
+    const el = section.querySelectorAll('.layer')[i];
+    return el ? el.getBoundingClientRect().top + window.scrollY - 72 : null;
   }
+  const cfg = config(section);
   const span = Math.max(1, section.offsetHeight - window.innerHeight);
-  const t = INTRO + (i + (PLAY * .82)) * PER;
-  return section.getBoundingClientRect().top + window.scrollY + t / TRAVEL * span;
+  const t = cfg.intro + (i + (PLAY * .82)) * cfg.per;
+  return section.getBoundingClientRect().top + window.scrollY + t / cfg.travel * span;
 }
 
-let typed = '';
+/* Hooks a stage can register to run after the shared variables are set (ps = each layer's progress). */
+const hooks = [];
+export const onStage = fn => hooks.push(fn);
+
 export function updateArchitecture(root, reduced) {
-  const section = root.querySelector('.dig');
-  if (!section) return;
+  root.querySelectorAll('.dig').forEach(section => updateStage(section, reduced));
+}
+
+function updateStage(section, reduced) {
   const vh = window.innerHeight;
   const layers = [...section.querySelectorAll('.layer')];
   const slabs = [...section.querySelectorAll('.block .slab')];
   const rect = section.getBoundingClientRect();
   if (rect.bottom < -vh || rect.top > vh * 2) return;
-  paintFrames(section);
+  const cfg = config(section);
   let e, d, ps, nav;
   if (isStacked()) {
     /* Phones: no pin. The block opens as it passes; each scene plays as it crosses the viewport. */
-    const map = section.querySelector('.dig-map').getBoundingClientRect();
-    e = reduced ? 1 : smooth(clamp((vh * .85 - map.top) / (vh * .6)));
+    const map = section.querySelector('.dig-map')?.getBoundingClientRect();
+    e = reduced || !map ? 1 : smooth(clamp((vh * .85 - map.top) / (vh * .6)));
     d = -1; nav = 0;
     ps = layers.map(l => { const r = l.querySelector('.pit').getBoundingClientRect(); return reduced ? 1 : clamp((vh * .92 - r.top) / (r.height * 1.1)); });
     layers.forEach(l => { l.style.setProperty('--s', 0); l.style.setProperty('--sa', 0); });
   } else {
-    const t = clamp(-rect.top / Math.max(1, section.offsetHeight - vh)) * TRAVEL;
+    const t = clamp(-rect.top / Math.max(1, section.offsetHeight - vh)) * cfg.travel;
     let k, u;
-    ({e, d, k, u} = digState(t));
+    ({e, d, k, u} = digState(t, cfg));
     if (reduced) { e = 1; d = Math.round(d); }
     nav = clamp(d + 1);
     ps = layers.map((_, j) => reduced || j < k ? 1 : j > k ? 0 : clamp(u / PLAY));
     layers.forEach((l, j) => { l.style.setProperty('--s', (j - d).toFixed(4)); l.style.setProperty('--sa', Math.abs(j - d).toFixed(4)); });
     const introCopy = section.querySelector('.dig-intro-copy');
-    introCopy.style.setProperty('--s', (-1 - d).toFixed(4));
-    introCopy.style.setProperty('--sa', Math.abs(-1 - d).toFixed(4));
+    introCopy?.style.setProperty('--s', (-1 - d).toFixed(4));
+    introCopy?.style.setProperty('--sa', Math.abs(-1 - d).toFixed(4));
   }
   section.style.setProperty('--e', e.toFixed(4));
   section.style.setProperty('--nav', nav.toFixed(4));
   section.classList.toggle('is-open', e > .35);
   section.classList.toggle('is-dug', d > -.5);
-  section.style.setProperty('--depth', clamp(d / (LAYERS.length - 1)).toFixed(4));
+  section.style.setProperty('--depth', clamp(d / Math.max(1, cfg.n - 1)).toFixed(4));
   layers.forEach((l, j) => {
     l.style.setProperty('--p', ps[j].toFixed(4));
-    const s = Math.abs(j - d);
-    l.classList.toggle('is-on', s < .5);
+    l.classList.toggle('is-on', Math.abs(j - d) < .5);
   });
-  /* The active slab slides out of the map toward the scene; the rest dim. */
+  /* The map keeps its shape; only the current layer's slab stays in full color. */
   const active = d < -.5 ? -1 : Math.round(d);
-  slabs.forEach((s, i) => {
-    const out = nav * clamp(1 - Math.abs(i - d));
-    s.style.setProperty('--out', out.toFixed(4));
-    s.style.setProperty('--dim', (nav * (1 - out)).toFixed(4));
-  });
+  slabs.forEach((s, i) => s.style.setProperty('--dim', (nav * (1 - clamp(1 - Math.abs(i - d)))).toFixed(4)));
   section.querySelectorAll('[data-dig]').forEach((b, i) => { b.classList.toggle('is-on', i === active); b.toggleAttribute('aria-current', i === active); });
   /* Labels track their slab's top face; all share one column right of the widest slab. */
-  if (!isStacked()) {
+  if (slabs.length && !isStacked()) {
     const map = section.querySelector('.dig-map').getBoundingClientRect();
     const tops = slabs.map(s => s.querySelector('.top').getBoundingClientRect());
     const right = Math.max(...tops.map(r => r.right)) - map.left + 22;
@@ -265,14 +270,21 @@ export function updateArchitecture(root, reduced) {
     const fit = Math.min(1.25, pit.clientWidth / 560, pit.clientHeight / 540) || 1;
     pit.style.setProperty('--fit', fit.toFixed(4));
   });
-  /* Search scene: the question types itself as the scene plays. */
+  hooks.forEach(fn => fn(section, ps, reduced));
+}
+
+/* This stage's extras: real frames, and the search question typing itself as the scene plays. */
+let typed = '';
+onStage((section, ps) => {
+  if (section.id !== 'architecture') return;
+  paintFrames(section);
   const ask = section.querySelector('.ask-text');
   if (ask) {
-    const full = ask.dataset.type, p = ps[1];
-    const next = full.slice(0, Math.round(full.length * clamp(p / .22)));
+    const full = ask.dataset.type;
+    const next = full.slice(0, Math.round(full.length * clamp(ps[1] / .22)));
     if (next !== typed || ask.textContent !== next) { typed = next; ask.textContent = next; }
   }
-}
+});
 
 /* ---- Real VID01 frames. One hidden video seeks to each needed second and copies the picture into a
    cache, then every canvas for that second is painted. Without the video, cards keep their fallback. ---- */

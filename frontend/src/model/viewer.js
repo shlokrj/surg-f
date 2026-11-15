@@ -35,7 +35,7 @@ export async function createViewer({ onChange = () => {}, onHover = () => {} } =
   renderer.localClippingEnabled = true;
   const canvas = renderer.domElement;
   canvas.setAttribute('role', 'img');
-  canvas.setAttribute('aria-label', '3D model of the gallbladder and nearby organs. Drag to rotate, scroll to zoom, select an organ to see through it.');
+  canvas.setAttribute('aria-label', '3D model of the gallbladder and nearby organs. Drag to rotate, scroll to zoom, select an organ to fade it and again to bring it back.');
   element.append(canvas);
 
   const scene = new THREE.Scene();
@@ -289,14 +289,17 @@ export async function createViewer({ onChange = () => {}, onHover = () => {} } =
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
-  const solidOrgans = () => [...organs.values()]
-    .filter(entry => entry.part.group !== 'outline')
-    .flatMap(entry => entry.meshes.filter(mesh => mesh.material.opacity > 0.6));
+  // Solid organs, plus organs the user faded, so a faded organ can be clicked back.
+  // ponytail: the nearest hit wins, so a faded organ in front blocks clicks on what is behind
+  // it; the "See through" buttons still reach those.
+  const clickableOrgans = () => [...organs.entries()]
+    .filter(([, entry]) => entry.part.group !== 'outline')
+    .flatMap(([name, entry]) => entry.meshes.filter(mesh => userGhost.has(name) || mesh.material.opacity > 0.6));
   function organAt(event) {
     const box = canvas.getBoundingClientRect();
     pointer.set(((event.clientX - box.left) / box.width) * 2 - 1, -((event.clientY - box.top) / box.height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
-    return raycaster.intersectObjects(solidOrgans(), false)[0]?.object.userData.organ ?? null;
+    return raycaster.intersectObjects(clickableOrgans(), false)[0]?.object.userData.organ ?? null;
   }
   let pressed = null;
   canvas.addEventListener('pointerdown', event => { pressed = { x: event.clientX, y: event.clientY }; });
@@ -355,7 +358,7 @@ export async function createViewer({ onChange = () => {}, onHover = () => {} } =
       onChange();
     },
     showAll() { userGhost.clear(); show(sceneKey, { camera: false }); onChange(); },
-    resetView() { show(sceneKey); },
+    resetView() { userGhost.clear(); show(sceneKey); onChange(); }, // camera and faded organs
     zoom(factor) { zoom(factor); },
     // For tests and debugging: what is on screen right now.
     snapshot: () => ({ step: sceneKey, ghosted: [...userGhost], state: { ...state }, camera: camera.position.toArray(), specimen: specimen.position.toArray() }),

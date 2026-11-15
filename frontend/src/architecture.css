@@ -10,7 +10,7 @@
 .slab .side{top:0;left:100%;width:var(--t);height:100%;transform-origin:left;transform:rotateY(-90deg);background:var(--side)}
 
 /* ---- The pinned stage ---- */
-.dig{--e:0;--nav:0;--depth:0;position:relative;height:calc(100svh * 10.4);background:var(--page);border-top:1px solid var(--line)}
+.dig{--e:0;--nav:0;--depth:0;position:relative;height:calc(100svh * (1 + var(--travel)));background:var(--page);border-top:1px solid var(--line)}
 .dig-pin{position:sticky;top:0;height:100svh;min-height:640px;display:grid;grid-template-columns:minmax(0,.74fr) minmax(0,2fr);grid-template-areas:"copy stage";align-items:center;column-gap:3vw;padding:0 4vw;overflow:clip}
 .layer{display:contents}
 
@@ -31,9 +31,9 @@
 
 /* Layer map: the block. Big and centered for the intro, then a small exploded tower on the right. */
 .dig-map{grid-area:stage;position:relative;align-self:stretch;z-index:2;pointer-events:none}
-.dig-stage{position:absolute;inset:0;perspective:2200px}
-.block{--gap:clamp(46px,7vh,78px);--navgap:150px;--navx:250px;position:absolute;left:calc(50% + var(--nav) * (50% - var(--navx)));top:52%;width:0;height:0;transform-style:preserve-3d;transform:scale(calc(1 - var(--nav) * .72)) rotateX(58deg) rotateZ(calc(45deg - var(--e) * 10deg)) translateZ(calc(-1 * (var(--e) * 2.5 * var(--gap) + var(--nav) * 2.5 * var(--navgap) + 90px)))}
-.block .slab{--w:min(26vw,330px);--d:min(26vw,330px);--t:30px;--out:0;--dim:0;transform:translateZ(calc((5 - var(--n)) * (var(--t) + var(--e) * var(--gap) + var(--nav) * var(--navgap)))) translate(calc(var(--out) * -130px), calc(var(--out) * 92px))}
+.dig-stage{position:absolute;inset:0;perspective:calc(2200px + var(--nav) * 60000px)}
+.block{--gap:clamp(46px,7vh,78px);--navgap:120px;--navx:226px;position:absolute;left:calc(50% + var(--nav) * (50% - var(--navx)));top:52%;width:0;height:0;transform-style:preserve-3d;transform:scale(calc(1 - var(--nav) * .74)) rotateX(58deg) rotateZ(calc(45deg - var(--e) * 10deg)) translateZ(calc(-1 * (var(--e) * 2.5 * var(--gap) + var(--nav) * 2.5 * var(--navgap) + 90px)))}
+.block .slab{--w:min(26vw,330px);--d:min(26vw,330px);--t:30px;--dim:0;transform:translateZ(calc((5 - var(--n)) * (var(--t) + var(--e) * var(--gap) + var(--nav) * var(--navgap))))}
 .block .slab .top{background-color:color-mix(in srgb,var(--top),var(--page) calc(var(--dim) * 62%))}
 .block .slab .front{background:color-mix(in srgb,var(--front),var(--page) calc(var(--dim) * 62%))}
 .block .slab .side{background:color-mix(in srgb,var(--side),var(--page) calc(var(--dim) * 62%))}

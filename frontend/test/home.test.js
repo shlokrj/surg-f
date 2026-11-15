@@ -35,7 +35,7 @@ test('wordmark keeps the real plus with the lens around it, and the plus dither 
  const brand=doc.querySelector('.small-brand .sf-mark');
  assert.equal(brand.textContent,'surg+f');
  assert.equal(brand.querySelectorAll('kbd').length,2);
- assert.equal(doc.querySelector('.footer-identity .sf-mark').outerHTML,brand.outerHTML,'nav and footer lockups are identical');
+ assert.equal(doc.querySelectorAll('.sf-mark').length,2,'one hero mark and one pinned nav mark; the footer relies on the pinned nav');
  assert.ok([...doc.querySelectorAll('.sky-dither')].every(c=>c.getAttribute('aria-hidden')==='true'));
  const a=ditherCells(64,40),b=ditherCells(64,40);
  assert.deepEqual(a,b);
@@ -50,7 +50,7 @@ test('feature sections show fixture data and open the demo with a real command',
  assert.match(doc.querySelector('#feature-steps').closest('section').textContent,/Clipping and cutting/);
  assert.match(doc.querySelector('#feature-chart').closest('section').textContent,/1:42/);
  assert.match(doc.querySelector('#feature-quiz').closest('section').textContent,/Not yet clinically reviewed/);
- assert.deepEqual([...doc.querySelectorAll('[data-open-sample]')].map(b=>b.dataset.command??''),['','/chart instruments','/quiz','']);
+ assert.deepEqual([...doc.querySelectorAll('[data-open-sample]')].map(b=>b.dataset.command??''),['','/chart instruments','/quiz']);
  assert.ok(doc.querySelector('.hero-search'),'hero search sits inside the frame');
 });
 test('logo and back-to-top scroll only the window, never the clipped hero layers',()=>{
@@ -76,19 +76,33 @@ test('logo and back-to-top scroll only the window, never the clipped hero layers
 test('dig into the stack and model notes render real, cited project data',()=>{
  const doc=new JSDOM(markup()).window.document;
  assert.equal(doc.querySelectorAll('.block .slab').length,6,'the block has six layers');
- const scenes=[...doc.querySelectorAll('.dig .layer')];
+ const scenes=[...doc.querySelectorAll('#architecture .layer')];
  assert.deepEqual(scenes.map(s=>s.id),['layer-player','layer-search','layer-index','layer-model','layer-features','layer-video']);
- assert.deepEqual([...doc.querySelectorAll('.dig-labels button')].map(b=>b.dataset.dig),['0','1','2','3','4','5'],'every layer label is a button');
+ assert.deepEqual([...doc.querySelectorAll('#architecture .dig-labels button')].map(b=>b.dataset.dig),['0','1','2','3','4','5'],'every layer label is a button');
  assert.match(doc.querySelector('#layer-player').textContent,/gallbladder 0\.997/,'real VID01 overlay prediction at 860 s');
- const links=[...doc.querySelectorAll('.layer-copy a')].map(a=>a.href);
+ const links=[...doc.querySelectorAll('#architecture .layer-copy a')].map(a=>a.href);
  for (const url of ['https://arxiv.org/abs/2109.03223','https://arxiv.org/abs/1602.03012','https://arxiv.org/abs/2307.15220','https://github.com/CAMMA-public/SurgVLP','https://fastapi.tiangolo.com/','https://mlflow.org/','https://delta.io/']) assert.ok(links.includes(url),url);
- assert.ok([...doc.querySelectorAll('.layer-copy a')].every(a=>a.rel.includes('noopener')));
+ assert.ok([...doc.querySelectorAll('#architecture .layer-copy a')].every(a=>a.rel.includes('noopener')));
  assert.equal(doc.querySelectorAll('.outs i').length,29,'6 instruments, 9 actions and 14 targets');
  assert.match(doc.querySelector('#layer-index').textContent,/860.*877.*scissors/s);
  assert.equal(doc.querySelectorAll('#layer-video .fr.is-cut').length,4,'scissors from 14:20 per the VID01 annotations');
  assert.equal(doc.querySelectorAll('#layer-video .lane.is-cut .track i').length,1,'one scissors segment in VID01');
  const model=doc.querySelector('#model-notes');
  assert.match(model.textContent,/9d18d20a/);
- assert.deepEqual([...model.querySelectorAll('.m-card')[0].querySelectorAll('.f1-num')].map(n=>n.dataset.count),['0.89','0.83','0.52','0.29','0.26','0.19']);
+ assert.deepEqual([...model.querySelectorAll('#model-instruments [data-f1]')].map(n=>n.dataset.v),['0.89','0.83','0.52','0.29','0.26','0.19']);
+ assert.deepEqual([...model.querySelectorAll('[data-dig]')].map(b=>b.dataset.dig),['0','1','2','3','4'],'every model chapter is a button');
+ assert.equal(model.querySelectorAll('.tile').length,49,'42 trained, 3 tuned, 4 tested');
+ assert.equal(model.querySelectorAll('.t-test').length,4);
  assert.equal(doc.querySelectorAll('.stack-card').length,3);
+});
+test('databricks section covers the real Databricks work, with the mark and checked links',()=>{
+ const doc=new JSDOM(markup()).window.document;
+ const db=doc.querySelector('#databricks');
+ assert.ok(db.querySelector('h2 .db-mark'),'Databricks mark in the heading');
+ assert.deepEqual([...db.querySelectorAll('.layer')].map(l=>l.id),['db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai']);
+ assert.equal(db.querySelectorAll('.bundles i').length,50,'one bundle per surgery');
+ assert.match(db.textContent,/9d18d20a/);assert.match(db.textContent,/surgf-import-clips/);assert.match(db.textContent,/surgf_quiz_facts/);
+ assert.deepEqual([...db.querySelectorAll('[data-scrub]')].map(b=>b.dataset.scrub.split(',')[1]),['50','0.304','0.343','11264','1658']);
+ assert.ok([...db.querySelectorAll('.layer-copy a')].every(a=>a.rel.includes('noopener')&&a.target==='_blank'));
+ assert.ok(doc.querySelector('.footer-links a[href="#databricks"]'));
 });
