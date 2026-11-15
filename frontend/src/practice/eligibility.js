@@ -44,7 +44,12 @@ export function checkEligibility(exercise, video) {
   const bound = exercise.eligible_video;
   const refuse = (reason, message) => ({ ok: false, reason, message });
   if (!video.localVideo) {
-    return refuse('not_uploaded', `Practice runs only on an uploaded copy of the ${bound.case_id} demonstration video, because its stages are timed to that exact file. Use “Open your own video”, pick ${bound.case_id}.mp4, and ask me again.`);
+    // The hosted demo case is the same asset, bound by its hosted asset id.
+    if (!bound.hosted || video.assetId !== bound.asset_id) {
+      return refuse('wrong_case', `Practice is built on the ${bound.case_id} video, because its stages are timed to that exact recording. Switch to ${bound.case_id} and ask me again.`);
+    }
+    if (video.videoError) return refuse('video_error', `The ${bound.case_id} video isn’t available here, so I can’t line the exercise up with it.`);
+    return checkDuration(bound, video, refuse);
   }
   if (video.videoError) return refuse('video_error', 'I can’t play this upload, so I can’t line the exercise up with it. Try opening the file again.');
   if (video.fingerprintError) return refuse('fingerprint_error', `I couldn’t check whether this upload is the ${bound.case_id} demo, so I won’t start Practice on it.`);
@@ -53,11 +58,16 @@ export function checkEligibility(exercise, video) {
   if (print.algorithm !== bound.fingerprint.algorithm || print.bytes !== bound.fingerprint.bytes || print.sample_sha256 !== bound.fingerprint.sample_sha256) {
     return refuse('mismatch', `This upload isn’t the ${bound.case_id} demonstration video my exercise is built on, so its moments wouldn’t line up. Practice works only with that exact file for now.`);
   }
+  return checkDuration(bound, video, refuse);
+}
+
+// The stage times are only meaningful if the player reports the bound duration.
+function checkDuration(bound, video, refuse) {
   if (!(video.duration > 0) || !Number.isFinite(video.duration)) {
     return refuse('unknown_duration', 'I can’t read this video’s length yet, so I can’t line the stages up with it. Wait for it to load and ask again.');
   }
   if (Math.abs(video.duration - bound.duration_sec) > bound.duration_tolerance_sec) {
-    return refuse('duration_mismatch', `This file’s length doesn’t match the ${bound.case_id} demo, so the stage moments would be off. I won’t start Practice on it.`);
+    return refuse('duration_mismatch', `This video’s length doesn’t match the ${bound.case_id} demo, so the stage moments would be off. I won’t start Practice on it.`);
   }
   return { ok: true };
 }

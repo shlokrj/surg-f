@@ -47,7 +47,7 @@ const state = {
 };
 // A reference clip being played in Practice stops at this video time.
 let practiceStopAt = null;
-const COMMANDS = ['/timestamp', '/quiz', '/chart', '/model'];
+const COMMANDS = ['/timestamp', '/quiz', '/chart', '/model', '/practice'];
 const formatTime = seconds => {
   const n = Math.floor(Number(seconds) || 0);
   return `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
@@ -323,9 +323,23 @@ function videoFacts() {
   const video = document.querySelector('#player');
   return {
     localVideo: state.localVideo, caseId: state.caseId, videoError: state.videoError,
+    assetId: state.localVideo ? null : videoAssetForCase(state.caseId),
     fingerprint: state.upload?.fingerprint ?? null, fingerprintError: Boolean(state.upload?.error),
     duration: Number.isFinite(video?.duration) ? video.duration : state.duration,
   };
+}
+
+// Wait up to a few seconds for the player to report the video's length, so a request typed
+// right after the page opens is not refused only because the metadata is still loading.
+function videoLength(timeoutMs = 4000) {
+  const video = document.querySelector('#player');
+  if (!video || state.videoError || Number.isFinite(video.duration) && video.duration > 0) return Promise.resolve();
+  return new Promise(resolve => {
+    const done = () => { clearTimeout(timer); video.removeEventListener('loadedmetadata', done); video.removeEventListener('error', done); resolve(); };
+    const timer = setTimeout(done, timeoutMs);
+    video.addEventListener('loadedmetadata', done);
+    video.addEventListener('error', done);
+  });
 }
 
 // Lil Doc's answer to a practice request: an offer with Start / Cancel, or why it cannot start.
@@ -335,6 +349,7 @@ async function answerPractice(intent) {
   const available = EXERCISES.map(item => STEP_LABELS[item.step_key]).join(' and ');
   if (!exercise) return { role: 'doc', text: practiceNotAuthored(STEP_LABELS[intent.step_key] ?? 'that step', available) };
   if (state.localVideo && state.upload && !state.upload.fingerprint && !state.upload.error) await state.upload.promise.catch(() => {});
+  await videoLength();
   const verdict = checkEligibility(exercise, videoFacts());
   if (!verdict.ok) return { role: 'doc', text: verdict.message };
   preloadPractice(exercise); // load the model and tools while the resident decides
@@ -576,7 +591,7 @@ function wire() {
 
   // Chat composer: command chips toggle a slash command in the input.
   const queryInput = document.querySelector('#query');
-  const typed = () => new Set(queryInput?.value.match(/\/(?:timestamp|quiz|chart|model)\b/g) ?? []);
+  const typed = () => new Set(queryInput?.value.match(/\/(?:timestamp|quiz|chart|model|practice)\b/g) ?? []);
   const syncCommands = () => {
     const selected = typed();
     document.querySelectorAll('[data-prompt]').forEach(button => {

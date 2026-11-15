@@ -44,7 +44,7 @@ export const STEP_NOTES = {
 };
 
 export const greeting = caseId =>
-  `Hi, I’m Lil Doc! I’ve watched all of ${caseId} so you don’t have to squint. Ask me when a tool shows up, or try /chart, /quiz or /model.`;
+  `Hi, I’m Lil Doc! I’ve watched all of ${caseId} so you don’t have to squint. Ask me when a tool shows up, or try /chart, /quiz, /model or /practice.`;
 
 export const switched = caseId => `Now watching ${caseId}. Same operation, different patient. Ask away!`;
 
@@ -62,7 +62,7 @@ export const localOnlyPractice =
   'I can’t search an uploaded video. If it’s the demo video, you can ask me to practice a step, like “Let me practice clipping and cutting.”';
 
 export const practiceOffer = exercise =>
-  `Let’s practice ${exercise.title.toLowerCase()} on this upload of ${exercise.eligible_video.case_id}. You’ll get ${exercise.stages.length} stages: pick an instrument from a 3D tray, place it on the model and use it, then compare with the matching moment in the video. Before you start: the model is a generic body, not this patient, and this is a schematic draft exercise that hasn’t been medically reviewed. It doesn’t teach real instrument handling or measure skill. Starting closes the other panels; your video stays where it is.`;
+  `Let’s practice ${exercise.title.toLowerCase()} on ${exercise.eligible_video.case_id}. You’ll get ${exercise.stages.length} stages: pick an instrument from a 3D tray, place it on the model and use it, then compare with the matching moment in the video. Before you start: the model is a generic body, not this patient, and this is a schematic draft exercise that hasn’t been medically reviewed. It doesn’t teach real instrument handling or measure skill. Starting closes the other panels; your video stays where it is.`;
 
 export const practiceStarted = 'Practice is open. Stage 1 is on the left, and the video is at its reference moment. Exit (×) brings your normal page back.';
 

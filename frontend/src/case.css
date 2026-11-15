@@ -65,7 +65,8 @@
 .msg p { font-size: 15px; }
 .msg-doc p { border-radius: 14px 14px 14px 4px; box-shadow: 0 1px 0 #e3ece8; }
 .msg-user button { border-radius: 14px 14px 4px 14px; font-size: 15px; transition: background-color .15s; }
-.suggestions button { min-height: 32px; padding: 0 10px; font-size: 13px; border-radius: var(--radius-sm); }
+.suggestions { gap: 4px; } /* five commands fit on one row of the 380 px chat */
+.suggestions button { min-height: 32px; padding: 0 6px; font-size: 13px; border-radius: var(--radius-sm); }
 .chat-compose form { min-height: 50px; border-radius: 12px; }
 .chat-compose form button { width: 40px; height: 40px; border-radius: var(--radius); transition: background-color .15s; }
 
