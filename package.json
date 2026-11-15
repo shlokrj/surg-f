@@ -1,0 +1,8 @@
+{
+  "name": "surg-f-app",
+  "private": true,
+  "description": "Databricks App build: compiles the frontend into frontend/dist, served by the backend.",
+  "scripts": {
+    "build": "npm --prefix frontend install --include=dev && VITE_BACKEND_URL= npm --prefix frontend run build"
+  }
+}
