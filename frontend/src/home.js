@@ -248,7 +248,7 @@ export function homePage({videoUrl, filterOn, filterButton, blurButton = '', err
       <div class="intro-sticky">
         <div class="hero-frame">
           <canvas class="sky-dither hero-dither" aria-hidden="true"></canvas>
-          <div class="intro-copy"><h1 id="landing-title">${wordmark('sf-hero')}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="${demo ? '#problem' : '#case-preview'}">${demo ? 'See the problem' : 'See the demo'} <span aria-hidden="true">↓</span></a></div>
+          <div class="intro-copy"><h1 id="landing-title">${wordmark('sf-hero')}</h1><p>Search surgical videos.</p><a class="hero-demo-link" href="${demo ? '#problem' : '#case-preview'}">${demo ? 'See the problem' : 'See the demo'} <span aria-hidden="true">↓</span></a></div>
           <form class="hero-search" id="hero-search" role="search">
             <label class="sr-only" for="hero-q">Ask about the VID01 demo case</label>
             ${searchGlyph}<input id="hero-q" name="q" value="${DEMO_QUESTION}" placeholder="Ask about the VID01 demo case" autocomplete="off" spellcheck="false" required>
@@ -261,7 +261,7 @@ export function homePage({videoUrl, filterOn, filterButton, blurButton = '', err
     <footer class="site-footer" aria-label="About surg+f">
       <div class="footer-sticky">
         <div class="footer-top">
-          <div class="footer-identity"><p>Search surgical video.</p></div>
+          <div class="footer-identity"><p>Search surgical videos.</p></div>
           <nav class="footer-links" aria-label="Footer">${links}<a href="#top">Back to top</a></nav>
         </div>
         <canvas class="footer-word" aria-hidden="true"></canvas>
