@@ -1,0 +1,6 @@
+# Databricks Apps installs this; keep in sync with backend/pyproject.toml.
+fastapi>=0.115
+uvicorn[standard]>=0.30
+databricks-sql-connector>=3.4
+python-dotenv>=1.0
+httpx>=0.27
