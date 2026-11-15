@@ -200,7 +200,9 @@ def interpret(
 )
 def chat(request: Request, body: ChatRequest) -> ChatResponse:
     try:
-        response, note = request.app.state.chat_service.chat(body.message, body.case_id)
+        response, note = request.app.state.chat_service.chat(
+            body.message, body.case_id, body.video_duration_sec
+        )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     request.state.chat = {"router": response.router, "action": response.action}

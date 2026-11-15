@@ -160,6 +160,7 @@ function outputSections() {
         <div class="panel-body">${request.categories.map(category => chartSection(category, request)).join('')}</div></section>`;
     }
     if (mode === 'quiz') return quizCard(state);
+    if (mode === 'studyquiz') return studyQuizCard();
     if (mode === 'model') {
       return `<section class="panel" id="sec-model" aria-labelledby="model-title">
         <div class="panel-head"><h2 id="model-title">3D model</h2><p>A three-dimensional view of the anatomy in this operation.</p></div>
@@ -167,6 +168,18 @@ function outputSections() {
     }
     return '';
   }).join('');
+}
+
+// Genie-written quiz on the topic the user asked for. Native <details> hides each answer.
+function studyQuizCard() {
+  const items = state.studyQuiz?.items ?? [];
+  const link = item => item.case_id === state.caseId && item.start_sec != null
+    ? `<button type="button" class="quiz-watch" data-seek="${item.start_sec}">Show in video (${formatTime(item.start_sec)})</button>` : '';
+  return `<section class="panel" id="sec-studyquiz" aria-labelledby="studyquiz-title">
+    <div class="panel-head"><h2 id="studyquiz-title">Quiz</h2><p>Written by Lil Doc. Answers marked "general" are not from this video and are not medically reviewed.</p></div>
+    <div class="panel-body"><ol class="quiz-list">${items.map(item => `<li class="quiz-item"><p><strong>${escapeHtml(item.question)}</strong></p>
+      <details><summary>Show answer</summary><p>${escapeHtml(item.answer)} <em>(${escapeHtml(item.source)})</em></p>
+      ${item.explanation ? `<p>${escapeHtml(item.explanation)}</p>` : ''}${link(item)}</details></li>`).join('')}</ol></div></section>`;
 }
 
 function chatPanel() {
@@ -467,8 +480,14 @@ async function runSearch(raw, { keepOutputs = false } = {}) {
     // Free-typed messages go to POST /chat: the backend picks the feature and returns its
     // data in one call. Slash commands, and anything /chat cannot take (older backend,
     // network error, fixture mode), use /interpret, which falls back to the local rules.
-    const chat = SLASH_COMMAND.test(query) ? null : await chatMessage(query, caseId).catch(() => null);
+    const chat = SLASH_COMMAND.test(query) ? null : await chatMessage(query, caseId, state.duration).catch(() => null);
     if (state.caseId !== caseId) return;
+    if (chat?.action === 'study_quiz') {
+      Object.assign(state, { studyQuiz: chat.data, outputs: ['studyquiz'], results: [], queryLabel: '' });
+      answer = chat.reply;
+      target = '#sec-studyquiz';
+      return;
+    }
     if (chat && (chat.action === 'none' || chat.action === 'answer' || (chat.action === 'search' && !chat.data.results.length))) {
       // Nothing to draw: a declined question, a Genie answer in words, or no matches.
       answer = chat.router === 'genie' ? `Here’s what I dug up: ${chat.reply}` : chat.reply;
