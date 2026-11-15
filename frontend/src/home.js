@@ -42,8 +42,11 @@ export function ditherCells(cols, rows, {horizon: base = .6, ceiling = 9, ramp =
       let g = Math.pow(v, 1.35) * 5.2 * ramp;
       if (t > 0) g += (smooth(Math.min(1, t)) * 5 + (noise(u * aspect * 9, v * 9) - .5) * 1.6 * Math.min(1, t * 2.5)) * ramp;
       g = Math.max(0, Math.min(ceiling, g));
+      // Bottom fifth: every column eases to the page color by the last row, so the hero ends on a straight,
+      // seamless line instead of a jagged terrain edge.
+      if (ceiling >= top) g += (top - g) * smooth(clamp01((v - .8) / .2));
       const level = Math.floor(g / STEP) * STEP, frac = (g - level) / STEP, i = y * cols + x;
-      const settled = g >= top - .35; // fully faded: exact page color, no marks
+      const settled = g >= top - .02; // fully faded: exact page color, no marks
       const [r, gr, b] = settled ? RGB[top] : sky(level);
       bg[i * 3] = r; bg[i * 3 + 1] = gr; bg[i * 3 + 2] = b;
       if (!settled && frac > BAYER[(y & 7) * 8 + (x & 7)]) {

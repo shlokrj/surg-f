@@ -5,8 +5,10 @@ import { homePage, mountHome, wordmark, paintDither, DEMO_QUESTION, DEMO_SEEK } 
 import './case.css';
 let disposeHome = () => {};
 let renderedPage = null;
-// What the last case-page render showed, so only new things animate in.
-let seen = { messages: 0, typing: false, outputs: [] };
+// Page load-in runs only after a real page change (home <-> case), never on re-renders from case
+// switches or commands. Re-renders inside the window continue the animation via a negative delay.
+const ENTER_MS = 650;
+let enterStart = -Infinity;
 import { searchClips, getTimeline, getQuiz, getSteps, interpretQuery, chatMessage, getActionRows, instrumentLabels } from './api.js';
 import { quizCard, wireQuiz } from './quiz.js';
 import { timelinePanel, timelineTick } from './timeline.js';
@@ -61,12 +63,12 @@ function render() {
   }
   wire();
   disposeHome = mountHome(document.querySelector('.landing'));
-  if (state.page === 'dash') markNew(renderedPage !== 'dash');
-  if (renderedPage !== state.page) {
-    window.scrollTo({top:0, behavior:'instant'});
-    // Subtle load-in when switching between the homepage and the case page (and on first load).
-    app.classList.remove('page-enter'); void app.offsetWidth; app.classList.add('page-enter');
-  }
+  if (renderedPage !== state.page) enterStart = performance.now();
+  const elapsed = performance.now() - enterStart, entering = elapsed < ENTER_MS;
+  app.classList.toggle('page-enter', entering);
+  app.style.setProperty('--enter-offset', entering ? `-${Math.round(elapsed)}ms` : '0ms');
+  if (state.page === 'dash') markNew();
+  if (renderedPage !== state.page) window.scrollTo({top:0, behavior:'instant'});
   renderedPage = state.page;
   if (hadFocus) {
     const next = document.querySelector('#query');
@@ -77,19 +79,9 @@ function render() {
   if (thread) thread.scrollTop = thread.scrollHeight;
 }
 
-// One entrance when the case page opens; afterwards only newly added messages and panels animate.
-function markNew(entering) {
-  const dash = document.querySelector('.dash');
-  dash.querySelectorAll('.sky-dither').forEach(paintDither);
-  if (entering) {
-    dash.classList.add('is-entering');
-  } else {
-    const thread = [...document.querySelectorAll('#chat-thread > .msg')];
-    thread.slice(seen.messages, state.messages.length).forEach(node => node.classList.add('is-new'));
-    if (state.loading && !seen.typing) thread.at(-1)?.classList.add('is-new');
-    state.outputs.filter(mode => !seen.outputs.includes(mode)).forEach(mode => document.querySelector(`#sec-${mode}`)?.classList.add('is-new'));
-  }
-  seen = { messages: state.messages.length, typing: state.loading, outputs: [...state.outputs] };
+// Case page: paint the dithered band after each render. Motion is handled by #app.page-enter only.
+function markNew() {
+  document.querySelector('.dash')?.querySelectorAll('.sky-dither').forEach(paintDither);
 }
 let resizeFrame = 0;
 window.addEventListener('resize', () => {
