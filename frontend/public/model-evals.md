@@ -50,22 +50,23 @@ The final instrument scores also beat our first model, a set of simple per-tool 
 
 ## Bounding boxes on the video (experimental)
 
-A second model draws boxes around the **gallbladder** and **cystic duct** in the VID01 video, every quarter second.
+Detectors draw boxes around the **gallbladder**, the **cystic duct** and **instruments** in the VID01 and VID02 videos, every quarter second.
 
 | | |
 |---|---|
 | **Model** | Faster R-CNN (MobileNetV3 backbone, pretrained on COCO), fine-tuned by us on full-resolution frames |
 | **Data** | Endoscapes: 1,212 surgeon-annotated frames from 120 surgeries for training, tested on 409 frames from 41 other surgeries |
-| **What it finds** | Gallbladder and cystic duct only. No instrument boxes: no dataset we have marks which instrument is where |
+| **What it finds** | Gallbladder and cystic duct (anatomy model), and instruments (a second version trained with Endoscapes' instrument boxes). Endoscapes boxes every instrument as one generic "tool", so the detector finds instruments but cannot tell their type |
+| **Instrument names** | Taken from the surgeons' per-second labels: a box is named only when the labels list exactly one instrument for that second **and** the detector finds exactly one instrument. Otherwise it is not shown, so names are never guessed between two tools. About a quarter of detected instruments get a name this way |
 
-| On the 409 test frames | Gallbladder | Cystic duct |
-|---|---|---|
-| Boxes that are correct (precision) | **0.93** | 0.69 |
-| Real ones it finds (recall) | **0.93** | 0.39 |
+| On the 409 test frames | Gallbladder | Cystic duct | Instruments (any type) |
+|---|---|---|---|
+| Boxes that are correct (precision) | **0.93** | 0.69 | **0.89** |
+| Real ones it finds (recall) | **0.93** | 0.39 | **0.83** |
 
-A box counts as correct when it overlaps the surgeon's box by at least half. Overall detection score (COCO AP): **0.38**, up from 0.35 for our previous version. The gallbladder is reliable; the cystic duct is small and often hidden, so many are missed.
+A box counts as correct when it overlaps the surgeon's box by at least half. Overall detection score (COCO AP): **0.38**, up from 0.35 for our previous version. The gallbladder and instruments are found reliably; the cystic duct is small and often hidden, so many are missed. Instrument names are not scored on a test set (no dataset has typed instrument boxes); a visual spot check of 12 named boxes across both videos found 11 clearly correct and 1 uncertain.
 
-**Not yet checked on this video.** These numbers come from Endoscapes surgeries, not from VID01 itself, and the boxes have not been reviewed by a clinician. Treat them as an experimental view, not as ground truth.
+**Not yet checked on this video.** These numbers come from Endoscapes surgeries, not from VID01 or VID02 themselves, and the boxes have not been reviewed by a clinician. Treat them as an experimental view, not as ground truth.
 
 ## How to read the search results
 

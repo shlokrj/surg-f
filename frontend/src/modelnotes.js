@@ -14,7 +14,8 @@ const RELIABLE = new Set(['Grasper', 'Hook', 'Retract', 'Dissect', 'Gallbladder'
 const AVG = .34;
 /* Box detector (model-evals.md, "Bounding boxes on the video"): precision and recall at the deployed
    thresholds, and COCO AP for v3 (0.38) against the previous version (0.35). */
-const BOXES = {gallbladder: [['Precision', .93], ['Recall', .93]], duct: [['Precision', .69], ['Recall', .39]], ap: .38};
+const BOXES = {gallbladder: [['Precision', .93], ['Recall', .93]], duct: [['Precision', .69], ['Recall', .39]],
+  instruments: [['Precision', .89], ['Recall', .83]], ap: .38};
 
 /* 49 surgeries: 42 trained on, 3 tuned on, 4 tested on. Tiles start in one grid and sort into groups. */
 const SPLIT = (() => {
@@ -92,13 +93,13 @@ const CHAPTERS = [
       <code class="run">MLflow 9d18d20a</code></div>`,
   },
   {
-    id: 'boxes', name: 'Box detector (v3)',
+    id: 'boxes', name: 'Box detectors',
     title: 'Boxes on the video.',
-    body: 'A second model, a Faster R-CNN fine-tuned on Endoscapes, draws boxes around the gallbladder and cystic duct every quarter second. On 409 frames from 41 surgeries it never trained on, the gallbladder is reliable. The cystic duct is small and often hidden, so many are missed. It has not yet been checked on this video itself.',
-    note: 'Precision: boxes that are right. Recall: real ones it finds. A box counts when it overlaps the surgeon’s box by at least half.',
+    body: 'Faster R-CNN detectors fine-tuned on Endoscapes box the gallbladder, cystic duct and instruments every quarter second. On 409 frames from 41 surgeries they never trained on, the gallbladder and instruments are reliable; the small cystic duct is often missed. Instrument names come from the surgeons’ labels, shown only when exactly one instrument is listed. Not yet checked on this video itself.',
+    note: 'Precision: boxes that are right. Recall: real ones it finds. Anatomy: v3; instruments, any type: v4.',
     link: '/evals.html#bounding-boxes-on-the-video-experimental',
-    scene: () => `<div class="sc mn-board"><div class="mn-panel"><h4>Gallbladder</h4>${rows(BOXES.gallbladder)}</div><div class="mn-panel"><h4>Cystic duct</h4>${rows(BOXES.duct, 2)}</div>
-      <div class="avg"><b data-avg="${BOXES.ap}">0.00</b><span>detection score (COCO AP), up from 0.35 in v2</span></div></div>`,
+    scene: () => `<div class="sc mn-board"><div class="mn-panel"><h4>Gallbladder</h4>${rows(BOXES.gallbladder)}</div><div class="mn-panel"><h4>Cystic duct</h4>${rows(BOXES.duct, 2)}</div><div class="mn-panel"><h4>Instruments</h4>${rows(BOXES.instruments, 4)}</div>
+      <div class="avg"><b data-avg="${BOXES.ap}">0.00</b><span>anatomy detection score (COCO AP), up from 0.35 in v2</span></div></div>`,
   },
 ];
 

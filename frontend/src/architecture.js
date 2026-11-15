@@ -13,7 +13,7 @@ const link = (href, text) => `<a href="${href}" target="_blank" rel="noopener no
 export const LAYERS = [
   {
     id: 'player', name: 'The player',
-    body: 'A Vite app in plain JavaScript. Choosing a result seeks the video to the clip’s first second. An experimental Faster R-CNN, trained on Endoscapes, looks for anatomy every 0.24 s and draws its box over the video.',
+    body: 'A Vite app in plain JavaScript. Choosing a result seeks the video to the clip’s first second. Experimental Faster R-CNN detectors, trained on Endoscapes, look for anatomy and instruments every 0.24 s and draw boxes over the video.',
     stack: [['Vite', 'https://vite.dev/'], ['Inclusive Sans', 'https://www.oliviaking.com/inclusivesans'], ['torchvision Faster R-CNN', 'https://docs.pytorch.org/vision/stable/models/faster_rcnn.html'], ['Endoscapes', 'https://github.com/CAMMA-public/Endoscapes']],
     sources: [['Ren et al., Faster R-CNN, 2015', 'https://arxiv.org/abs/1506.01497'], ['Murali et al., Endoscapes, 2023', 'https://arxiv.org/abs/2312.12429']],
   },

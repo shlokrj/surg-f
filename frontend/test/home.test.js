@@ -94,7 +94,7 @@ test('dig into the stack and model notes render real, cited project data',()=>{
  assert.match(model.textContent,/9d18d20a/);
  assert.deepEqual([...model.querySelectorAll('#model-instruments [data-f1]')].map(n=>n.dataset.v),['0.89','0.83','0.52','0.29','0.26','0.19']);
  assert.deepEqual([...model.querySelectorAll('[data-dig]')].map(b=>b.dataset.dig),['0','1','2','3','4','5'],'every model chapter is a button');
- assert.deepEqual([...model.querySelectorAll('#model-boxes [data-f1]')].map(n=>n.dataset.v),['0.93','0.93','0.69','0.39'],'box precision/recall from model-evals.md');
+ assert.deepEqual([...model.querySelectorAll('#model-boxes [data-f1]')].map(n=>n.dataset.v),['0.93','0.93','0.69','0.39','0.89','0.83'],'box precision/recall from model-evals.md');
  assert.equal(model.querySelector('#model-boxes [data-avg]').dataset.avg,'0.38');
  assert.ok([...model.querySelectorAll('.mn-link a')].every(a=>a.getAttribute('href').startsWith('/evals.html')),'links open the rendered evaluation');
  assert.equal(model.querySelectorAll('.tile').length,49,'42 trained, 3 tuned, 4 tested');
