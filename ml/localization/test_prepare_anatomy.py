@@ -18,3 +18,12 @@ class PreparationTests(unittest.TestCase):
         for key,value in [('is_det_keyframe',False),('video_id',121)]:
             data=source();data['images'][0][key]=value
             with self.assertRaises(ValueError):prepare(data,dict(validation=[],test=[]))
+
+    def test_validation_excludes_stage2_training_overlap(self):
+        data=source()
+        for image,case in zip(data['images'],[121,122]):
+            image['video_id']=case
+            image['file_name']=f'{case}_25.jpg'
+        result, report=prepare(data,dict(train=['VID66'],validation=[],test=[]),'val')
+        self.assertEqual([i['video_id'] for i in result['images']],[122])
+        self.assertEqual(report['excluded_endoscapes_cases'],[121])
