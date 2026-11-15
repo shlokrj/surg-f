@@ -9,6 +9,10 @@ Mihir continues spatial work on `feat/spatial-overlays`, retaining the scoped ev
 The earlier integrated `frontend/dev` work reached `main` through `6d468dd`. Further unfinished spatial work remains on `feat/spatial-overlays` until explicitly published. The frontend lane row below records current verification and remaining model/data limits.
 
 
+## Spatial anatomy overlay published to main (2026-11-14)
+
+With Shlok's approval, Mihir fast-forwarded `main` to `feat/spatial-overlays`, publishing the anatomy model tooling, the exporter fix, the full-length VID01 anatomy artifact and the player changes described in the section below. Checks at the published commit: 23 localization tests, 15 frontend tests and the frontend build passed. **Demo change:** `main`'s VID01 boxes are now gallbladder/cystic duct anatomy only; the earlier Grounding DINO instrument boxes are gone (kept as a test fixture). Further spatial work continues on `feat/spatial-overlays`; teammates should pull `main`.
+
 ## Spatial: anatomy model and VID01 overlay deployed (2026-11-14, Mihir)
 
 On `feat/spatial-overlays`, Mihir finished the anatomy run, analyzed its validation errors and deployed a full-length VID01 anatomy artifact.

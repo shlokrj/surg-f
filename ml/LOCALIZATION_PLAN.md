@@ -32,7 +32,7 @@ Mihir fetches/pulls and pushes spatial work on `feat/spatial-overlays`. Preserve
 
 Mihir owns validated artifacts, model/class map, data and checkpoint provenance, measured validation quality, matching video asset, player integration and browser acceptance. Mihir → Shlok: integration points, visual constraints and browser acceptance evidence. Shlok → Mihir: design changes affecting player layout or shared DOM/CSS. Record schema changes in `agent-kit/CONTRACTS.md` before changing producers/consumers.
 
-Before spatial publication: reproducible training/evaluation, explicitly supported classes, correct video alignment, passing automated/browser checks and documented limitations. Tracking, action recognition, six validated instrument types and all anatomy targets are not implied by the two-class smoke. Main publication still requires Shlok's request; the current request publishes ownership docs only.
+Before spatial publication: reproducible training/evaluation, explicitly supported classes, correct video alignment, passing automated/browser checks and documented limitations. Tracking, action recognition, six validated instrument types and all anatomy targets are not implied by the two-class smoke. Main publication still requires Shlok's request. On 2026-11-14 Shlok approved publishing the anatomy model tooling and full-length VID01 anatomy overlay; `main` was fast-forwarded to `feat/spatial-overlays`.
 
 ## Intended experience
 
