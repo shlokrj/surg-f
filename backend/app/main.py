@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from .chat import ChatService, LLMRouter
 from .config import Settings, load_settings
 from .genie import GenieClient
 from .interpret import InterpretService
@@ -28,6 +29,7 @@ API_DESCRIPTION = """Study-tool API for laparoscopic cholecystectomy videos.
 - **Chart:** `GET /cases/VID01/timeline` returns segments and a per-instrument summary.
 - **Quiz:** `GET /quiz?seed=1` returns 5 general questions about the operation.
 - **Interpret:** `GET /interpret?q=...` turns typed input into actions for the three above.
+- **Chat:** `POST /chat` takes one typed message and returns a reply, one action and its data.
 
 Without Databricks credentials the API serves local fixtures; `GET /health` shows the mode.
 Errors use `{"detail": "..."}`. Frontend guide: `backend/docs/FRONTEND_GUIDE.md`.
@@ -69,14 +71,23 @@ def build_genie(settings: Settings) -> GenieClient | None:
     return GenieClient(settings.databricks, settings.genie_space_id, settings.genie_timeout_sec)
 
 
+def build_llm(settings: Settings) -> LLMRouter | None:
+    """The LLM router is optional: it needs Databricks credentials and an endpoint name."""
+    if settings.databricks is None or settings.chat_endpoint is None:
+        return None
+    return LLMRouter(settings.databricks, settings.chat_endpoint, settings.chat_timeout_sec)
+
+
 def create_app(
     settings: Settings | None = None,
     repository: ClipRepository | None = None,
     genie: GenieClient | None = None,
+    llm: LLMRouter | None = None,
 ) -> FastAPI:
     settings = settings or load_settings()
     repository = repository or build_repository(settings)
     genie = genie or build_genie(settings)
+    llm = llm or build_llm(settings)
     _configure_logging()
 
     @asynccontextmanager
@@ -94,6 +105,14 @@ def create_app(
     app.state.quiz_service = QuizService(QuizBank.load(settings.quiz_bank_file))
     app.state.interpret_service = InterpretService(genie)
     app.state.steps_service = StepsService(settings.fixtures_dir)
+    app.state.chat_service = ChatService(
+        app.state.search_service,
+        app.state.timeline_service,
+        app.state.quiz_service,
+        llm=llm,
+        genie=genie,
+        llm_timeout_sec=settings.chat_timeout_sec,
+    )
     app.include_router(router)
 
     @app.middleware("http")
@@ -116,6 +135,8 @@ def create_app(
                 "duration_ms": round((time.perf_counter() - start) * 1000, 2),
                 "mode": repository.mode,
             }
+            # /chat adds which router answered and the action it chose.
+            entry.update(getattr(request.state, "chat", None) or {})
             error = getattr(request.state, "error", None)
             if error:
                 entry["error"] = error
@@ -125,7 +146,7 @@ def create_app(
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(settings.cors_origins),
-        allow_methods=["GET"],
+        allow_methods=["GET", "POST"],
         allow_headers=["*"],
         expose_headers=["X-Request-ID"],
     )

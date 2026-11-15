@@ -1,0 +1,653 @@
+{
+  "description": "One POST /chat example per action. The search, quiz, timeline and none examples are real responses generated in fixture mode by the rule-based router (the quiz is one random draw). In Databricks mode the timeline data can hold more labels than the six instruments. The answer example is illustrative.",
+  "examples": [
+    {
+      "request": {
+        "message": "show me when the clipper is used",
+        "case_id": "VID01"
+      },
+      "verified": true,
+      "response": {
+        "reply": "Found 5 moments with the clipper in VID01. The first starts at 11:14.",
+        "action": "search",
+        "data": {
+          "results": [
+            {
+              "case_id": "VID01",
+              "start_sec": 674.0,
+              "end_sec": 690.0,
+              "label": "clipper",
+              "source": "annotation"
+            },
+            {
+              "case_id": "VID01",
+              "start_sec": 698.0,
+              "end_sec": 747.0,
+              "label": "clipper",
+              "source": "annotation"
+            },
+            {
+              "case_id": "VID01",
+              "start_sec": 749.0,
+              "end_sec": 753.0,
+              "label": "clipper",
+              "source": "annotation"
+            },
+            {
+              "case_id": "VID01",
+              "start_sec": 754.0,
+              "end_sec": 758.0,
+              "label": "clipper",
+              "source": "annotation"
+            },
+            {
+              "case_id": "VID01",
+              "start_sec": 815.0,
+              "end_sec": 844.0,
+              "label": "clipper",
+              "source": "annotation"
+            }
+          ]
+        },
+        "router": "rules"
+      }
+    },
+    {
+      "request": {
+        "message": "quiz me",
+        "case_id": "VID01"
+      },
+      "verified": true,
+      "response": {
+        "reply": "Here is a five-question quiz on the operation.",
+        "action": "quiz",
+        "data": {
+          "seed": 1861098177,
+          "reviewed": false,
+          "questions": [
+            {
+              "id": "after-cleaning",
+              "type": "next_step",
+              "prompt": "What comes after this step: cleaning and coagulating the operative field?",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Remove the gallbladder through a port site"
+                },
+                {
+                  "id": "b",
+                  "text": "Cut the cystic duct and cystic artery between the clips"
+                },
+                {
+                  "id": "c",
+                  "text": "Place the ports and insufflate the abdomen"
+                },
+                {
+                  "id": "d",
+                  "text": "Dissect Calot's triangle to expose the cystic duct and cystic artery"
+                }
+              ],
+              "correct_option_id": "a",
+              "explanation": "In the standard phase order, the bagged gallbladder is then removed from the abdomen through one of the port sites. The order of the last steps can vary in practice.",
+              "search_q": null
+            },
+            {
+              "id": "after-cut",
+              "type": "next_step",
+              "prompt": "What comes after this step: cutting the cystic duct and cystic artery between the clips?",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Dissect Calot's triangle to expose the cystic duct and cystic artery"
+                },
+                {
+                  "id": "b",
+                  "text": "Dissect the gallbladder off the liver bed"
+                },
+                {
+                  "id": "c",
+                  "text": "Remove the ports, release the pneumoperitoneum, and close the incisions"
+                },
+                {
+                  "id": "d",
+                  "text": "Place the ports and insufflate the abdomen"
+                }
+              ],
+              "correct_option_id": "b",
+              "explanation": "With the cystic duct and cystic artery divided, the gallbladder is still attached only to the liver bed, so it is dissected off the liver, commonly with the hook and electrocautery.",
+              "search_q": "hook"
+            },
+            {
+              "id": "after-calot",
+              "type": "next_step",
+              "prompt": "What comes after this step: dissecting Calot's triangle until the critical view of safety is achieved?",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Place the ports and insufflate the abdomen"
+                },
+                {
+                  "id": "b",
+                  "text": "Remove the gallbladder through a port site"
+                },
+                {
+                  "id": "c",
+                  "text": "Place the gallbladder in a retrieval bag"
+                },
+                {
+                  "id": "d",
+                  "text": "Clip the cystic duct and cystic artery"
+                }
+              ],
+              "correct_option_id": "d",
+              "explanation": "The critical view of safety means Calot's triangle is cleared of fat and fibrous tissue, the lower part of the gallbladder is separated from the liver bed, and only two structures, the cystic duct and the cystic artery, are seen entering the gallbladder. Only then are they clipped.",
+              "search_q": "clipper"
+            },
+            {
+              "id": "tool-retract",
+              "type": "which_tool",
+              "prompt": "Which of these tools is used for this step: holding the gallbladder and retracting it to expose Calot's triangle?",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Clipper (clip applier)"
+                },
+                {
+                  "id": "b",
+                  "text": "Irrigator (suction-irrigation)"
+                },
+                {
+                  "id": "c",
+                  "text": "Grasper"
+                },
+                {
+                  "id": "d",
+                  "text": "Scissors"
+                }
+              ],
+              "correct_option_id": "c",
+              "explanation": "Graspers hold and retract the gallbladder throughout the operation, which exposes Calot's triangle and keeps tissue under tension during dissection.",
+              "search_q": "grasper"
+            },
+            {
+              "id": "tool-clip",
+              "type": "which_tool",
+              "prompt": "Which of these tools is used for this step: placing clips on the cystic duct and cystic artery?",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Clipper (clip applier)"
+                },
+                {
+                  "id": "b",
+                  "text": "Grasper"
+                },
+                {
+                  "id": "c",
+                  "text": "Scissors"
+                },
+                {
+                  "id": "d",
+                  "text": "Irrigator (suction-irrigation)"
+                }
+              ],
+              "correct_option_id": "a",
+              "explanation": "A clip applier (labeled clipper in the dataset) places clips that close the cystic duct and cystic artery before they are cut.",
+              "search_q": "clipper"
+            }
+          ]
+        },
+        "router": "rules"
+      }
+    },
+    {
+      "request": {
+        "message": "chart the tools used in this case",
+        "case_id": "VID01"
+      },
+      "verified": true,
+      "response": {
+        "reply": "Here is the instrument timeline for VID01: 70 segments across 6 instruments.",
+        "action": "timeline",
+        "data": {
+          "case_id": "VID01",
+          "source": "annotation",
+          "segments": [
+            {
+              "label": "grasper",
+              "start_sec": 0.0,
+              "end_sec": 5.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 10.0,
+              "end_sec": 108.0
+            },
+            {
+              "label": "hook",
+              "start_sec": 20.0,
+              "end_sec": 272.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 136.0,
+              "end_sec": 172.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 177.0,
+              "end_sec": 190.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 276.0,
+              "end_sec": 298.0
+            },
+            {
+              "label": "irrigator",
+              "start_sec": 291.0,
+              "end_sec": 315.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 302.0,
+              "end_sec": 312.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 324.0,
+              "end_sec": 327.0
+            },
+            {
+              "label": "bipolar",
+              "start_sec": 325.0,
+              "end_sec": 391.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 328.0,
+              "end_sec": 363.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 367.0,
+              "end_sec": 387.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 391.0,
+              "end_sec": 395.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 397.0,
+              "end_sec": 401.0
+            },
+            {
+              "label": "irrigator",
+              "start_sec": 402.0,
+              "end_sec": 425.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 403.0,
+              "end_sec": 406.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 415.0,
+              "end_sec": 471.0
+            },
+            {
+              "label": "bipolar",
+              "start_sec": 433.0,
+              "end_sec": 467.0
+            },
+            {
+              "label": "bipolar",
+              "start_sec": 468.0,
+              "end_sec": 476.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 477.0,
+              "end_sec": 481.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 482.0,
+              "end_sec": 484.0
+            },
+            {
+              "label": "hook",
+              "start_sec": 484.0,
+              "end_sec": 505.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 493.0,
+              "end_sec": 496.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 524.0,
+              "end_sec": 530.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 536.0,
+              "end_sec": 621.0
+            },
+            {
+              "label": "hook",
+              "start_sec": 561.0,
+              "end_sec": 658.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 651.0,
+              "end_sec": 746.0
+            },
+            {
+              "label": "clipper",
+              "start_sec": 674.0,
+              "end_sec": 690.0
+            },
+            {
+              "label": "clipper",
+              "start_sec": 698.0,
+              "end_sec": 747.0
+            },
+            {
+              "label": "clipper",
+              "start_sec": 749.0,
+              "end_sec": 753.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 750.0,
+              "end_sec": 751.0
+            },
+            {
+              "label": "clipper",
+              "start_sec": 754.0,
+              "end_sec": 758.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 754.0,
+              "end_sec": 758.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 763.0,
+              "end_sec": 771.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 774.0,
+              "end_sec": 796.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 812.0,
+              "end_sec": 883.0
+            },
+            {
+              "label": "clipper",
+              "start_sec": 815.0,
+              "end_sec": 844.0
+            },
+            {
+              "label": "scissors",
+              "start_sec": 860.0,
+              "end_sec": 877.0
+            },
+            {
+              "label": "hook",
+              "start_sec": 894.0,
+              "end_sec": 921.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 935.0,
+              "end_sec": 936.0
+            },
+            {
+              "label": "irrigator",
+              "start_sec": 936.0,
+              "end_sec": 961.0
+            },
+            {
+              "label": "irrigator",
+              "start_sec": 962.0,
+              "end_sec": 963.0
+            },
+            {
+              "label": "irrigator",
+              "start_sec": 964.0,
+              "end_sec": 978.0
+            },
+            {
+              "label": "irrigator",
+              "start_sec": 981.0,
+              "end_sec": 988.0
+            },
+            {
+              "label": "irrigator",
+              "start_sec": 990.0,
+              "end_sec": 996.0
+            },
+            {
+              "label": "bipolar",
+              "start_sec": 1010.0,
+              "end_sec": 1026.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1037.0,
+              "end_sec": 1039.0
+            },
+            {
+              "label": "hook",
+              "start_sec": 1039.0,
+              "end_sec": 1181.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1100.0,
+              "end_sec": 1111.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1116.0,
+              "end_sec": 1118.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1158.0,
+              "end_sec": 1192.0
+            },
+            {
+              "label": "hook",
+              "start_sec": 1182.0,
+              "end_sec": 1378.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1193.0,
+              "end_sec": 1434.0
+            },
+            {
+              "label": "hook",
+              "start_sec": 1381.0,
+              "end_sec": 1431.0
+            },
+            {
+              "label": "hook",
+              "start_sec": 1432.0,
+              "end_sec": 1434.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1435.0,
+              "end_sec": 1437.0
+            },
+            {
+              "label": "hook",
+              "start_sec": 1438.0,
+              "end_sec": 1439.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1439.0,
+              "end_sec": 1440.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1443.0,
+              "end_sec": 1460.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1478.0,
+              "end_sec": 1565.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1567.0,
+              "end_sec": 1652.0
+            },
+            {
+              "label": "irrigator",
+              "start_sec": 1606.0,
+              "end_sec": 1625.0
+            },
+            {
+              "label": "irrigator",
+              "start_sec": 1626.0,
+              "end_sec": 1640.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1653.0,
+              "end_sec": 1655.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1658.0,
+              "end_sec": 1670.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1671.0,
+              "end_sec": 1678.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1689.0,
+              "end_sec": 1690.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1697.0,
+              "end_sec": 1709.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1711.0,
+              "end_sec": 1718.0
+            },
+            {
+              "label": "grasper",
+              "start_sec": 1721.0,
+              "end_sec": 1728.0
+            }
+          ],
+          "summary": [
+            {
+              "label": "grasper",
+              "count": 42,
+              "total_sec": 1141.0,
+              "first_sec": 0.0
+            },
+            {
+              "label": "hook",
+              "count": 9,
+              "total_sec": 788.0,
+              "first_sec": 20.0
+            },
+            {
+              "label": "irrigator",
+              "count": 9,
+              "total_sec": 133.0,
+              "first_sec": 291.0
+            },
+            {
+              "label": "bipolar",
+              "count": 4,
+              "total_sec": 124.0,
+              "first_sec": 325.0
+            },
+            {
+              "label": "clipper",
+              "count": 5,
+              "total_sec": 102.0,
+              "first_sec": 674.0
+            },
+            {
+              "label": "scissors",
+              "count": 1,
+              "total_sec": 17.0,
+              "first_sec": 860.0
+            }
+          ]
+        },
+        "router": "rules"
+      }
+    },
+    {
+      "request": {
+        "message": "which instrument was used the longest?",
+        "case_id": "VID01"
+      },
+      "verified": false,
+      "note": "Illustrative only. The answer action needs a Surg+F Genie space, which does not exist yet. Shape taken from the backend tests; values from the verified VID01 timeline.",
+      "response": {
+        "reply": "The grasper was used the longest in VID01.",
+        "action": "answer",
+        "data": {
+          "columns": [
+            "label",
+            "count",
+            "total_sec",
+            "first_sec"
+          ],
+          "rows": [
+            [
+              "grasper",
+              42,
+              1141.0,
+              0.0
+            ]
+          ],
+          "sql": "SELECT label, count(*) AS count, sum(end_sec - start_sec) AS total_sec, min(start_sec) AS first_sec FROM workspace.default.surgf_clips WHERE case_id = 'VID01' AND source = 'annotation' GROUP BY label ORDER BY total_sec DESC LIMIT 1"
+        },
+        "router": "genie"
+      }
+    },
+    {
+      "request": {
+        "message": "what dose of antibiotics should I give",
+        "case_id": "VID01"
+      },
+      "verified": true,
+      "response": {
+        "reply": "I'm a study aid for this operation, so I can't give medical advice or answer that. Try an instrument name such as \"clipper\", ask for a quiz, or ask for a chart of the tools used.",
+        "action": "none",
+        "data": null,
+        "router": "rules"
+      }
+    }
+  ]
+}
