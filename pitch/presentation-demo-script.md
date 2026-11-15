@@ -134,9 +134,9 @@ About 690 spoken words at roughly 140 words a minute. If you run long, cut the l
 
 > And search and chat run on Databricks SQL, Genie and the Foundation Model APIs.
 
-**→ Databricks Apps** (marked "Planned")
+**→ Databricks Apps**
 
-> Next, we're moving the whole app onto Databricks Apps, so it runs inside the workspace with its own service principal and no personal tokens.
+> And the whole app is hosted on Databricks Apps, so it runs inside the workspace with its own service principal and no personal tokens.
 
 ---
 

@@ -101,8 +101,9 @@
    service principal's key travels down each one. Marked "Planned". */
 .db-apps{--c:clamp(0, calc(var(--p) / .25), 1);--w:clamp(0, calc((var(--p) - .2) / .35), 1);--kt:clamp(0, calc((var(--p) - .5) / .3), 1)}
 .app-card{position:absolute;left:50%;top:40px;width:330px;display:grid;gap:12px;padding:18px 20px;border-radius:18px;background:#fff;color:var(--ink);box-shadow:0 30px 70px #052a2655;translate:-50% 0;opacity:var(--c);transform:translateY(calc((1 - var(--c)) * 24px)) scale(calc(.94 + .06 * var(--c)))}
-.app-head{display:flex;align-items:center;gap:10px;font-size:19px}.app-head .db-mark{width:26px;height:26px}
-.app-plan{position:absolute;right:14px;top:14px;padding:3px 9px;border-radius:999px;background:#FF362118;color:#c42a19;font-size:12.5px;font-weight:700}
+.app-head{display:flex;align-items:center;gap:8px;color:#1b3139;font-size:30px}
+.app-head .db-mark{width:.9em;height:.9em}.app-head .db-word{height:.62em;width:auto;aspect-ratio:106.85/16.91}
+.app-head b{margin-left:2px;font-size:.66em;font-weight:500;line-height:1;letter-spacing:-.01em}
 .app-parts{display:flex;gap:8px}.app-parts span{flex:1;padding:9px 10px;border-radius:10px;background:var(--surface-tint);font-size:14px;font-weight:600;text-align:center}
 .app-sp{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:#0f2d2a;color:#cfe6dc;font-size:14px}
 .app-sp i{position:relative;width:16px;height:9px;border:2px solid #9ff3df;border-radius:5px}

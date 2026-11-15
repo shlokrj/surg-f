@@ -110,7 +110,7 @@ test('databricks section covers the real Databricks work, with the mark and chec
  assert.ok(logo.querySelector('.db-word path')&&logo.rel.includes('noopener'));
  assert.deepEqual([...db.querySelectorAll('.layer')].map(l=>l.id),['db-volumes','db-jobs','db-mlflow','db-lakeflow','db-ai','db-apps']);
  assert.equal(db.querySelectorAll('.bundles i').length,50,'one bundle per surgery');
- assert.match(db.textContent,/9d18d20a/);assert.match(db.querySelector('#db-apps').textContent,/Planned, not deployed yet/);assert.match(db.textContent,/surgf-import-clips/);assert.match(db.textContent,/surgf_quiz_facts/);
+ assert.match(db.textContent,/9d18d20a/);assert.ok(db.querySelector('#db-apps .app-head .db-mark')&&db.querySelector('#db-apps .app-head .db-word'),'the databricks logo on the app card');assert.match(db.textContent,/surgf-import-clips/);assert.match(db.textContent,/surgf_quiz_facts/);
  assert.deepEqual([...db.querySelectorAll('[data-scrub]')].map(b=>b.dataset.scrub.split(',')[1]),['50','0.304','0.343','11264','1658']);
  assert.ok([...db.querySelectorAll('.layer-copy a')].every(a=>a.rel.includes('noopener')&&a.target==='_blank'));
  assert.ok(doc.querySelector('.footer-links a[href="#databricks"]'));

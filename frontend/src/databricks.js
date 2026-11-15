@@ -88,13 +88,13 @@ const CHAPTERS = [
   },
   {
     id: 'apps', name: 'Databricks Apps',
-    title: 'Next: hosted on Databricks Apps.',
-    body: 'Next, Surg+F moves into a Databricks App, with the web app and its FastAPI backend running inside the same workspace. The app’s own service principal reaches the SQL warehouse, Genie, the Llama endpoint and the Volume, so there are no personal access tokens to hand around.',
+    title: 'Hosted on Databricks Apps.',
+    body: 'Surg+F runs as a Databricks App, with the web app and its FastAPI backend inside the same workspace. The app’s own service principal reaches the SQL warehouse, Genie, the Llama endpoint and the Volume, so there are no personal access tokens to hand around.',
     stack: [['Databricks Apps', 'https://docs.databricks.com/aws/en/dev-tools/databricks-apps/'], ['App resources', 'https://docs.databricks.com/aws/en/dev-tools/databricks-apps/resources']],
-    note: 'Planned, not deployed yet. Resource types and the app’s service principal are as described in the Databricks Apps docs.',
+    note: 'The app and the workspace resources it reaches with its own service principal.',
     scene: () => `<div class="sc db-apps">
-      <div class="app-card"><span class="app-plan">Planned</span>
-        <div class="app-head">${DATABRICKS_MARK}<b>Databricks App</b></div>
+      <div class="app-card">
+        <div class="app-head">${DATABRICKS_MARK}${DATABRICKS_WORD}<b>Apps</b></div>
         <div class="app-parts"><span>Web app</span><span>FastAPI backend</span></div>
         <div class="app-sp"><i aria-hidden="true"></i>Service principal</div></div>
       <svg class="app-wires" viewBox="0 0 560 540" aria-hidden="true">${[76, 212, 348, 484].map((x, k) => `<path style="--k:${k}" pathLength="1" d="M280 238C280 300 ${x} 292 ${x} 372"/>`).join('')}</svg>

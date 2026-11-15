@@ -25,7 +25,7 @@ Name each one while its scene is on screen. Judges are scoring how many we used 
 5. **Databricks SQL**: the warehouse behind search.
 6. **Genie**: free-form questions over our quiz-facts view.
 7. **Foundation Model APIs**: Llama 3.3 70B routes each chat message.
-8. **Databricks Apps** (next, not deployed yet): where the whole app will run. Say "next" or "we're moving to".
+8. **Databricks Apps**: where the whole app is hosted.
 
 ---
 
@@ -81,9 +81,9 @@ Name each one while its scene is on screen. Judges are scoring how many we used 
 
 > Search runs parameterized queries on a Databricks SQL warehouse. Chat goes to Llama 3.3 70B on the Foundation Model APIs, which picks a tool, and free-form questions go to a Genie space built on our quiz-facts view.
 
-**→ Databricks Apps** (marked "Planned")
+**→ Databricks Apps**
 
-> And next, the whole app moves onto Databricks Apps, running inside the workspace under its own service principal.
+> And the whole app is hosted on Databricks Apps, running inside the workspace under its own service principal.
 
 ## 5. Live in the app, then close: Shlok (2:35–3:00)
 
