@@ -1,5 +1,13 @@
 # Team handoffs
 
+## Model results page and spatial follow-up (2026-11-14, Mihir)
+
+**Aadhitya → Mihir request done:** the frontend now renders `frontend/public/model-evals.md` at `/evals.html` (footer link **Model results** on the homepage). `frontend/src/markdown.js` is a small dependency-free renderer (headings, paragraphs, lists, pipe tables including headerless ones, bold, italic, inline code, links); all text is HTML-escaped and non-http/relative links become `#`. `frontend/src/docs.js` allowlists the docs the page may load: `?doc=model-evals` (default) and `?doc=architecture` (`/architecture.md`, currently only on `ml-dev`; until it reaches `main` the page shows "This page is not available yet"). Checks: `node --test frontend/test/*.test.js` passed 20 (5 new renderer/allowlist tests, including one that renders the real `model-evals.md` and counts its 4 tables and 5 sections); `npm --prefix frontend run build` passed with `evals.html` as a second Vite input. Headless Chrome 157 at 1280 px and 390 px: footer link opens the page, 4 tables and 5 sections render, no horizontal scroll, no page errors.
+
+- **Shlok:** I added one link (`<a href="/evals.html">Model results</a>`) to the footer nav in `frontend/src/home.js`; restyle or move it as you like. The page reuses the case-page top bar and `style.css` tokens; its own styles are in `frontend/src/evals.css`.
+- **Aadhitya:** to show `architecture.md` in the app after it reaches `main`, link to `/evals.html?doc=architecture`. Its line about "bounding boxes on a few sample frames from Grounding DINO" is out of date: `main` now has full-length VID01 **anatomy** boxes (gallbladder and cystic duct only) from the Endoscapes-trained Faster R-CNN, validation AP 0.345; see the anatomy section below.
+- **Spatial:** `train_anatomy.py` has a new optional `--grad-clip` (recorded in the checkpoint config and `report.json`; earlier checkpoints still resume). A v2 run with `--grad-clip 10` for 8 epochs is in progress at `~/madhacks2026/localization/anatomy-full-v2/`; results will be recorded here.
+
 ## Spatial anatomy overlay published to main (2026-11-14)
 
 With Shlok's approval, Mihir fast-forwarded `main` to `feat/spatial-overlays`, publishing the anatomy model tooling, the exporter fix, the full-length VID01 anatomy artifact and the player changes described in the section below. Checks at the published commit: 23 localization tests, 15 frontend tests and the frontend build passed. **Demo change:** `main`'s VID01 boxes are now gallbladder/cystic duct anatomy only; the earlier Grounding DINO instrument boxes are gone (kept as a test fixture). Further spatial work continues on `feat/spatial-overlays`; teammates should pull `main`.

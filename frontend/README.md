@@ -60,6 +60,10 @@ On the home page, submitting the prefilled hero search **When is the cystic duct
 
 With the backend returning real rows and `VID01.mp4` available, search `clipper`. Click the first result and confirm `VID01` seeks to `11:14` (674 s). Repeat with VID02: the first `clipper` annotation is `VID02 1255–1268` (20:55). Also check a result from a case without video (for example any `clipper` hit outside VID01/VID02), a `prediction` result, and a no-match query. Run `npm run build` for a production build.
 
+## Model results page
+
+`/evals.html` renders team Markdown from `public/` with `src/markdown.js` (escaped, dependency-free). Allowed docs are listed in `src/docs.js`: `?doc=model-evals` (default) and `?doc=architecture`. Add new docs there; do not load arbitrary paths.
+
 ## Experimental bounding boxes
 
 Spatial data/model/export, player integration and browser verification are owned by Mihir on `feat/spatial-overlays`; Shlok owns the overall frontend design. Enable **Bounding boxes**, then choose a **Sampled frame**. Instrument/anatomy filters hide categories; the minimum-score slider hides lower-scoring detections (scores are not calibrated probabilities). Use **Fullscreen with overlays** to expand the video container; the native video fullscreen button may omit HTML overlays.
