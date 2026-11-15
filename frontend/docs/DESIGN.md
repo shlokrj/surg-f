@@ -59,7 +59,7 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
   - **Product** (`/`): hero, Find the clip, the three feature cards, the stack, model notes, Open your own video.
   - **Demo** (`/demo`, `?demo`): the original presentation version, unchanged: problem (4), solution (3), features, the stack, model notes, Built on Databricks, What's next.
   - **Presentation demo** (`/presentation-demo`): the 5-minute pitch. Problem (17 seconds, writing it down, who needs it), solution (label, ask, jump, the labels are the record, practice in 3D), features, the stack, model notes (test, instruments, v1 to v2, boxes), Databricks, What's next.
-  - **Video demo** (`/video-demo`): the 3-minute Databricks-track video. Problem (17 seconds, writing it down), solution (ask, jump, practice in 3D), Databricks; per 1.6 and 2.3 s playback.
+  - **Video demo** (`/video-demo`): the 3-minute Databricks-track video. Problem (17 seconds, writing it down), solution (ask, jump, practice in 3D), Databricks; per 1.6 and 3.8 s playback.
   - `?mode=<name>` selects a version on any host; the paths need the host to serve `index.html` for unknown paths (Vite does).
 - **Presenter stops:** the arrow keys also stop at each feature card (its sticky resting position), so no section is skipped.
 - **Problem** (`src/problem.js`, `src/problem.css`; demo only): "Finding one moment.", four chapters built from real VID01 frames (painted by the shared `paintFrames`):
