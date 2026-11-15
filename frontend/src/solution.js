@@ -2,12 +2,14 @@
    three chapters (label, ask, jump) that replaces the old "Find the clip" block there; its buttons open
    the real VID01 case. Data: VID01 surgeon labels (architecture.js TRACKS), the cut at 860–877 s, the
    scissors clip count across 50 surgeries (agent-kit/PROGRESS.md), and the backend's label search. */
-import { onStage, paintFrames, TRACKS, VID01_LEN } from './architecture.js';
-import { frameStrip } from './problem.js';
+import { onStage, paintFrames, TRACKS, VID01_LEN, layerP, pickChapters } from './architecture.js';
+import { frameStrip, RECORD } from './problem.js';
 
 const pct = v => `${(v * 100).toFixed(3)}%`;
 const clock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const CUT = [860, 877];
+/* Captures of Surg+F's 3D panel (public/screens/README.md) at three VID01 steps, with each step's span. */
+const PRACTICE = [['Calot’s triangle dissection', 21, 673], ['Clipping and cutting', 673, 887], ['Gallbladder dissection', 887, 1470]];
 
 const CHAPTERS = [
   {
@@ -44,14 +46,35 @@ const CHAPTERS = [
         <div class="so-scrub"><span class="clip"></span><span class="fill"></span><span class="knob"></span></div>
         <div class="so-meta"><b data-jump>0:00</b><span>VID01, scissors cut the cystic duct</span></div></div></div>`,
   },
+  {
+    id: 'record', name: 'The labels are the record',
+    title: 'The labels are the record.',
+    body: 'Every label Surg+F stores already says which step, which instrument and when. Laid out as a record, all of VID01 fills in at once. Writing clinical notes from it is the next step.',
+    note: 'Built from VID01’s labels. Surg+F does not write clinical notes yet.',
+    scene: () => `<div class="sc so-record"><div class="pb-form">
+      <div class="pb-form-head"><b>From the labels</b><span>VID01, laparoscopic cholecystectomy</span></div>
+      <div class="pb-form-cols"><span>Step</span><span>Time</span><span>Instruments</span></div>
+      ${RECORD.map(([step, a, b, tools], k) => `<div class="pb-form-row" style="--k:${k}"><span>${step}</span><span>${clock(a)}–${clock(b)}</span><span>${tools}</span><i aria-hidden="true">✓</i></div>`).join('')}
+    </div></div>`,
+  },
+  {
+    id: 'practice', name: 'Practice in 3D',
+    title: 'Practice the anatomy in 3D.',
+    body: 'Practice on cadavers is expensive and hard to come by. Surg+F adds a 3D model of the gallbladder region that follows the video step by step: rotate it, zoom in, and fade organs away to see what the surgeon is working around.',
+    note: 'Real captures of Surg+F’s 3D panel. Anatomy from BodyParts3D (CC BY 4.0); clips, cut and triangle are schematic and not yet medically reviewed.',
+    scene: () => `<div class="sc so-practice">
+      <div class="so-3d"><div class="so-3d-stage">${PRACTICE.map(([name], k) => `<img src="/screens/model-step${k + 1}.jpg" alt="" loading="lazy" style="--k:${k}">`).join('')}</div>
+        <div class="so-steps">${PRACTICE.map(([name, a, b], k) => `<span style="--k:${k}"><b>${name}</b><em>${clock(a)}–${clock(b)}</em></span>`).join('')}</div></div></div>`,
+  },
 ];
 
-export function solutionSection() {
-  return `<section class="dig dig-model dig-solution" id="solution" aria-labelledby="solution-heading" data-intro="0" data-per="2" style="--travel:6;--nav:1">
+export function solutionSection({only, per = 2} = {}) {
+  const chapters = pickChapters(CHAPTERS, only);
+  return `<section class="dig dig-model dig-solution" id="solution" aria-labelledby="solution-heading" data-intro="0" data-per="${per}" style="--travel:${chapters.length * per};--nav:1">
     <div class="dig-pin">
       <div class="mn-heading"><h2 id="solution-heading">Ask, and jump to it.</h2></div>
-      <div class="dig-map"><ol class="dig-labels" aria-label="The solution">${CHAPTERS.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>
-      ${CHAPTERS.map((c, i) => `<div class="layer" id="solution-${c.id}" data-layer="${i}" style="--p:0;--s:1">
+      <div class="dig-map"><ol class="dig-labels" aria-label="The solution">${chapters.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>
+      ${chapters.map((c, i) => `<div class="layer" id="solution-${c.id}" data-layer="${i}" style="--p:0;--s:1">
         <div class="dig-copy layer-copy"><h3>${c.title}</h3><p>${c.body}</p>${c.cta ? '<div class="so-cta"><button type="button" class="btn-primary" id="sample-event">Open VID01 at 14:20</button><button type="button" class="btn-secondary" id="sample">Explore the demo</button></div>' : ''}</div>
         <div class="pit" style="--k:${i}" role="img" aria-label="${c.name} animation"><canvas class="sky-dither" data-horizon=".72" data-ceiling="4.6" aria-hidden="true"></canvas><div class="fit">${c.scene()}</div><p class="v-cap">${c.note}</p></div>
       </div>`).join('')}
@@ -65,11 +88,21 @@ const setText = (el, text) => { if (el && el.textContent !== text) el.textConten
 onStage((section, ps) => {
   if (section.id !== 'solution') return;
   paintFrames(section);
-  const read = section.querySelector('[data-clock]');
-  setText(read, clock(Number(read.dataset.clock) * clamp((ps[0] - .05) / .6)));
-  const q = section.querySelector('.so-q');
-  setText(q, q.dataset.type.slice(0, Math.round(q.dataset.type.length * clamp((ps[1] - .04) / .26))));
-  const more = section.querySelector('[data-count]');
-  setText(more, String(Math.round(Number(more.dataset.count) * ease(clamp((ps[1] - .62) / .25)))));
-  setText(section.querySelector('[data-jump]'), clock(CUT[0] * ease(clamp((ps[2] - .2) / .3))));
+  const pLabel = layerP(section, ps, 'solution-label');
+  if (pLabel !== null) { const el = section.querySelector('[data-clock]'); setText(el, clock(Number(el.dataset.clock) * clamp((pLabel - .05) / .6))); }
+  const pAsk = layerP(section, ps, 'solution-ask');
+  if (pAsk !== null) {
+    const q = section.querySelector('.so-q');
+    setText(q, q.dataset.type.slice(0, Math.round(q.dataset.type.length * clamp((pAsk - .04) / .26))));
+    const more = section.querySelector('[data-count]');
+    setText(more, String(Math.round(Number(more.dataset.count) * ease(clamp((pAsk - .62) / .25)))));
+  }
+  const pJump = layerP(section, ps, 'solution-jump');
+  if (pJump !== null) setText(section.querySelector('[data-jump]'), clock(CUT[0] * ease(clamp((pJump - .2) / .3))));
+  /* Practice in 3D: the model moves through three steps; each picture and its step chip fade in turn. */
+  const pPractice = layerP(section, ps, 'solution-practice');
+  if (pPractice !== null) {
+    const pos = clamp((pPractice - .2) / .65) * (PRACTICE.length - 1);
+    section.querySelectorAll('.so-3d-stage img, .so-steps span').forEach(el => el.style.setProperty(el.tagName === 'IMG' ? '--o' : '--on', clamp(1 - Math.abs(pos - Number(el.style.getPropertyValue('--k')))).toFixed(3)));
+  }
 });

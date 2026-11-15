@@ -23,7 +23,7 @@
 .pb-knob{position:absolute;top:-10px;bottom:-10px;left:calc(var(--hx) * 100%);width:4px;margin-left:-2px;border-radius:2px;background:#fff;box-shadow:0 0 0 3px #0f2d2a66,0 0 18px #fff}
 .pb-knob::before{content:"";position:absolute;left:50%;top:-12px;width:16px;height:16px;border-radius:50%;translate:-50% 0;background:#fff;box-shadow:0 4px 10px #052a2650}
 .pb-cut{position:absolute;top:-4px;bottom:-4px;left:var(--cx);width:max(var(--cw),5px);border-radius:2px;background:var(--hit);box-shadow:0 0 16px var(--hit);opacity:var(--land)}
-.pb-callout{position:absolute;left:calc(14px + (100% - 28px) * .4977);top:384px;display:grid;gap:3px;padding:10px 14px;border-radius:12px;background:#fff;color:var(--ink);translate:-50% 0;box-shadow:0 18px 40px #052a2650;opacity:var(--land);transform:translateY(calc((1 - var(--land)) * 12px))}
+.pb-callout{position:absolute;left:calc(14px + (100% - 28px) * .4963);top:384px;display:grid;gap:3px;padding:10px 14px;border-radius:12px;background:#fff;color:var(--ink);translate:-50% 0;box-shadow:0 18px 40px #052a2650;opacity:var(--land);transform:translateY(calc((1 - var(--land)) * 12px))}
 .pb-callout::before{content:"";position:absolute;left:50%;top:-8px;width:14px;height:14px;background:#fff;rotate:45deg;translate:-50% 0}
 .pb-callout b{font-size:16px;color:var(--brand-strong)}.pb-callout span{font-size:14px;color:var(--ink-muted);white-space:nowrap}
 
@@ -52,3 +52,15 @@
 .pb-lane.is-cut{color:#fff;font-weight:600}.pb-lane.is-cut .tr i{background:var(--hit);box-shadow:0 0 10px var(--hit)}
 .pb-hit{position:absolute;left:14px;top:396px;display:flex;align-items:baseline;gap:12px;padding:12px 18px;border-radius:12px;background:#fff;color:var(--ink);box-shadow:0 16px 36px #052a2650;opacity:clamp(0, calc((var(--p) - .28) * 6), 1)}
 .pb-hit b{font:600 30px var(--mono);color:var(--brand-strong);font-variant-numeric:tabular-nums}.pb-hit span{font-size:15px;color:var(--ink-muted)}
+
+/* Writing it down: an operative record fills in row by row, slowly, while the review clock runs. */
+.pb-form{position:absolute;left:14px;right:14px;top:40px;padding:18px 18px 10px;border-radius:14px;background:#fdfcf7;color:var(--ink);box-shadow:0 24px 60px #052a2650;transform:rotate(-1deg)}
+.pb-form-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding-bottom:10px;border-bottom:2px solid var(--ink)}
+.pb-form-head b{font-size:17px}.pb-form-head span{font-size:13px;color:var(--ink-muted)}
+.pb-form-cols,.pb-form-row{display:grid;grid-template-columns:1.25fr .8fr 1.35fr;gap:10px;align-items:baseline}
+.pb-form-cols{padding:8px 0 4px;color:var(--ink-muted);font-size:12.5px;font-weight:600}
+.pb-form-row{--w:clamp(0, calc((var(--p) - .08 - var(--k) * .095) / .09), 1);min-height:34px;padding:7px 0;border-bottom:1px dashed #c9d6cf;font-size:14px}
+.pb-form-row > span{clip-path:inset(0 calc((1 - var(--w)) * 100%) 0 0);font-family:'Segoe Print','Bradley Hand','Comic Sans MS',cursive;color:#1f3d8a}
+.pb-form-row > span:nth-child(2){font-family:var(--mono);font-size:13px}
+.pb-review{position:absolute;left:14px;top:448px;display:flex;align-items:baseline;gap:12px;padding:12px 18px;border-radius:12px;background:#0f2d2ae8;color:#cfe6dc;box-shadow:0 16px 36px #052a2650;font-size:15px}
+.pb-review b{font:600 28px var(--mono);color:#fff;font-variant-numeric:tabular-nums}

@@ -188,11 +188,37 @@ const feature = ({id, title, body, action, command, horizon, preview, index}) =>
   <div class="feature-visual"><canvas class="sky-dither" data-horizon="${horizon}" data-ceiling="7.2" aria-hidden="true"></canvas>${preview}</div>
 </section>`;
 
-/* Two versions of the homepage. `public`: the product. `demo` (/demo or ?demo, used to present the
-   project): problem, solution (in place of "Find the clip"), features, the stack, model notes, the
-   Databricks section and what's next (in place of "Open your own video"). */
+/* Homepage versions. Each lists its sections in order, with options: `only` picks a stage's chapters and
+   `per` sets its pace (viewport heights of scroll per chapter). `playMs` is how long the hidden arrow-key
+   playback takes per scene.
+   - public (/): the product.
+   - demo (/demo, ?demo): the original presentation version, kept as it was.
+   - presentation-demo (/presentation-demo): the 5-minute in-person pitch, four speakers.
+   - video-demo (/video-demo): the 3-minute Devpost video for the Databricks track; faster, solution and
+     Databricks first.
+   Scripts: pitch/ at the repo root. */
+const VERSIONS = {
+  public: {playMs: 3200, sections: [['find'], ['features'], ['architecture'], ['model'], ['local']]},
+  demo: {playMs: 3200, sections: [
+    ['problem', {only: ['length', 'needle', 'uses', 'index']}], ['solution', {only: ['label', 'ask', 'jump']}],
+    ['features'], ['architecture'], ['model'], ['databricks'], ['future'],
+  ]},
+  'presentation-demo': {playMs: 3000, sections: [
+    ['problem', {only: ['needle', 'docs', 'uses']}], ['solution', {only: ['label', 'ask', 'jump', 'record', 'practice']}],
+    ['features'], ['architecture'], ['model', {only: ['test', 'instruments', 'versions', 'boxes']}], ['databricks'], ['future'],
+  ]},
+  'video-demo': {playMs: 2300, sections: [
+    ['problem', {only: ['needle', 'docs'], per: 1.6}], ['solution', {only: ['ask', 'jump', 'practice'], per: 1.6}],
+    ['databricks', {per: 1.6}],
+  ]},
+};
+export const VERSION_NAMES = Object.keys(VERSIONS);
+const FOOTER_LINKS = {
+  problem: ['problem', 'The problem'], solution: ['solution', 'The solution'], find: ['case-preview', 'The demo'],
+  architecture: ['architecture', 'The stack'], model: ['model-notes', 'Model'], databricks: ['databricks', 'Databricks'], future: ['future', 'What’s next'],
+};
 export function homePage({videoUrl, filterOn, filterButton, blurButton = '', error, showcase = {}, mode = 'public'}) {
-  const demo = mode === 'demo';
+  const demo = mode !== 'public' && Boolean(VERSIONS[mode]);
   const findClip = `    <section class="case-section" id="case-preview" aria-labelledby="case-heading">
       <div class="case-copy"><h2 id="case-heading">Find the clip.</h2><p>Ask when a step happens and jump straight to the annotated moment.</p><button type="button" class="btn-primary" id="sample">Explore the demo</button></div>
       <div class="case-console"><div class="console-bar"><span class="console-case"><strong>VID01</strong><span>Cholecystectomy</span></span></div>
@@ -204,7 +230,18 @@ export function homePage({videoUrl, filterOn, filterButton, blurButton = '', err
     ${feature({id: 'feature-chart', title: 'See which instruments appear, and for how long.', body: 'Time on screen for each instrument, totalled from the dataset annotations.', action: 'Show the instrument chart', command: '/chart instruments', horizon: .62, index: 1, preview: instrumentsPreview(showcase.timeline)})}
     ${feature({id: 'feature-quiz', title: 'Test yourself on the procedure.', body: 'Five questions on step order and instruments, each with an explanation and example clips.', action: 'Start the quiz', command: '/quiz', horizon: .62, index: 2, preview: quizPreview(showcase.quiz)})}
     </div>`;
-  return `<main class="landing${demo ? ' is-demo' : ''}${filterOn ? ' is-blurred' : ''}" id="main-content">
+  const local = `<section class="local-section" aria-labelledby="local-heading"><div><h2 id="local-heading">Open your own video.</h2><p>MP4 and MOV files open for local playback. Indexed search covers the demo cases.</p></div><button type="button" id="drop-zone" class="btn-secondary local-open" aria-label="Open a local MP4 or MOV for playback only">Open a video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>${error ? `<p class="home-error" role="alert">${error}</p>` : ''}</section>`;
+  const version = VERSIONS[mode] ?? VERSIONS.public;
+  const sections = version.sections.map(([id]) => id);
+  const opts = Object.fromEntries(version.sections.map(([id, o = {}]) => [id, o]));
+  const SECTION_HTML = {
+    find: () => findClip, features: () => features, local: () => local,
+    problem: () => problemSection(opts.problem), solution: () => solutionSection(opts.solution),
+    architecture: () => architectureSection(opts.architecture), model: () => modelSection(opts.model),
+    databricks: () => databricksSection(opts.databricks), future: () => futureSection(opts.future),
+  };
+  const links = sections.filter(id => FOOTER_LINKS[id]).map(id => `<a href="#${FOOTER_LINKS[id][0]}">${FOOTER_LINKS[id][1]}</a>`).join('');
+  return `<main class="landing${demo ? ' is-demo' : ''}${filterOn ? ' is-blurred' : ''}" id="main-content" data-version="${VERSIONS[mode] ? mode : 'public'}" data-play-ms="${version.playMs}">
     <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><span class="nav-actions">${blurButton}<button type="button" id="open-sample" class="nav-case">Open a case</button></span></nav>
     <section class="landing-intro" aria-labelledby="landing-title">
       <div class="intro-sticky">
@@ -219,17 +256,12 @@ export function homePage({videoUrl, filterOn, filterButton, blurButton = '', err
         </div>
       </div>
     </section>
-    ${demo ? `${problemSection()}\n${solutionSection()}` : findClip}
-    ${features}
-    ${architectureSection()}
-    ${modelSection()}
-    ${demo ? `${databricksSection()}\n${futureSection()}` : ''}
-    ${demo ? '' : `    <section class="local-section" aria-labelledby="local-heading"><div><h2 id="local-heading">Open your own video.</h2><p>MP4 and MOV files open for local playback. Indexed search covers the demo cases.</p></div><button type="button" id="drop-zone" class="btn-secondary local-open" aria-label="Open a local MP4 or MOV for playback only">Open a video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>${error ? `<p class="home-error" role="alert">${error}</p>` : ''}</section>`}
+    ${sections.map(id => SECTION_HTML[id]()).join('\n')}
     <footer class="site-footer" aria-label="About surg+f">
       <div class="footer-sticky">
         <div class="footer-top">
           <div class="footer-identity"><p>Search surgical video.</p></div>
-          <nav class="footer-links" aria-label="Footer">${demo ? '<a href="#problem">The problem</a><a href="#solution">The solution</a>' : '<a href="#case-preview">The demo</a>'}<a href="#architecture">The stack</a><a href="#model-notes">Model</a>${demo ? '<a href="#databricks">Databricks</a><a href="#future">What’s next</a>' : ''}<a href="#top">Back to top</a></nav>
+          <nav class="footer-links" aria-label="Footer">${links}<a href="#top">Back to top</a></nav>
         </div>
         <canvas class="footer-word" aria-hidden="true"></canvas>
         <div class="footer-legal"><span>Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>
@@ -312,7 +344,7 @@ export function mountHome(root) {
      during a glide counts from where the glide is headed, so every press is one scene. Ignored while
      typing or with a modifier held; a wheel, touch or click cancels the glide. Chapter buttons use the
      same motion. */
-  const PLAY_MS = 3200;
+  const PLAY_MS = Number(root.dataset.playMs) || 3200;
   let glide = 0, aim = null;
   const stopGlide = () => { cancelAnimationFrame(glide); glide = 0; aim = null; };
   const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -339,13 +371,27 @@ export function mountHome(root) {
     out.push(kind === 'play' ? {to, ms: Math.max(600, PLAY_MS * Math.min(1, Math.abs(to - prev) / Math.max(1, window.innerHeight * 1.4))), ease: easeSine} : {to, ms: moveMs(to - prev), ease: easeInOut});
     return out;
   }, []);
+  /* The feature cards are stops too: each card's scroll position when it reaches its sticky top. Sticky
+     cards report their stuck position, so natural tops are summed from the container instead. */
+  const cardScenes = () => {
+    const box = root.querySelector('.feature-stack');
+    if (!box || window.matchMedia?.('(max-width: 860px)').matches) return [];
+    const cs = getComputedStyle(box), gap = parseFloat(cs.rowGap) || 0;
+    let y = box.getBoundingClientRect().top + window.scrollY + (parseFloat(cs.paddingTop) || 0);
+    return [...box.querySelectorAll('.stack-card')].map(card => {
+      const at = Math.round(y - (parseFloat(getComputedStyle(card).top) || 0));
+      y += card.offsetHeight + gap;
+      return {start: at, end: at};
+    });
+  };
+  const allScenes = () => [...digScenes(root), ...cardScenes()].sort((a, b) => a.start - b.start);
   const playScene = scene => { const y = window.scrollY; const l = legs(y, [[scene.start, 'move'], [scene.end, 'play']]); if (l.length) run(l, scene.end); };
   const step = event => {
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.defaultPrevented) return;
     if (event.target.closest?.('input, textarea, select, [contenteditable="true"], video')) return;
     event.preventDefault();
-    const scenes = digScenes(root), y = window.scrollY, from = aim ?? y;
+    const scenes = allScenes(), y = window.scrollY, from = aim ?? y;
     if (event.key === 'ArrowRight') {
       const next = scenes.find(sc => sc.end > from + 4);
       if (!next) return;
