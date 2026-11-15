@@ -1,11 +1,15 @@
 /* "Built on Databricks": pinned stage. Layout, chapter list and transitions come from architecture.css
    and modelnotes.css (.dig-model). Here: the heading with the Databricks mark and five scenes. */
-.db-heading h2{display:flex;align-items:center;gap:.32em;margin:0 0 10px;font-size:inherit}
-.db-heading p{margin:0;color:var(--ink-muted);font-size:17px;letter-spacing:0;line-height:1.5}
-.db-mark{width:.9em;height:.9em;flex:none}
+.db-heading h2{display:grid;justify-items:start;gap:.2em;margin:0 0 14px;font-size:inherit}
+.db-heading p{margin:0;color:var(--ink-muted);font-size:17px;letter-spacing:0;line-height:1.5;text-wrap:pretty}
+/* Horizontal Databricks logo: mark about 1.3× the letter height, as in the official lockup. */
+.db-logo{display:inline-flex;align-items:center;gap:.24em;padding:.08em .12em;margin:-.08em -.12em;border-radius:10px;color:#1b3139;text-decoration:none;transition:background-color .15s}
+.db-logo:hover{background:#ff36210f}
+.db-logo:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.db-mark{width:.86em;height:.86em;flex:none}
+.db-word{height:.62em;width:auto;aspect-ratio:106.85/16.91;flex:none}
 .dig-db .dig-labels::after{background:#FF3621}
 .dig-db .dig-labels button.is-on span{border-color:#c42a19;background:#FF3621;box-shadow:0 2px 0 #a3230f}
-.dig-db .layer-copy{margin-top:16vh}
 .db-win,.db-jobs .job,.runs,.sweep,.dag,.delta,.rerun,.ex,.space{color:#e6f3ee}
 
 /* 1. Volume: folders open one by one and the features folder fills with 50 bundles. */
