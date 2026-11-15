@@ -83,6 +83,70 @@ export function paintDither(canvas) {
 export const DEMO_QUESTION = 'When is the cystic duct cut?';
 export const DEMO_SEEK = 860;
 
+/* Footer mark as a plus dither. The wordmark is drawn once per size into a coarse coverage grid
+   (same lens geometry as wordmark(), at weight 600 / stroke 113). Scroll progress raises the Bayer
+   threshold, so the word fills in with "+" marks and darkens. Redraws only when the 64-step level changes. */
+/* Cell size scales with width: 4 px on phones, 7 px on desktop. */
+const footCell = width => Math.max(4, Math.min(7, Math.round(width / 200)));
+export function footerMask(cols, rows) {
+  let off;
+  try { off = document.createElement('canvas'); off.width = cols; off.height = rows; } catch { return null; }
+  const c = off.getContext?.('2d');
+  if (!c) return null;
+  const font = em => { c.font = `600 ${em}px "Inclusive Sans Variable", sans-serif`; c.letterSpacing = `${-0.03 * em}px`; };
+  font(100);
+  const unit = (c.measureText('surg').width + c.measureText('f').width) / 100 + .81;
+  const em = Math.min(cols * .84 / unit, rows * .7);
+  font(em);
+  const surg = c.measureText('surg').width, total = surg + c.measureText('f').width + .81 * em;
+  let x = (cols - total) / 2;
+  const base = rows / 2 + .245 * em;
+  c.fillStyle = c.strokeStyle = '#000';
+  c.fillText('surg', x, base);
+  x += surg + .075 * em;
+  const cx = x + .3 * em, cy = base - .295 * em;
+  c.lineWidth = .113 * em;
+  c.beginPath(); c.arc(cx, cy, .248 * em, 0, Math.PI * 2); c.stroke();
+  c.beginPath();
+  c.moveTo(cx - .125 * em, cy); c.lineTo(cx + .125 * em, cy); // slightly shorter arms keep the gap
+  c.moveTo(cx, cy - .125 * em); c.lineTo(cx, cy + .125 * em); // to the ring open at coarse cells
+  c.moveTo(cx + .18 * em, cy + .18 * em); c.lineTo(cx + .38 * em, cy + .38 * em);
+  c.stroke();
+  c.fillText('f', x + .735 * em, base);
+  const alpha = c.getImageData(0, 0, cols, rows).data, cover = new Uint8Array(cols * rows);
+  for (let i = 0; i < cover.length; i++) cover[i] = alpha[i * 4 + 3] > 140 ? 1 : 0;
+  return {cols, rows, cover};
+}
+export function paintFooterWord(canvas, progress, cache) {
+  const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+  const w = canvas.offsetWidth, h = canvas.offsetHeight;
+  if (!w || !h) return;
+  const size = `${w}x${h}x${dpr}`;
+  if (cache.size !== size) {
+    const step = footCell(w);
+    const mask = footerMask(Math.ceil(w / step), Math.ceil(h / step));
+    if (!mask) return;
+    Object.assign(cache, {size, mask, step, level: -1});
+    canvas.width = w * dpr; canvas.height = h * dpr;
+  }
+  const level = Math.round((.14 + .86 * progress) * 64);
+  if (level === cache.level) return;
+  cache.level = level;
+  let ctx = null;
+  try { ctx = canvas.getContext('2d'); } catch { /* no canvas */ }
+  if (!ctx) return;
+  const {cols, rows, cover} = cache.mask, cell = cache.step * dpr, arm = Math.round(cache.step * .36 * dpr), bar = Math.max(1, Math.round(cache.step * .2 * dpr));
+  const t = progress, mix = (a, b) => Math.round(a + (b - a) * t);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = `rgb(${mix(190, 104)},${mix(212, 160)},${mix(206, 150)})`;
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    if (!cover[y * cols + x] || BAYER[(y & 7) * 8 + (x & 7)] * 64 >= level) continue;
+    const px = x * cell + (cell >> 1), py = y * cell + (cell >> 1);
+    ctx.fillRect(px - arm, py - (bar >> 1), arm * 2, bar);
+    ctx.fillRect(px - (bar >> 1), py - arm, bar, arm * 2);
+  }
+}
+
 const searchGlyph = `<svg class="glyph" aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 5 5"/></svg>`;
 const clock = seconds => { const n = Math.floor(Number(seconds) || 0); return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`; };
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -145,11 +209,11 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
     <footer class="site-footer" aria-label="About surg+f">
       <div class="footer-sticky">
         <div class="footer-top">
-          <div class="footer-identity">${wordmark()}<p>Search surgical video.<br>Built at MadHacks 2026.</p></div>
-          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#feature-steps">Features</a><a href="#top">Back to top</a></nav>
+          <div class="footer-identity">${wordmark()}<p>Search surgical video.</p></div>
+          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#feature-steps">Features</a><a href="#top">Back to top</a><button type="button" class="btn-primary" data-open-sample>Open a case</button></nav>
         </div>
-        <div class="footer-word" aria-hidden="true">${wordmark()}</div>
-        <div class="footer-legal"><span>Shlok Jadhav, Aadhitya Balaji, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>
+        <canvas class="footer-word" aria-hidden="true"></canvas>
+        <div class="footer-legal"><span>Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>
       </div>
     </footer>
   </main>`;
@@ -160,6 +224,8 @@ export function mountHome(root) {
   const intro = root.querySelector('.landing-intro');
   const canvases = [...root.querySelectorAll('.sky-dither')];
   const footer = root.querySelector('.site-footer');
+  const footerWord = root.querySelector('.footer-word');
+  const footerCache = {};
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
   let frame = 0;
   const update = () => {
@@ -171,6 +237,7 @@ export function mountHome(root) {
       const span = Math.max(1, footer.offsetHeight - window.innerHeight);
       const fp = media.matches ? 1 : Math.max(0, Math.min(1, -footer.getBoundingClientRect().top / span));
       footer.style.setProperty('--footer-progress', fp.toFixed(4));
+      if (footerWord) paintFooterWord(footerWord, fp, footerCache);
     }
     canvases.forEach(paintDither);
   };
@@ -195,5 +262,6 @@ export function mountHome(root) {
   const unavailable = () => { root.querySelector('.preview-unavailable').hidden = false; };
   video.addEventListener('error', unavailable);
   update();
+  root.ownerDocument?.fonts?.ready?.then(() => { footerCache.size = null; schedule(); });
   return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); video.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
 }

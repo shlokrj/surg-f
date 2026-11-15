@@ -62,7 +62,11 @@ function render() {
   wire();
   disposeHome = mountHome(document.querySelector('.landing'));
   if (state.page === 'dash') markNew(renderedPage !== 'dash');
-  if (renderedPage !== state.page) window.scrollTo({top:0, behavior:'instant'});
+  if (renderedPage !== state.page) {
+    window.scrollTo({top:0, behavior:'instant'});
+    // Subtle load-in when switching between the homepage and the case page (and on first load).
+    app.classList.remove('page-enter'); void app.offsetWidth; app.classList.add('page-enter');
+  }
   renderedPage = state.page;
   if (hadFocus) {
     const next = document.querySelector('#query');

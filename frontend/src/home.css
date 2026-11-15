@@ -101,17 +101,15 @@ body:has(.landing)>.topbar,body:has(.landing) #app>.topbar{display:none}
 @media(max-width:480px){.hero-search .glyph{display:none}.landing .hero-search{padding-left:16px}}
 .hs-case{flex:none;padding:5px 9px;border-radius:var(--radius-sm);background:var(--brand-tint);color:var(--brand-strong);font-size:14px;font-weight:600}
 
-/* Footer, after Hangar: a tall section with a sticky panel. The giant mark widens, darkens and gains
-   weight as the footer scrolls in (--footer-progress 0 → 1). The lens stroke follows the measured stem
-   (84 units at weight 400, 113 at 600). Reduced motion shows the final state. */
+/* Footer: a tall section with a sticky panel (Hangar's structure). The giant mark is a plus dither that
+   fills in and zooms slightly as --footer-progress runs 0 → 1 (see paintFooterWord). Reduced motion
+   shows the final state. */
 .site-footer{--footer-progress:0;position:relative;height:165svh;min-height:900px;background:#edf3f1;color:var(--ink-muted)}
 .footer-sticky{position:sticky;top:0;height:100svh;min-height:600px;display:grid;grid-template-rows:auto 1fr auto;padding:40px clamp(20px,3vw,44px) 26px;border-top:1px solid var(--line);overflow:clip}
-.footer-top{display:flex;justify-content:space-between;align-items:flex-start;gap:40px;z-index:1}
-.footer-identity{display:flex;align-items:flex-start;gap:16px}.footer-identity .sf-mark{font-size:26px;color:var(--brand-strong)}.footer-identity p{margin:3px 0 0;font-size:15px;line-height:1.5}
-.footer-links{display:flex;gap:28px;font-size:15px}.footer-links a{text-decoration:none}.footer-links a:hover{color:var(--ink)}
-.footer-word{place-self:center;color:#0f4b46;opacity:calc(.06 + .07 * var(--footer-progress));transform:scaleX(calc(.78 + .23 * var(--footer-progress)));transform-origin:50%;will-change:transform,opacity;white-space:nowrap;line-height:.8}
-.footer-word .sf-mark{font-size:clamp(110px,26vw,400px);font-weight:calc(400 + 200 * var(--footer-progress));letter-spacing:-.07em}
-.footer-word .sf-lens{stroke-width:calc(84 + 29 * var(--footer-progress))}
-.footer-legal{display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:14px;z-index:1}
-@media(max-width:860px){.site-footer{height:140svh;min-height:760px}.footer-sticky{padding:28px 20px 20px}.footer-top{flex-direction:column;gap:20px}.footer-links{gap:20px}.footer-word .sf-mark{font-size:27vw}.footer-legal{flex-direction:column;align-items:flex-start;gap:6px}}
+.footer-top{display:flex;justify-content:space-between;align-items:center;gap:40px;z-index:1}
+.footer-identity{display:flex;align-items:baseline;gap:16px}.footer-identity .sf-mark{font-size:28px;color:var(--brand-strong)}.footer-identity p{margin:0;font-size:16px;line-height:1}
+.footer-links{display:flex;align-items:center;gap:28px;font-size:16px}.footer-links .btn-primary{min-height:44px;padding:0 18px;font-size:15px}.footer-links a{text-decoration:none}.footer-links a:hover{color:var(--ink)}
+.footer-word{width:100%;height:100%;min-height:0;transform:scale(calc(.94 + .06 * var(--footer-progress)));transform-origin:50% 55%}
+.footer-legal{display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:15px;z-index:1}
+@media(max-width:860px){.site-footer{height:140svh;min-height:760px}.footer-sticky{padding:28px 20px 20px}.footer-top{flex-direction:column;align-items:flex-start;gap:20px}.footer-links{gap:20px;flex-wrap:wrap}.footer-legal{flex-direction:column;align-items:flex-start;gap:6px}}
 @media(prefers-reduced-motion:reduce){.site-footer{height:100svh;min-height:600px}}
