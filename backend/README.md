@@ -6,6 +6,7 @@ FastAPI service for the Surg+F study tool. **Frontend developers: start with [do
 |---|---|
 | `GET /search?q=<label>` | Search. Shared contract in [CONTRACTS.md](../agent-kit/CONTRACTS.md), shape of [shared/search.fixture.json](../shared/search.fixture.json) |
 | `GET /cases/{case_id}/timeline` | Chart: instrument segments and per-label summary for one video |
+| `GET /cases/{case_id}/steps` | Timeline: the steps (surgical phases) of one video, from saved Cholec80 phase annotations. Same with or without Databricks |
 | `GET /quiz?seed=<int>` | Quiz: 5 general questions about the operation |
 | `GET /interpret?q=<text>&case_id=<id>` | Turns typed text into actions (`timestamp`, `chart`, `quiz`, `model`). Rules first; Databricks Genie for free-form questions when `DATABRICKS_GENIE_SPACE_ID` is set. See [docs/GENIE_PLAN.md](docs/GENIE_PLAN.md) |
 | `GET /health` | Shows `mode`: `databricks` or `fixture` |
