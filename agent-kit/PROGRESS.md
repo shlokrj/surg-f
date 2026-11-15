@@ -1,5 +1,12 @@
 # Surg+F progress
 
+## Stage 3 anatomy preparation (2026-11-14)
+
+Shlok, `feat/spatial-overlays`: pinned the published CAMMA surgery-overlap map at `8347b9f4cb02ebe739747903e6eada272ee9d25e`. No listed Endoscapes-train overlap with our current protected validation/test/diagnostic cases. Added `prepare_anatomy.py`, which excludes protected overlapping surgeries, rejects nontraining/unreviewed images, and maps only cystic duct/gallbladder. Real run prepared 1,212 frames, 2,126 boxes and 34 anatomy-negative frames across 120 surgeries. Source/split hashes and mapping are committed in `anatomy_train_manifest.json`; generated labels remain outside Git.
+
+Verification: `python3 -m unittest discover -s ml/localization -p 'test_*.py'` passes 10 tests, including whole-surgery exclusion and training/keyframe guards. The README preparation command ran successfully on real Endoscapes training annotations. No training or accuracy improvement is claimed. Next: fetch selected training imagery, prepare independent validation with category-scoped metrics, then fine-tune an anatomy detector. Six-instrument supervision and browser acceptance remain outstanding; Aadhitya continues stage 2 independently.
+
+
 ## Stage 3 annotation audit (2026-11-14)
 
 Shlok, `feat/spatial-overlays`: audited primary-source annotation downloads. CholecT50 converted COCO archive has zero boxes and 40 duplicate image IDs; it cannot provide localization ground truth. Endoscapes training JSON has 1,212 unique image records and 5,566 valid boxes (1,186 frames with boxes), including gallbladder/cystic duct and generic tools. Saved reproducible aggregate audits with SHA-256 in `ml/localization/*_audit.json`; source files remain outside Git. Downloaded only Endoscapes training annotations using remote ZIP access, not full imagery or held-out annotations.

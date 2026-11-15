@@ -36,9 +36,9 @@ This is our proposed starting experiment, not a claim of surgical accuracy. Its 
 
 Our proposed architecture is detector on selected frames → optional mask/tracking propagation → versioned overlay artifacts → player rendering. Tracking identity and semantic labels need separate validation. Initially use offline inference and cached results; measure cost, latency and available compute before choosing sampling density or claiming live inference. Current CPU feature-extraction throughput says nothing about detector/segmenter throughput.
 
-## Proposed data boundary, not an implemented API
+## Spatial data boundary
 
-Keep spatial detections separate from `surgf_clips` and its existing search CSV. Agree on a versioned artifact/API before implementation. Suggested fields:
+Spatial detections remain separate from `surgf_clips`. The static artifact v1 is implemented on the feature branch; see [shared contracts](../agent-kit/CONTRACTS.md). The table below preserves the broader design, including deferred tracking and relations:
 
 | Field | Proposed meaning |
 |---|---|
@@ -68,3 +68,5 @@ Acceptance later: per-class box AP/recall and localization IoU on held-out surge
 ## Current stopping point
 
 Shlok is implementing a versioned artifact, bounded offline Grounding DINO inference and a player toggle. No stage-2 jobs or shared clip-table schemas are changed. Initial labels use the six existing instrument names plus explicitly experimental anatomy prompts; no seventh instrument or verb detector is invented. Separate masks/tracking and action relations remain deferred.
+
+Anatomy preparation now uses Endoscapes cystic duct/gallbladder boxes with published cross-dataset overlap checks; see [localization setup](localization/README.md). This is label preparation, not a trained or validated replacement model.

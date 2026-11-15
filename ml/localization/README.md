@@ -55,3 +55,16 @@ Saved audit reports are adjacent to this README. The [official SurgLatentGraph C
 The [official Endoscapes archive](https://github.com/CAMMA-public/Endoscapes) supplies `endoscapes/train/annotation_coco.json`: 1,212 detection-keyframe records, 5,566 valid boxes, 1,186 frames with boxes. Labels include 1,174 gallbladder, 952 cystic duct and 1,946 generic tool instances. Other labels are cystic plate, cystic artery and calot triangle. Source data is CC BY-NC-SA 4.0; cite Murali et al., Endoscapes benchmark and Latent Graph Representations, as requested by the source repository. Only aggregate audit reports are committed, not the dataset.
 
 Downloaded annotation files live outside Git under `/Users/shlokjadhav/madhacks2026/localization/`. Endoscapes JSON was read directly from the remote ZIP using `remotezip==0.12.6`; the full imagery archive was not downloaded. Its source case IDs are not CholecT50 IDs. Before training or evaluating, resolve [CAMMA cross-dataset surgery overlaps](https://github.com/CAMMA-public/camma_dataset_overlaps) against `ml/case_split.json`. Do not tune on final-test surgeries. Generic tool cannot be mapped to grasper or another instrument subtype. Anatomy scope must be mapped explicitly; the existing evaluator requires complete review of its supported categories, so do not silently claim complete liver annotations from Endoscapes. No Endoscapes model has been trained or evaluated yet.
+
+## Prepare anatomy training data
+
+```sh
+python ml/localization/prepare_anatomy.py /path/to/endoscapes-train-coco.json \
+  --split ml/case_split.json --output-dir /path/to/new/anatomy-train-v1
+```
+
+The output is COCO `train.json` plus a manifest binding source annotation and split hashes. It uses official Endoscapes training surgeries 1–120 only, requires explicit detection keyframes, and maps cystic duct → class 1 and gallbladder → class 2. All other classes are excluded. Empty frames remain negative only for these two categories; they say nothing about liver or instruments. The generated training JSON stays outside Git.
+
+The published CAMMA overlap map at revision `8347b9f4cb02ebe739747903e6eada272ee9d25e` has no listed overlap between Endoscapes training and our current protected CholecT50 validation/test/diagnostic cases. The preparation code excludes entire overlapping surgeries if those lists change. This is based on the published map, not independent visual deduplication. The saved `anatomy_train_manifest.json` records 120 surgeries, 1,212 frames, 2,126 boxes and 34 frames without either selected anatomy class.
+
+This prepares labels only. Training imagery, a separate validation manifest, model fine-tuning and held-out accuracy measurement are the next steps. The existing Grounding DINO preview is unchanged. Do not evaluate this two-category dataset through the all-category overlay evaluator without adding an explicit category-scope contract first.
