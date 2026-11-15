@@ -1,5 +1,12 @@
 # Surg+F progress
 
+## Spatial work published to main (2026-11-14)
+
+Shlok requested publication for teammate handoff. All stage-3 work through `1f49b33` is now integrated into `main`, including detector/overlay prototype, annotation preparation, evaluation utilities and the real-image training smoke runner. Start from `main`; older branch references below describe historical work. Task reassignment will be discussed separately, so existing owners remain unchanged.
+
+Verification on the integrated main: `node --test frontend/test/*.test.js` passed 6 tests; `python3 -m unittest discover -s ml/localization -p 'test_*.py'` passed 11; `npm --prefix frontend run build` and `git diff --check` passed. Read `ml/localization/README.md` before running jobs. Full anatomy training/evaluation, six-instrument supervision and real-browser acceptance remain unfinished. Images, videos, credentials and model checkpoints remain outside Git.
+
+
 ## Stage 3 real-image training smoke (2026-11-14)
 
 Shlok, `feat/spatial-overlays`: extended preparation to official validation surgeries 121–161, guarding overlaps with stage-2 training as well as other protected splits. Downloaded four actual Endoscapes images through bounded remote ZIP access, verified decoding/dimensions and SHA-256, and ran three optimizer steps on the two train images using Torchvision Faster R-CNN MobileNetV3 320 with COCO_V1 initialization and a new two-anatomy head. Separate validation images produced finite inference outputs. Saved checkpoint/predictions outside Git and `anatomy_smoke_report.json` in Git. This is a pipeline smoke, not a quality result or app model replacement.
