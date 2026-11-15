@@ -1,0 +1,94 @@
+/* "Built on Databricks": pinned stage. Layout, chapter list and transitions come from architecture.css
+   and modelnotes.css (.dig-model). Here: the heading with the Databricks mark and five scenes. */
+.db-heading h2{display:flex;align-items:center;gap:.32em;margin:0 0 10px;font-size:inherit}
+.db-heading p{margin:0;color:var(--ink-muted);font-size:17px;letter-spacing:0;line-height:1.5}
+.db-mark{width:.9em;height:.9em;flex:none}
+.dig-db .dig-labels::after{background:#FF3621}
+.dig-db .dig-labels button.is-on span{border-color:#c42a19;background:#FF3621;box-shadow:0 2px 0 #a3230f}
+.dig-db .layer-copy{margin-top:16vh}
+.db-win,.db-jobs .job,.runs,.sweep,.dag,.delta,.rerun,.ex,.space{color:#e6f3ee}
+
+/* 1. Volume: folders open one by one and the features folder fills with 50 bundles. */
+.db-vol{display:grid;align-content:center;padding:0 18px}
+.db-win{overflow:hidden;border-radius:16px;background:#0f2d2ae8;box-shadow:0 24px 60px #052a2650}
+.db-path{padding:12px 16px;background:#163b37;font:500 14px var(--mono);color:#cfe6dc}
+.fold{--o:clamp(0, calc((var(--p) - var(--r) * .1) / .14), 1);display:grid;grid-template-columns:22px 118px 1fr;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid #ffffff14;font-size:15px;opacity:var(--o);transform:translateX(calc((1 - var(--o)) * -24px))}
+.fold span{font:600 15px var(--mono)}
+.fold em{font-style:normal;color:#9fd9c6;text-align:right}
+.fold em b{color:#fff;font-weight:600}
+.fico{width:20px;height:15px;border-radius:2px 4px 4px 4px;background:#FF3621;position:relative}
+.fico::before{content:"";position:absolute;left:0;top:-3px;width:9px;height:4px;border-radius:2px 2px 0 0;background:#FF3621}
+.bundles{grid-column:1/-1;display:grid;grid-template-columns:repeat(25,1fr);gap:4px;margin-top:8px}
+.bundles i{--b:clamp(0, calc((var(--p) - .12 - var(--j) * .008) * 14), 1);aspect-ratio:1;border-radius:3px;background:color-mix(in srgb,#ffffff14,#9ff3df calc(var(--b) * 100%));transform:scale(calc(.6 + .4 * var(--b)))}
+
+/* 2. Jobs: a run travels down the pipeline; each job tilts up and flips from Queued to Succeeded. */
+.db-jobs{display:grid;align-content:center;gap:12px;padding:0 22px 0 52px;perspective:900px}
+.db-jobs .rail{position:absolute;left:30px;top:70px;bottom:70px;width:2px;background:#ffffff26}
+.db-jobs .rail i{position:absolute;left:0;top:0;width:100%;height:calc(clamp(0, calc((var(--p) - .08) / .8), 1) * 100%);background:#fff;box-shadow:0 0 12px #fff}
+.job{--on:clamp(0, calc((var(--p) - .1 - var(--k) * .16) * 9), 1);position:relative;display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:color-mix(in srgb,#0f2d2a99,#0f2d2af0 calc(var(--on) * 100%));box-shadow:0 calc(var(--on) * 18px) 40px #052a2640;transform-origin:left;transform:rotateY(calc((1 - var(--on)) * 18deg)) translateX(calc((1 - var(--on)) * 10px));opacity:calc(.45 + .55 * var(--on))}
+.job .dot{position:absolute;left:-29px;top:50%;width:12px;height:12px;border-radius:50%;translate:0 -50%;background:color-mix(in srgb,#ffffff40,#FF3621 calc(var(--on) * 100%));box-shadow:0 0 0 calc(var(--on) * 4px) #ff362140}
+.job b{display:block;font-size:16px}.job small{font-size:14px;color:#9fd9c6}
+.state{display:grid;font-size:13px;font-weight:600}
+.state > span{grid-area:1/1;padding:3px 8px;border-radius:6px}
+.state .q{background:#ffffff1f;color:#cfe6dc;opacity:calc(1 - var(--on))}
+.state .ok{background:#9ff3df;color:#0f3d36;opacity:var(--on)}
+.job .chip{padding:3px 8px;border-radius:6px;border:1px solid #ffffff33;font-size:12.5px;color:#cfe6dc}
+
+/* 3. MLflow: two runs compared, then the smoothing sweep grows and the selected setting lights. */
+.db-ml{display:grid;align-content:center;gap:16px;padding:0 20px}
+.runs,.sweep{padding:16px 18px;border-radius:16px;background:#0f2d2ae8;box-shadow:0 24px 60px #052a2650}
+.runs h4,.sweep h4{margin:0 0 12px;color:#9fd9c6;font-size:15px;font-weight:600}
+.mlrun{display:grid;grid-template-columns:88px 128px 1fr 54px;align-items:center;gap:10px;padding:6px 0;font-size:14px}
+.mlrun code{font-size:14px;color:#fff}.mlrun span{color:#cfe6dc}
+.mlrun .bar{height:12px;border-radius:6px;background:#ffffff1a;overflow:hidden}
+.mlrun .bar i{display:block;height:100%;width:calc(var(--v) / .4 * 100%);border-radius:6px;background:#5fb7a9;transform-origin:left;transform:scaleX(clamp(0, calc((var(--p) - .06 - var(--i) * .06) / .3), 1))}
+.mlrun.is-best .bar i{background:#9ff3df}.mlrun b{font:600 15px var(--mono);text-align:right}
+.sweep{position:relative}
+.cols{display:grid;grid-template-columns:repeat(6,1fr);align-items:end;gap:12px;height:180px}
+.col{--g:clamp(0, calc((var(--p) - .4 - var(--i) * .04) / .25), 1);display:grid;grid-template-rows:auto 1fr auto;justify-items:center;gap:6px;height:100%}
+.col .b{position:relative;align-self:stretch;width:100%}
+.col .b i{position:absolute;left:0;right:0;bottom:0;height:calc(var(--v) * 100%);border-radius:6px 6px 2px 2px;background:#5fb7a9;transform-origin:bottom;transform:scaleY(var(--g))}
+.col .val{font:600 13px var(--mono);opacity:var(--g)}
+.col .k{font:600 14px var(--mono);color:#cfe6dc}
+.col.is-best .b i{background:color-mix(in srgb,#5fb7a9,#FF3621 calc(clamp(0, calc((var(--p) - .78) * 8), 1) * 100%))}
+.pick{position:absolute;right:18px;top:14px;padding:3px 9px;border-radius:6px;background:#FF3621;color:#fff;font-size:13px;font-weight:600;opacity:clamp(0, calc((var(--p) - .78) * 8), 1)}
+
+/* 4. Lakeflow and Delta: the CSV rides through stage and import, the table fills by source, and a
+   rerun passes through without inserting anything. */
+.db-lake{--f:clamp(0, calc((var(--p) - .05) / .3), 1);--t:clamp(0, calc((var(--p) - .3) / .3), 1);--rr:clamp(0, calc((var(--p) - .78) / .14), 1);display:grid;align-content:center;gap:16px;padding:0 20px}
+.dag{position:relative;height:110px;border-radius:16px;background:#0f2d2ae8;box-shadow:0 24px 60px #052a2650}
+.dag svg{position:absolute;left:24px;right:24px;top:50%;width:calc(100% - 48px);height:10px;translate:0 -50%;z-index:0}
+.dag path{fill:none;stroke:#ffffff40;stroke-width:2;stroke-dasharray:5 6;vector-effect:non-scaling-stroke}
+.dag .file,.dag .task{position:absolute;top:50%;z-index:1;translate:0 -50%}
+.dag .file{left:18px;padding:7px 10px;border-radius:8px;background:#fff;color:var(--brand-strong);font:600 13px var(--mono)}
+.dag .task{display:grid;justify-items:center;gap:2px;padding:9px 14px;border-radius:10px;background:#163b37;border:1.5px solid #ffffff33}
+.dag .task b{font-size:15px}.dag .task small{font:500 12.5px var(--mono);color:#9fd9c6}
+.dag .t1{left:52%;translate:-50% -50%}.dag .t2{right:18px}
+.dag .t1{border-color:color-mix(in srgb,#ffffff33,#9ff3df calc(clamp(0, calc((var(--f) - .4) * 6), 1) * 100%))}
+.dag .t2{border-color:color-mix(in srgb,#ffffff33,#9ff3df calc(clamp(0, calc((var(--f) - .9) * 10), 1) * 100%))}
+.dag .dpkt{position:absolute;top:50%;left:calc(130px + (100% - 230px) * var(--f));z-index:2;width:14px;height:14px;border-radius:4px;translate:-50% -50%;background:#FF3621;box-shadow:0 0 14px #FF3621;opacity:calc(clamp(0, calc(var(--f) * 30), 1) * clamp(0, calc((1 - var(--f)) * 30), 1))}
+.delta{padding:16px 18px;border-radius:16px;background:#0f2d2ae8;box-shadow:0 24px 60px #052a2650}
+.dt-head{display:flex;justify-content:space-between;margin-bottom:12px;font-size:14px;color:#9fd9c6}.dt-head code{color:#fff;font-size:15px}
+.stackbar{display:flex;height:30px;border-radius:8px;overflow:hidden;background:#ffffff14}
+.stackbar i{display:block;height:100%;transform-origin:left;transform:scaleX(var(--t))}
+.stackbar .s-ann{width:87.2%;background:#9ff3df}.stackbar .s-pred{width:12.8%;background:#FF3621}
+.legend{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:12px;font-size:14px;color:#cfe6dc}
+.legend span{display:flex;align-items:center;gap:7px}.legend b{color:#fff;font:600 15px var(--mono)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px}.legend .s-ann{background:#9ff3df}.legend .s-pred{background:#FF3621}
+.rerun{display:flex;align-items:center;gap:10px;justify-self:start;padding:10px 14px;border-radius:12px;background:#0f2d2ae8;font-size:14px;opacity:var(--rr);transform:translateY(calc((1 - var(--rr)) * 12px))}
+.rerun b{font-size:15px}.rerun span{padding:3px 8px;border-radius:6px;background:#9ff3df;color:#0f3d36;font-weight:600}
+
+/* 5. SQL, Genie and Llama: three logged questions, each with its route and a time bar. */
+.db-ai{display:grid;align-content:center;gap:12px;padding:0 20px}
+.ex{--o:clamp(0, calc((var(--p) - .05 - var(--k) * .24) / .14), 1);display:grid;grid-template-columns:1fr auto;gap:8px 10px;padding:14px 16px;border-radius:16px;background:#0f2d2ae8;box-shadow:0 18px 40px #052a2640;opacity:var(--o);transform:translateY(calc((1 - var(--o)) * 18px)) scale(calc(.97 + .03 * var(--o)))}
+.ex .q{grid-column:1/-1;justify-self:end;padding:7px 12px;border-radius:12px 12px 4px 12px;background:#fff;color:var(--ink);font-size:15px}
+.ex .via{grid-row:2;grid-column:2;align-self:center;padding:3px 9px;border-radius:6px;background:#FF362126;border:1px solid #FF362166;color:#ffd5cf;font-size:13px;font-weight:600}
+.ex .a{grid-row:2;grid-column:1;justify-self:start;font-size:16px;font-weight:600;color:#fff}
+.ex .time{grid-row:3;grid-column:1/-1;display:grid;grid-template-columns:1fr 52px;align-items:center;gap:10px}
+.ex .time i{height:6px;border-radius:3px;background:#ffffff1f;position:relative;overflow:hidden}
+.ex .time i::after{content:"";position:absolute;inset:0;width:calc(var(--sec) * 100%);border-radius:3px;background:#9ff3df;transform-origin:left;transform:scaleX(var(--o))}
+.ex .time em{font:600 13px var(--mono);font-style:normal;color:#cfe6dc;text-align:right}
+.space{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 14px;border-radius:14px;background:#0f2d2acc;font-size:14px;opacity:clamp(0, calc((var(--p) - .8) * 8), 1)}
+.space code{padding:3px 8px;border-radius:6px;background:#ffffff1a;color:#fff;font-size:13px}
+
+@media(max-width:860px){.dig-db .layer-copy{margin-top:0}}
