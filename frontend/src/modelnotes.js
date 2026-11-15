@@ -1,7 +1,8 @@
 /* "How well the model sees": the homepage model notes as a pinned stage (same mechanics as "Dig into
-   the stack", see architecture.js). Five chapters, each with a scroll-driven scene. Every number comes
-   from frontend/public/model-evals.md (Aadhi): final model MLflow run 9d18d20a, F1 on 4 held-out
-   surgeries. The smoothing strip is an illustration of the rule, not model output. */
+   the stack", see architecture.js). Six chapters, each with a scroll-driven scene. Every number comes
+   from frontend/public/model-evals.md: the label model (Aadhi, final MLflow run 9d18d20a, F1 on 4
+   held-out surgeries) and the box detector (Mihir, v3 on 409 Endoscapes test frames, IoU 0.5).
+   The smoothing strip is an illustration of the rule, not model output. */
 import { onStage } from './architecture.js';
 
 const F1 = {
@@ -11,6 +12,9 @@ const F1 = {
 };
 const RELIABLE = new Set(['Grasper', 'Hook', 'Retract', 'Dissect', 'Gallbladder', 'Specimen bag']);
 const AVG = .34;
+/* Box detector (model-evals.md, "Bounding boxes on the video"): precision and recall at the deployed
+   thresholds, and COCO AP for v3 (0.38) against the previous version (0.35). */
+const BOXES = {gallbladder: [['Precision', .93], ['Recall', .93]], duct: [['Precision', .69], ['Recall', .39]], ap: .38};
 
 /* 49 surgeries: 42 trained on, 3 tuned on, 4 tested on. Tiles start in one grid and sort into groups. */
 const SPLIT = (() => {
@@ -82,10 +86,19 @@ const CHAPTERS = [
     title: 'More surgeries, better scissors.',
     body: 'Training on 42 surgeries instead of 12 raised the average F1 and more than quadrupled scissors F1, the instrument behind “When is the cystic duct cut?”. Every number traces to a logged MLflow run.',
     note: 'Neural network v1 against v2, the live model. Final model: MLflow run 9d18d20a.',
-    link: true,
+    link: '/evals.html',
     scene: () => `<div class="sc mn-up"><div class="ver"><span class="v1">v1</span><span class="v2">v2, live</span></div>
       ${[['Training surgeries', 12, 42, 50, 0], ['Average F1', .30, .34, 1, 2], ['Scissors F1', .07, .29, 1, 2]].map(([label, a, b, max, dg], i) => `<div class="up" data-up data-from="${a}" data-to="${b}" data-digits="${dg}" data-i="${i}" style="--a:${a / max};--b:${b / max};--u:0"><span>${label}</span><div class="bars"><i class="was"></i><i class="now"></i></div><b>${a.toFixed(dg)}</b></div>`).join('')}
       <code class="run">MLflow 9d18d20a</code></div>`,
+  },
+  {
+    id: 'boxes', name: 'Boxes on the video',
+    title: 'Boxes on the video.',
+    body: 'A second model, a Faster R-CNN fine-tuned on Endoscapes, draws boxes around the gallbladder and cystic duct every quarter second. On 409 frames from 41 surgeries it never trained on, the gallbladder is reliable. The cystic duct is small and often hidden, so many are missed. It has not yet been checked on this video itself.',
+    note: 'Precision: boxes that are right. Recall: real ones it finds. A box counts when it overlaps the surgeon’s box by at least half.',
+    link: '/evals.html#bounding-boxes-on-the-video-experimental',
+    scene: () => `<div class="sc mn-board"><div class="mn-panel"><h4>Gallbladder</h4>${rows(BOXES.gallbladder)}</div><div class="mn-panel"><h4>Cystic duct</h4>${rows(BOXES.duct, 2)}</div>
+      <div class="avg"><b data-avg="${BOXES.ap}">0.00</b><span>detection score (COCO AP), up from 0.35</span></div></div>`,
   },
 ];
 
@@ -95,7 +108,7 @@ export function modelSection() {
       <h2 class="mn-heading" id="model-heading">How well the model sees.</h2>
       <div class="dig-map"><ol class="dig-labels" aria-label="Model notes">${CHAPTERS.map((c, i) => `<li><button type="button" data-dig="${i}"><span>${i + 1}</span>${c.name}</button></li>`).join('')}</ol></div>
       ${CHAPTERS.map((c, i) => `<div class="layer" id="model-${c.id}" data-layer="${i}" style="--p:0;--s:1">
-        <div class="dig-copy layer-copy"><h3>${c.title}</h3><p>${c.body}</p>${c.link ? '<p class="mn-link"><a href="/model-evals.md">Read the full evaluation</a></p>' : ''}</div>
+        <div class="dig-copy layer-copy"><h3>${c.title}</h3><p>${c.body}</p>${c.link ? `<p class="mn-link"><a href="${c.link}">Read the full evaluation</a></p>` : ''}</div>
         <div class="pit" style="--k:${i}" role="img" aria-label="${c.name} animation"><canvas class="sky-dither" data-horizon=".72" data-ceiling="4.6" aria-hidden="true"></canvas><div class="fit">${c.scene()}</div><p class="v-cap">${c.note}</p></div>
       </div>`).join('')}
     </div>

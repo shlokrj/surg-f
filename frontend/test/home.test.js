@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
@@ -79,7 +80,9 @@ test('dig into the stack and model notes render real, cited project data',()=>{
  const scenes=[...doc.querySelectorAll('#architecture .layer')];
  assert.deepEqual(scenes.map(s=>s.id),['layer-player','layer-search','layer-index','layer-model','layer-features','layer-video']);
  assert.deepEqual([...doc.querySelectorAll('#architecture .dig-labels button')].map(b=>b.dataset.dig),['0','1','2','3','4','5'],'every layer label is a button');
- assert.match(doc.querySelector('#layer-player').textContent,/gallbladder 0\.997/,'real VID01 overlay prediction at 860 s');
+ const overlay=JSON.parse(fs.readFileSync(new URL('../public/overlays/VID01.json',import.meta.url),'utf8'));
+ const at860=overlay.frames.find(f=>Math.abs(f.timestamp_sec-860.16)<1e-6).detections[0];
+ assert.ok(doc.querySelector('#layer-player').textContent.includes(`${at860.label} ${at860.score.toFixed(3)}`),'scene shows the deployed overlay prediction at 860 s');
  const links=[...doc.querySelectorAll('#architecture .layer-copy a')].map(a=>a.href);
  for (const url of ['https://arxiv.org/abs/2109.03223','https://arxiv.org/abs/1602.03012','https://arxiv.org/abs/2307.15220','https://github.com/CAMMA-public/SurgVLP','https://fastapi.tiangolo.com/','https://mlflow.org/','https://delta.io/']) assert.ok(links.includes(url),url);
  assert.ok([...doc.querySelectorAll('#architecture .layer-copy a')].every(a=>a.rel.includes('noopener')));
@@ -90,7 +93,10 @@ test('dig into the stack and model notes render real, cited project data',()=>{
  const model=doc.querySelector('#model-notes');
  assert.match(model.textContent,/9d18d20a/);
  assert.deepEqual([...model.querySelectorAll('#model-instruments [data-f1]')].map(n=>n.dataset.v),['0.89','0.83','0.52','0.29','0.26','0.19']);
- assert.deepEqual([...model.querySelectorAll('[data-dig]')].map(b=>b.dataset.dig),['0','1','2','3','4'],'every model chapter is a button');
+ assert.deepEqual([...model.querySelectorAll('[data-dig]')].map(b=>b.dataset.dig),['0','1','2','3','4','5'],'every model chapter is a button');
+ assert.deepEqual([...model.querySelectorAll('#model-boxes [data-f1]')].map(n=>n.dataset.v),['0.93','0.93','0.69','0.39'],'box precision/recall from model-evals.md');
+ assert.equal(model.querySelector('#model-boxes [data-avg]').dataset.avg,'0.38');
+ assert.ok([...model.querySelectorAll('.mn-link a')].every(a=>a.getAttribute('href').startsWith('/evals.html')),'links open the rendered evaluation');
  assert.equal(model.querySelectorAll('.tile').length,49,'42 trained, 3 tuned, 4 tested');
  assert.equal(model.querySelectorAll('.t-test').length,4);
  assert.equal(doc.querySelectorAll('.stack-card').length,3);

@@ -55,8 +55,8 @@ const slab = (cls = '', top = '') => `<div class="slab ${cls}"><div class="face 
 const frame = (t, w = 256, h = 144) => `<canvas class="vf" data-t="${t}" width="${w}" height="${h}" aria-hidden="true"></canvas>`;
 
 /* ---- Real data ---- */
-/* frontend/public/overlays/VID01.json at 860.16 s: experimental anatomy prediction (not ground truth). */
-const BOX = {t: 860.16, label: 'gallbladder', score: '0.997', xyxy: [0.3167, 0.0069, 0.692, 0.4689]};
+/* frontend/public/overlays/VID01.json at 860.16 s (frame 21504, v3 model): experimental anatomy prediction (not ground truth). */
+const BOX = {t: 860.16, label: 'gallbladder', score: '0.998', xyxy: [0.3147, 0.0, 0.6913, 0.4779]};
 /* Proposals the detector "considers" before settling (illustration of the search, not model output). */
 const CANDS = [[4, 46, 30, 40], [58, 50, 34, 44], [18, 20, 44, 52], [46, 4, 46, 30], [8, 6, 28, 34], [62, 14, 30, 36]];
 /* shared/triplets.annotation.csv, VID01, in time order. */
