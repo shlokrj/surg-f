@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
-import {homePage,mountHome} from '../src/home.js';
+import {homePage,mountHome,plusDither} from '../src/home.js';
 const markup=()=>homePage({videoUrl:'/videos/VID01.mp4',filterOn:true,filterButton:'<button>Content filter</button>',error:''});
 test('homepage preserves real entry points and honest upload scope',()=>{
  const doc=new JSDOM(markup()).window.document;
@@ -23,4 +23,17 @@ test('scroll progress clamps, honors reduced motion, and cleans up listeners',()
  reduced=true;handler();queued();assert.equal(root.style.getPropertyValue('--journey'),'0.0000');
  root.querySelector('video').dispatchEvent(new window.Event('error'));assert.equal(root.querySelector('.preview-unavailable').hidden,false);
  dispose();assert.ok(removed);assert.equal(queued,null);
+});
+
+test('revised branding uses magnifier-plus and stable decorative dither',()=>{
+ const doc=new JSDOM(markup()).window.document;
+ const title=doc.querySelector('h1');
+ assert.equal(title.getAttribute('aria-label'),'surg+f');
+ assert.equal(title.textContent,'surgf');
+ assert.ok(title.querySelector('svg circle'));
+ assert.equal(doc.querySelector('.plus-dither').getAttribute('aria-hidden'),'true');
+ assert.ok(doc.querySelectorAll('.plus-dither path').length>100);
+ assert.equal(plusDither(),plusDither());
+ assert.equal(doc.querySelector('.field-ring'),null);
+ assert.doesNotMatch(doc.body.textContent,/Less scrubbing|More finding|familiar shortcut/);
 });

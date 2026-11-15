@@ -4,22 +4,27 @@ Owner: Shlok. Branch: `feat/shlok-frontend-v2`. Commit here only for this design
 
 ## Direction
 
-A quiet surgical workspace with a memorable first screen. Center Surg+F, make the plus visible, and relate it to the familiar find shortcut. [Hangar](https://hangarplm.com/) is the user's reference for minimal, technical, scroll-led presentation. Borrow the direction rather than its copy, assets or claims. The reference content was accessible; live animation/screenshot inspection was blocked by the browser tool, so exact visual fidelity is not claimed.
+The first homepage pass was rejected by Shlok: uppercase branding, a circular reticle, slogan copy and a contracting title did not match the reference. Do not restore those choices.
+
+Use the supplied Hangar screenshots as the composition reference: a large rounded panel inset within a white page, a compact top navigation, centered primary content, and a product-preview edge entering from below. The panel expands toward the viewport edges as native scrolling advances. Shlok specifically requests lowercase `surg+f`, light teal lettering, a magnifying glass with a plus inside replacing the plain plus, and a dithered field made of small plus marks. No giant background circle or crosshair axes.
+
+[Hangar](https://hangarplm.com/) supplies visual direction, not copy or assets to reuse. The supplied screenshots and a native Chrome screenshot were inspected. Live reference scroll verification was interrupted by a computer-use failure; exact animation parity is not claimed. The implemented motion follows Shlok's explicit description.
 
 ## Type and color
 
 Use Olivia King's Inclusive Sans for headings, copy and controls, self-hosted through `@fontsource-variable/inclusive-sans` (OFL-1.1). Keep the font license in the dependency distribution. Use ordinary weight and size differences before adding a second family. System monospace is acceptable for timestamps/commands, not whole paragraphs. [Requested Figma reference](https://www.figma.com/resource-library/modern-fonts/#font-7-inclusive-sans), [designer's description](https://www.oliviaking.com/inclusivesans/feature).
 
-Palette: warm surgical white `#edf1eb`, deep scrub green `#123e36`, secondary green `#408774`, muted green-gray rules. The dark case-preview section uses light text. These are visual associations, not a claimed hospital standard. Reserve warning colors for actual warnings; avoid blood-red decoration. Check text contrast in its actual context, including focus and disabled states.
+Palette: white outer page, dark teal panel `#104d4c`, light teal wordmark `#bcebe1`, near-white secondary text `#def1ea`. Dither uses muted teal plus marks, with varied density and an open center behind the wordmark. These are brand choices, not a hospital standard. Keep interface text readable; decoration is not information.
 
 ## Homepage composition
 
-1. A centered oversized Surg+F wordmark, one literal description and an immediate “Open a case” action. No scrolling required to enter the app.
-2. Native scrolling gently contracts the title and moves the fine reference geometry. No intercepted wheel events or pinned scrolling library. Reduced-motion preference removes the effect and extra scroll distance.
-3. One real case preview with the existing content filter, a dataset-labeled clipper match at 11:14 and a working jump action. No autoplay surgical imagery. Missing video has a visible fallback.
-4. A simple local-video entry with the playback-only limitation nearby. Avoid a second sales pitch.
+1. The opening panel has a 10–22px white surround and rounded corners. Scrolling reduces the surround/corner radius while slightly enlarging the central content. Do not reverse this into a shrinking hero.
+2. Lowercase `surg` + magnifier-plus icon + lowercase `f`. Retain an accessible `surg+f` name. No blinking cursor or oversized standalone plus.
+3. Keep the opening copy to “Search surgical video.” and functional navigation. No eyebrow, shortcut explanation, tagline stack or “less X, more Y” slogan.
+4. Dither consists of deterministic small plus strokes, rendered as decorative SVG. No canvas animation loop, random repositioning on each render or flashing effects.
+5. Preserve real case entry, the filtered VID01 preview, annotation timestamp action and local playback limitation. The preview-edge strip links to the actual preview; it is not fake product data.
 
-Use fluid type, full-width sections, restrained rules and very few rounded containers. On narrow screens, stack the preview and copy and remove secondary decorative details. Keep controls reachable by keyboard with visible focus. Do not hide content pending an animation.
+Reduced motion keeps the inset rounded panel static and removes extra scrolling distance. On narrow screens keep navigation, wordmark and case action within the frame. Use native scroll, accessible controls and visible focus; never intercept browser Ctrl+F.
 
 ## Acceptance
 
