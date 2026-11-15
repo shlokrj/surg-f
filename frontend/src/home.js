@@ -76,6 +76,10 @@ export function paintDither(canvas) {
   }
 }
 
+/* The prefilled hero question; it opens VID01 at the annotated clipper-clips-cystic-duct triplet (698 s). */
+export const DEMO_QUESTION = 'When is the cystic duct clipped?';
+export const DEMO_SEEK = 698;
+
 const searchGlyph = `<svg class="glyph" aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 5 5"/></svg>`;
 const clock = seconds => { const n = Math.floor(Number(seconds) || 0); return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`; };
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -117,10 +121,11 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
           <canvas class="sky-dither hero-dither" aria-hidden="true"></canvas>
           <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><button type="button" id="open-sample" class="nav-case">Open a case</button></nav>
           <div class="intro-copy"><h1 id="landing-title">${wordmark()}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="#case-preview">See the demo <span aria-hidden="true">↓</span></a></div>
-          <a href="#case-preview" class="hero-search" aria-label="Example search: when is the cystic duct clipped? Jump to the VID01 result at 11:38">
-            <span class="hs-query">${searchGlyph}When is the cystic duct clipped?</span>
-            <span class="hs-hit"><span>VID01</span><span class="hs-time">11:38</span></span>
-          </a>
+          <form class="hero-search" id="hero-search" role="search">
+            <label class="sr-only" for="hero-q">Ask about the VID01 demo case</label>
+            ${searchGlyph}<input id="hero-q" name="q" value="${DEMO_QUESTION}" autocomplete="off" spellcheck="false" required>
+            <button type="submit" aria-label="Search VID01"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+          </form>
         </div>
       </div>
     </section>

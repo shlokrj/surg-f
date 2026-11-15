@@ -1,7 +1,7 @@
 import '@fontsource-variable/inclusive-sans';
 import './style.css';
 import './home.css';
-import { homePage, mountHome, wordmark, paintDither } from './home.js';
+import { homePage, mountHome, wordmark, paintDither, DEMO_QUESTION, DEMO_SEEK } from './home.js';
 import './case.css';
 let disposeHome = () => {};
 let renderedPage = null;
@@ -317,7 +317,16 @@ function wire() {
   const preview = document.querySelector('.preview-video video');
   preview?.addEventListener('loadedmetadata', () => { preview.currentTime = 674; });
   document.querySelector('#sample')?.addEventListener('click', () => openSample());
-  document.querySelector('#sample-event')?.addEventListener('click', () => openSample(698, 'When is the cystic duct clipped?'));
+  document.querySelector('#sample-event')?.addEventListener('click', () => openSample(DEMO_SEEK, DEMO_QUESTION));
+  // Hero search: typing opens VID01 and asks Lil Doc. The prefilled question also seeks to its moment.
+  document.querySelector('#hero-search')?.addEventListener('submit', event => {
+    event.preventDefault();
+    const query = event.target.elements.q.value.trim();
+    if (!query) return;
+    if (query.toLowerCase() === DEMO_QUESTION.toLowerCase()) { openSample(DEMO_SEEK, DEMO_QUESTION); return; }
+    openSample();
+    runSearch(query);
+  });
   document.querySelector('#open-sample')?.addEventListener('click', () => openSample());
   document.querySelectorAll('[data-open-sample]').forEach(button => button.addEventListener('click', () => {
     openSample();
