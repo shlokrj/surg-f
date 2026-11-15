@@ -1,0 +1,42 @@
+{
+  "purpose": "three optimizer steps only; no accuracy claim",
+  "architecture": "fasterrcnn_mobilenet_v3_large_320_fpn",
+  "initial_weights": "COCO_V1",
+  "seed": 17,
+  "torch": "2.6.0",
+  "torchvision": "0.21.0",
+  "train_cases": [
+    1,
+    2
+  ],
+  "validation_cases": [
+    121,
+    122
+  ],
+  "losses": [
+    {
+      "loss_classifier": 0.9614962339401245,
+      "loss_box_reg": 0.26978975534439087,
+      "loss_objectness": 0.1513977348804474,
+      "loss_rpn_box_reg": 0.020164068788290024
+    },
+    {
+      "loss_classifier": 0.8435317277908325,
+      "loss_box_reg": 0.21747542917728424,
+      "loss_objectness": 0.13876499235630035,
+      "loss_rpn_box_reg": 0.019915737211704254
+    },
+    {
+      "loss_classifier": 0.6712995767593384,
+      "loss_box_reg": 0.2592998147010803,
+      "loss_objectness": 0.19219474494457245,
+      "loss_rpn_box_reg": 0.019444448873400688
+    }
+  ],
+  "elapsed_seconds": 1.3250677080068272,
+  "validation_detection_counts": [
+    36,
+    37
+  ],
+  "data_manifest_sha256": "65ed2fe2918e319bf04727a88632a5a5a6d51d35164b68ba8afade54ed64f8f6"
+}

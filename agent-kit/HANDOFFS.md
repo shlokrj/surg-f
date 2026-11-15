@@ -1,5 +1,19 @@
 # Team handoffs
 
+## Spatial work published to main (2026-11-14)
+
+Shlok requested publication for teammate handoff. All stage-3 work through `1f49b33` is now integrated into `main`, including detector/overlay prototype, annotation preparation, evaluation utilities and the real-image training smoke runner. Start from `main`; older branch references below describe historical work. Task reassignment will be discussed separately, so existing owners remain unchanged.
+
+Verification on the integrated main: `node --test frontend/test/*.test.js` passed 6 tests; `python3 -m unittest discover -s ml/localization -p 'test_*.py'` passed 11; `npm --prefix frontend run build` and `git diff --check` passed. Read `ml/localization/README.md` before running jobs. Full anatomy training/evaluation, six-instrument supervision and real-browser acceptance remain unfinished. Images, videos, credentials and model checkpoints remain outside Git.
+
+
+## Stage 3 player handoff (2026-11-14)
+
+Shlok, `feat/spatial-overlays`: offline detector and opt-in player integration implemented. The player validates versioned artifacts, separates instrument/anatomy filters, supports sampled-frame seeking, clears expired boxes and computes letterbox coordinates. Separate fullscreen control includes the overlay container. Real VID01 preview: three frames, ten predictions; known incorrect instrument labels mean this is not accuracy-qualified. No tracking, action relations, or new backend routes.
+
+Verification: `node --test frontend/test/overlays.test.js` passed 3 tests (real artifact, rejection/expiry, geometry); `python3 -m unittest discover -s ml/localization -p 'test_*.py'` passed 3 tests; `npm --prefix frontend run build` passed. Browser interaction could not be verified: computer-use returned “The browser access host is unavailable.” Manual player acceptance remains open; see frontend README. Next: Shlok performs browser acceptance and obtains reviewed localization ground truth before detector tuning/accuracy claims. Aadhitya continues stage 2 unchanged.
+
+
 ## Active phase ownership (2026-11-14)
 
 Shlok explicitly took ownership of **stage 3 bounding-box implementation** on `feat/spatial-overlays`, using a separate worktree (`surg-f-spatial`). Aadhitya continues **stage 2** classifier retraining, validation, smoothing and prediction integration on `ml-dev`. Do not duplicate or restart each other's jobs. Shlok owns new localization scripts/artifacts and the isolated player-overlay integration; preserve Mihir's other frontend work and Rohan's backend routes. This supersedes the earlier future-only status and proposed stage-3 task split. Stage-3 implementation is a bounded offline detector-to-player prototype; tracking, action recognition and validated anatomy accuracy remain separate follow-ups. Commits and verification will be recorded below.

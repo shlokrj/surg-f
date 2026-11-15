@@ -1,5 +1,54 @@
 # Surg+F progress
 
+## Spatial work published to main (2026-11-14)
+
+Shlok requested publication for teammate handoff. All stage-3 work through `1f49b33` is now integrated into `main`, including detector/overlay prototype, annotation preparation, evaluation utilities and the real-image training smoke runner. Start from `main`; older branch references below describe historical work. Task reassignment will be discussed separately, so existing owners remain unchanged.
+
+Verification on the integrated main: `node --test frontend/test/*.test.js` passed 6 tests; `python3 -m unittest discover -s ml/localization -p 'test_*.py'` passed 11; `npm --prefix frontend run build` and `git diff --check` passed. Read `ml/localization/README.md` before running jobs. Full anatomy training/evaluation, six-instrument supervision and real-browser acceptance remain unfinished. Images, videos, credentials and model checkpoints remain outside Git.
+
+
+## Stage 3 real-image training smoke (2026-11-14)
+
+Shlok, `feat/spatial-overlays`: extended preparation to official validation surgeries 121–161, guarding overlaps with stage-2 training as well as other protected splits. Downloaded four actual Endoscapes images through bounded remote ZIP access, verified decoding/dimensions and SHA-256, and ran three optimizer steps on the two train images using Torchvision Faster R-CNN MobileNetV3 320 with COCO_V1 initialization and a new two-anatomy head. Separate validation images produced finite inference outputs. Saved checkpoint/predictions outside Git and `anatomy_smoke_report.json` in Git. This is a pipeline smoke, not a quality result or app model replacement.
+
+Checks: localization unittest discovery passes 11 tests; both README smoke commands completed successfully. Train surgeries 1/2 and validation 121/122 are disjoint; finite total training losses approximately 1.403, 1.220, 1.142. Next: full image preparation, category-scoped evaluation and real training/validation; keep six instrument classes and browser acceptance as separate unfinished work. No stage-2 jobs changed.
+
+
+## Stage 3 anatomy preparation (2026-11-14)
+
+Shlok, `feat/spatial-overlays`: pinned the published CAMMA surgery-overlap map at `8347b9f4cb02ebe739747903e6eada272ee9d25e`. No listed Endoscapes-train overlap with our current protected validation/test/diagnostic cases. Added `prepare_anatomy.py`, which excludes protected overlapping surgeries, rejects nontraining/unreviewed images, and maps only cystic duct/gallbladder. Real run prepared 1,212 frames, 2,126 boxes and 34 anatomy-negative frames across 120 surgeries. Source/split hashes and mapping are committed in `anatomy_train_manifest.json`; generated labels remain outside Git.
+
+Verification: `python3 -m unittest discover -s ml/localization -p 'test_*.py'` passes 10 tests, including whole-surgery exclusion and training/keyframe guards. The README preparation command ran successfully on real Endoscapes training annotations. No training or accuracy improvement is claimed. Next: fetch selected training imagery, prepare independent validation with category-scoped metrics, then fine-tune an anatomy detector. Six-instrument supervision and browser acceptance remain outstanding; Aadhitya continues stage 2 independently.
+
+
+## Stage 3 annotation audit (2026-11-14)
+
+Shlok, `feat/spatial-overlays`: audited primary-source annotation downloads. CholecT50 converted COCO archive has zero boxes and 40 duplicate image IDs; it cannot provide localization ground truth. Endoscapes training JSON has 1,212 unique image records and 5,566 valid boxes (1,186 frames with boxes), including gallbladder/cystic duct and generic tools. Saved reproducible aggregate audits with SHA-256 in `ml/localization/*_audit.json`; source files remain outside Git. Downloaded only Endoscapes training annotations using remote ZIP access, not full imagery or held-out annotations.
+
+Verification: `python3 -m unittest discover -s ml/localization -p 'test_*.py'` passes 8 tests; both real-source audit commands in localization README ran successfully. This establishes annotation availability, not model accuracy. Next: Shlok audits cross-dataset surgery overlap and creates an explicit anatomy-only mapping/evaluation scope before training. Six instrument subtype supervision and browser acceptance remain open. Aadhitya's stage-2 scope is unchanged.
+
+
+## Stage 3 interaction tests and preview (2026-11-14)
+
+Shlok, `feat/spatial-overlays`: added a minimum detection-score slider and DOM integration tests using the real VID01 prediction artifact. `node --test frontend/test/*.test.js` passes 6 tests, including rendering, score/category filtering, seek/expiry, local-upload disablement, dimension rejection and disposal during a pending request. Media state is simulated in jsdom: this verifies DOM behavior, not actual video decoding/fullscreen or visual browser layout. `npm --prefix frontend run build` passes; localization unittest discovery passes 7 tests.
+
+The offline preview plots all ten real predictions across the three source frames and verifies each source SHA-256 before plotting. Visually inspected the generated PNG: the near-full-image irrigator boxes and incorrect labels make detector quality unsuitable for a finished feature. No real evaluation score or reviewed ground truth has been invented. Next: obtain reviewed boxes, benchmark/adapt the detector and complete browser acceptance. Aadhitya's stage-2 jobs remain separate.
+
+
+## Stage 3 continuation (2026-11-14)
+
+Shlok, `feat/spatial-overlays`: pulled the branch and merged `origin/main` through `5c65035` in `035ff38`, preserving the new quiz, charts and interpret integration alongside overlays. Added `ml/localization/evaluate.py`: confidence-ordered, class-aware one-to-one IoU matching; reviewed-frame-only precision/recall; explicit complete-review gate; asset/timebase validation. No real accuracy claim without reviewed boxes.
+
+Checks: `python3 -m unittest discover -s ml/localization -p 'test_*.py'` passed 7 tests; `node --test frontend/test/*.test.js` passed 3; `npm --prefix frontend run build` passed with the merged frontend. Browser retry still returned “The browser access host is unavailable.” Next: Shlok obtains reviewed boxes (instructions in localization README) and completes manual browser acceptance; Aadhitya remains on stage 2. No remote training restarted.
+
+
+## Stage 3 player handoff (2026-11-14)
+
+Shlok, `feat/spatial-overlays`: offline detector and opt-in player integration implemented. The player validates versioned artifacts, separates instrument/anatomy filters, supports sampled-frame seeking, clears expired boxes and computes letterbox coordinates. Separate fullscreen control includes the overlay container. Real VID01 preview: three frames, ten predictions; known incorrect instrument labels mean this is not accuracy-qualified. No tracking, action relations, or new backend routes.
+
+Verification: `node --test frontend/test/overlays.test.js` passed 3 tests (real artifact, rejection/expiry, geometry); `python3 -m unittest discover -s ml/localization -p 'test_*.py'` passed 3 tests; `npm --prefix frontend run build` passed. Browser interaction could not be verified: computer-use returned “The browser access host is unavailable.” Manual player acceptance remains open; see frontend README. Next: Shlok performs browser acceptance and obtains reviewed localization ground truth before detector tuning/accuracy claims. Aadhitya continues stage 2 unchanged.
+
+
 ## Active phase ownership (2026-11-14)
 
 Shlok explicitly took ownership of **stage 3 bounding-box implementation** on `feat/spatial-overlays`, using a separate worktree (`surg-f-spatial`). Aadhitya continues **stage 2** classifier retraining, validation, smoothing and prediction integration on `ml-dev`. Do not duplicate or restart each other's jobs. Shlok owns new localization scripts/artifacts and the isolated player-overlay integration; preserve Mihir's other frontend work and Rohan's backend routes. This supersedes the earlier future-only status and proposed stage-3 task split. Stage-3 implementation is a bounded offline detector-to-player prototype; tracking, action recognition and validated anatomy accuracy remain separate follow-ups. Commits and verification will be recorded below.
