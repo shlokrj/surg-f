@@ -1,5 +1,9 @@
 # Team handoffs
 
+
+## Lil Doc study modes published to main (2026-11-14)
+
+At Aadhitya's request, `ml-dev` was merged with `main` (3D model work included) and `main` fast-forwarded to `68ffdcb`. This adds Genie topic quizzes (`study_quiz`), video length, general educational answers, up-front deflection of advice and surgery-judging questions, and the `surgf_quiz_facts` view (see [databricks/README.md](../databricks/README.md)). "show me the anatomy" and other 3D requests still open the 3D model view. Checks at the merge: backend `pytest -q` 226 passed, `ruff check .` passed, `npm run build` passed, 21 frontend tests passed; live `/chat` returned the 3D model, a Genie Calot triangle answer and a 5-question `study_quiz`. **Everyone running the backend:** set `DATABRICKS_GENIE_SPACE_ID=01f1e09d399e101dbee5a37e935198bf` in `.env` (the old `01f1e086…` space has outdated rules) and run `npm ci` in `frontend/` (the 3D view needs `three`). Not checked: a click-through of the quiz reveal and "Show in video" in a browser.
 ## 3D model for `/model` (Rohan, 2026-11-14)
 
 Shlok and Mihir: `/model` is now a working 3D view of the gallbladder area that follows the video step by step. Details and file list are under "3D model" in [frontend/README.md](../frontend/README.md); the licence and what is drawn rather than sourced are in [frontend/public/models/ATTRIBUTION.md](../frontend/public/models/ATTRIBUTION.md).
