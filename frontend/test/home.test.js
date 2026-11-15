@@ -182,14 +182,16 @@ test('sources: right before the footer on every version, with the citations the 
  assert.deepEqual([...src.querySelectorAll('#sources-models .src-cite b')].map(b=>b.textContent.split(':')[0]),['Learning multi-modal representations by watching hundreds of surgical video lectures.','Faster R-CNN','The Llama 3 herd of models.'],'only the pretrained models we used');
  assert.equal(src.querySelectorAll('#sources-data .src-item').length,4,'CholecT50, Cholec80, Endoscapes, BodyParts3D');
 });
-test('video demo problem: footage length, then the cost of learning with cited figures',()=>{
+test('video demo problem: footage length, then the cost of learning with recent cited figures',()=>{
  const d=new JSDOM(markup('video-demo')).window.document;
  assert.deepEqual([...d.querySelectorAll('#problem .layer')].map(l=>l.id),['problem-needle','problem-learning']);
  const l=d.querySelector('#problem-learning');
- assert.deepEqual([...l.querySelectorAll('[data-num]')].map(n=>n.dataset.num),['850','47970','95']);
- assert.match(l.textContent,/63 min/);assert.match(l.textContent,/86 min/);
+ assert.deepEqual([...l.querySelectorAll('[data-num]')].map(n=>n.dataset.num),['850','57.71','98.6']);
+ assert.match(l.textContent,/\+37%/);
+ assert.doesNotMatch(l.textContent,/1999|2004/,'no figures older than 2021');
+ assert.equal(l.querySelectorAll('.lc-dots i.on').length,71,'71 of 72 residents');
  const hrefs=[...l.querySelectorAll('.lv-sources a')].map(a=>a.href);
- for(const u of ['https://doi.org/10.1001/archsurg.139.4.366','https://doi.org/10.1016/S0002-9610(98)00289-X','https://doi.org/10.1016/j.jsurg.2016.04.024'])assert.ok(hrefs.includes(u),u);
+ for(const u of ['https://doi.org/10.1007/s00464-020-07780-5','https://doi.org/10.1001/jamasurg.2026.2355','https://doi.org/10.1016/j.euros.2024.07.108'])assert.ok(hrefs.includes(u),u);
  assert.ok(hrefs.some(h=>h.startsWith('https://www.acgme.org/')));
  assert.equal(new JSDOM(markup('presentation-demo')).window.document.querySelector('#problem-learning'),null,'only the video demo');
 });

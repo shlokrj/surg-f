@@ -274,7 +274,8 @@ function updateStage(section, reduced) {
   /* Scenes are drawn in a fixed 560×540 box and scaled to fit their card. */
   layers.forEach(l => {
     const pit = l.querySelector('.pit');
-    const fit = Math.min(1.25, pit.clientWidth / 560, pit.clientHeight / 540) || 1;
+    // Leave room: 16px at each side, and space above for breathing room and below for the caption.
+    const fit = Math.min(1.25, (pit.clientWidth - 32) / 560, (pit.clientHeight - 96) / 540) || 1;
     pit.style.setProperty('--fit', fit.toFixed(4));
   });
   const head = section.querySelector('.mn-heading');

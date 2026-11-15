@@ -41,7 +41,7 @@ Name each one while its scene is on screen. Judges are scoring how many we used 
 
 **→ Learning is costly**
 
-> And learning surgery is slow and expensive. A resident needs 850 operations over five years, teaching adds 23 minutes to this very operation, and almost every learner prepares by watching video that no one can search.
+> And learning surgery is slow and expensive. A resident needs 850 operations over five years, a resident makes this very operation about 37% longer at around $58 an operating-room minute, and almost every resident prepares with video that no one can search.
 
 ## 2. Solution: Mihir (0:25–1:00)
 
