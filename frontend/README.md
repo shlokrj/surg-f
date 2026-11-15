@@ -40,7 +40,7 @@ This writes `frontend/public/videos/VID01.mp4` (692,593,324 bytes, 28:53) and `V
 
 ## Content filter
 
-The home preview and dashboard player start with a modest 10 px blur over the surgical footage for demos. The dashboard overlay covers the full video image. A separate control bar sits above it, keeping play/pause, seek and time, volume, speed, and fullscreen clear and usable. The fullscreen control toggles back to the normal player size and updates its label when fullscreen is exited with Escape. The **Content filter: On/Off** button is beside “Demo case” on the home page and above the dashboard video. Turning it off reveals the footage; selecting a new video turns it back on. The filter is a visual overlay and does not change video data or analysis.
+The home preview and dashboard player start with a modest 10 px blur over the surgical footage for demos. The dashboard overlay covers the full video image. A separate control bar sits above it, keeping play/pause, seek and time, volume, speed, and fullscreen clear and usable. The fullscreen control toggles back to the normal player size and updates its label when fullscreen is exited with Escape. The content filter is an eye button in the top-right corner of the home preview and the case player. It shows a slashed eye while the footage is blurred and an open eye while it is visible, and it has `aria-pressed` plus the label “Blur footage”. Turning it off reveals the footage; selecting a new video turns it back on. The filter is a visual overlay and does not change video data or analysis.
 
 ## Search features
 
@@ -56,7 +56,7 @@ The four buttons are multi-select controls: clicking an unselected button insert
 
 Run `npm run build`. With the Databricks backend and VID01 video available, enter `/timestamp clipper`; the first known interval is `674–690` seconds. Select it and confirm the video seeks to 11:14. `/chart` and `/quiz` require the six instrument-label queries to succeed. A cold warehouse may take time to respond.
 
-On the home page, **View clipper event at 11:14** opens VID01 at 674 seconds. The requested seek stays pending while the dashboard reloads for timeline and search results, and the player clears it only after the `seeked` event. Check that the time control reads 11:14 after the clip loads.
+On the home page, the demo card **When is the cystic duct clipped? 11:38** opens VID01 at 698 seconds, the annotated `clipper, clip, cystic_duct` triplet (698–747 s), and asks Lil Doc the same question. Local routing maps “clip/clipped/clipping” to the `clipper` label. The requested seek stays pending while the dashboard reloads for timeline and search results, and the player clears it only after the `seeked` event. Check that the time control reads 11:38 after the clip loads. On the case page, **Open your own video** in the top bar opens a local MP4/MOV (playback only); the logo returns home.
 
 With the backend returning real rows and `VID01.mp4` available, search `clipper`. Click the first result and confirm `VID01` seeks to `11:14` (674 s). Repeat with VID02: the first `clipper` annotation is `VID02 1255–1268` (20:55). Also check a result from a case without video (for example any `clipper` hit outside VID01/VID02), a `prediction` result, and a no-match query. Run `npm run build` for a production build.
 
