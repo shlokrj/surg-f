@@ -15,7 +15,7 @@ import sys
 
 import mlflow
 
-for name in ['module_dir', 'experiment_path', 'source_revision', 'model_run_id', 'case_id', 'iou', 'smoothing']:
+for name in ['module_dir', 'experiment_path', 'source_revision', 'model_run_id', 'case_id', 'iou', 'smoothing', 'all_labels']:
     dbutils.widgets.text(name, '')
 ml_dir = Path(dbutils.widgets.get('module_dir'))
 if not (ml_dir / 'export_predictions.py').is_file():
@@ -28,11 +28,13 @@ model_run_id, case_id = dbutils.widgets.get('model_run_id'), dbutils.widgets.get
 iou = float(dbutils.widgets.get('iou') or 0.5)
 settings = [tuple(int(v) for v in s.split(':')) for s in (dbutils.widgets.get('smoothing') or '0:1').split(',')]
 experiment_path = dbutils.widgets.get('experiment_path')
+all_labels = dbutils.widgets.get('all_labels') == 'true'  # also write <csv>-all.csv with verbs/targets for search
 if not experiment_path.startswith('/Users/'):
     raise ValueError('Use an explicit user-owned MLflow experiment path')
 mlflow.set_experiment(experiment_path)
 bundle = Path('/Volumes/workspace/default/surgf/features') / case_id
-model_dir = Path(mlflow.artifacts.download_artifacts(run_id=model_run_id, artifact_path='baseline'))
+is_mlp = mlflow.get_run(model_run_id).data.params.get('model') == 'mlp'  # train_multilabel run
+model_dir = Path(mlflow.artifacts.download_artifacts(run_id=model_run_id, artifact_path='multilabel' if is_mlp else 'baseline'))
 model_report = json.loads((model_dir / 'metrics.json').read_text())
 bundle_metadata = json.loads((bundle / 'metadata.json').read_text())
 
@@ -54,7 +56,16 @@ for max_gap, min_len in settings:
             writer = csv.writer(f)
             writer.writerow(['case_id', 'start_sec', 'end_sec', 'label', 'source'])
             writer.writerows(rows)
-        report = evaluate(destination, bundle, iou)
+        report = evaluate(destination, bundle, iou)  # scored on instruments only
+        if all_labels:
+            everything = destination.with_name(destination.stem + '-all.csv')
+            with everything.open('w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['case_id', 'start_sec', 'end_sec', 'label', 'source'])
+                writer.writerows(predict_clips(model_dir, bundle, max_gap, min_len,
+                                               groups=('instruments', 'verbs', 'targets')))
+            mlflow.log_artifact(str(everything), artifact_path='clips')
+            report['all_labels_csv'] = str(everything)
         report.update(model_run_id=model_run_id, prediction_csv=str(destination), prediction_rows=len(rows),
                       max_gap_sec=max_gap, min_clip_sec=min_len,
                       model_split=model_report.get('split'), frame_threshold=model_report['threshold'],

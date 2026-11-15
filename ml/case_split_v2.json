@@ -1,0 +1,62 @@
+{
+  "name": "expanded-v2",
+  "train": [
+    "VID01",
+    "VID04",
+    "VID05",
+    "VID06",
+    "VID08",
+    "VID10",
+    "VID12",
+    "VID13",
+    "VID14",
+    "VID18",
+    "VID22",
+    "VID23",
+    "VID35",
+    "VID36",
+    "VID40",
+    "VID42",
+    "VID43",
+    "VID47",
+    "VID48",
+    "VID49",
+    "VID50",
+    "VID51",
+    "VID52",
+    "VID56",
+    "VID57",
+    "VID60",
+    "VID62",
+    "VID65",
+    "VID66",
+    "VID68",
+    "VID70",
+    "VID73",
+    "VID74",
+    "VID75",
+    "VID78",
+    "VID79",
+    "VID80",
+    "VID92",
+    "VID96",
+    "VID103",
+    "VID110",
+    "VID111"
+  ],
+  "validation": [
+    "VID15",
+    "VID25",
+    "VID26"
+  ],
+  "test": [
+    "VID27",
+    "VID29",
+    "VID31",
+    "VID32"
+  ],
+  "diagnostic": [
+    "VID02"
+  ],
+  "note": "Frozen before any expanded-v2 result. Identical validation/test/diagnostic to expanded-v1; the 30 remaining CholecT50 cases are added to train only, so v1 and v2 test scores compare the same surgeries."
+}

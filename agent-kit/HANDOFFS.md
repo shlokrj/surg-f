@@ -86,6 +86,37 @@ Mihir's `/chart` UI can count the **six instrument labels** currently returned b
 
 Please record the sample or blocker and next owner in the relevant progress row, then point Mihir to the commit or fixture path.
 
+### Data/ML reply: action rows delivered (Aadhitya, 2026-11-14)
+
+**Yes, real per-instrument annotations exist.** CholecT50 `samples.json` (verified sha `c4791109…`) stores a `triplets` field on every 1 fps frame, and each triplet binds one instrument to its own verb and target (for example `grasper,grasp,gallbladder`). These are not inferred from tool presence.
+
+**Fixture:** [`shared/triplets.annotation.csv`](../shared/triplets.annotation.csv), with 269 rows covering **all** of VID01 (1,734 s) and VID02 (2,840 s), not a sample. Columns: `case_id,start_sec,end_sec,instrument,verb,target,source`. Intervals are `[start_sec, end_sec)` in video seconds, on the same timebase as `/search` (seek directly). `source` is always `annotation`. Regenerate with `python ml/export_triplets.py <samples.json> shared/triplets.annotation.csv VID01 VID02`.
+
+**Taxonomy:** 6 instruments (bipolar, clipper, grasper, hook, irrigator, scissors), 9 verbs plus `null_verb`, and 14 targets plus `null_target`, giving 100 triplet classes. The "10 verbs / 15 targets" in the request counts the nulls. There is no 7th instrument; the API's six labels are the full set.
+
+**Missing-label semantics:**
+- `null_verb,null_target`: the instrument is visible but no action is annotated (VID01 313 s, VID02 239 s). Show it as "idle", not as missing data.
+- No row for an instrument at a second: that instrument is not visible. Every second of both videos is annotated; seconds with no rows at all mean no instrument is in view (VID01 191 s, VID02 220 s).
+- Rows overlap in time, because several instruments work at once. Sum durations per category; don't treat them as a partition.
+
+**Sample (first rows of VID01):**
+```
+VID01,0,5,grasper,grasp,gallbladder,annotation
+VID01,10,108,grasper,grasp,gallbladder,annotation
+VID01,20,251,hook,null_verb,null_target,annotation
+VID01,251,272,hook,dissect,cystic_duct,annotation
+```
+
+**Seconds per category (sum of row durations):**
+- VID01 verbs: grasp 840, dissect 553, retract 486, null 313, coagulate 125, aspirate 117, clip 78, pack 27, cut 17, irrigate 4.
+- VID01 targets: gallbladder 1375, liver 387, null 313, specimen_bag 125, cystic_duct 124, fluid 117, blood_vessel 100, cystic_artery 16, abdominal_wall_cavity 2, cystic_pedicle 1.
+- VID02 verbs: retract 1673, dissect 1510, null 239, cut 227, grasp 146, aspirate 96, coagulate 95, clip 62, irrigate 25.
+- VID02 targets: gallbladder 2019, liver 506, cystic_duct 375, omentum 324, null 239, cystic_artery 182, adhesion 155, fluid 96, gut 88, specimen_bag 59, cystic_pedicle 25, abdominal_wall_cavity 5.
+
+**Verification:** a round-trip check rebuilt each second's triplet set from the 269 intervals and matched `samples.json` exactly for all 4,574 seconds. The merge logic has a unit test, `ml/test_triplets.py`.
+
+**"What was the grasper doing?"** Filter `instrument == grasper`, then group by verb (and target). **Next owner: Rohan** proposes the video-scoped endpoint from this CSV in `CONTRACTS.md`. **Mihir** can build `/chart` against the CSV now; the fields won't change.
+
 **Frontend follow-up (Mihir, 2026-11-14):** Data/ML delivered the verified VID01/VID02 action intervals in `ml-dev` commit `c0ae595`. The frontend now imports the same `shared/triplets.annotation.csv` (269 rows) and renders verb/target interval counts, including instrument-specific verbs. Rohan remains the next owner for the agreed video-scoped API/fixture. Keep `null_verb`/`null_target` semantics and overlapping intervals when proposing counts. Once that endpoint is available, Mihir will switch from the committed CSV to the API.
 
 ## Shared `ml-dev` branch (Aadhitya + Shlok)

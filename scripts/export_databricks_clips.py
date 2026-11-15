@@ -4,6 +4,7 @@ Loads the model from a training MLflow run and logs results as its child run. Th
   python scripts/clips_job.py run --csv /Volumes/workspace/default/surgf/predictions/<MODEL_RUN>/<CASE>.csv
 Usage: python scripts/export_databricks_clips.py --model-run-id 54659bc6... --case-id VID02 [--iou 0.5]
        [--smoothing 0:1,1:2,2:2,3:3]   # max_gap:min_len sweep, one MLflow child run and CSV per setting
+       [--all-labels]                  # MLP: also write <CASE>-gap<G>-min<M>-all.csv (instruments+verbs+targets)
 """
 import argparse
 import json
@@ -15,7 +16,8 @@ from databricks.sdk.service.workspace import ImportFormat, Language
 from run_databricks_features import ROOT, client, snapshot
 
 FILES = ['ml/export_evaluate_databricks.py', 'ml/export_predictions.py', 'ml/evaluate_clips.py',
-         'ml/extract_features.py', 'databricks/make_clips_csv.py']
+         'ml/extract_features.py', 'databricks/make_clips_csv.py',
+         'ml/train_multilabel.py', 'ml/train_tools.py']  # MLP export reuses with_context
 
 
 def main():
@@ -24,6 +26,7 @@ def main():
     parser.add_argument('--case-id', required=True)
     parser.add_argument('--iou', default='0.5')
     parser.add_argument('--smoothing', default='0:1', help='comma list of max_gap:min_len (seconds); 0:1 = unsmoothed')
+    parser.add_argument('--all-labels', action='store_true', help='also write <csv>-all.csv with verbs/targets (MLP only)')
     args = parser.parse_args()
     for s in args.smoothing.split(','):  # fail here, not after a Databricks job starts
         max_gap, min_len = (int(v) for v in s.split(':'))
@@ -51,7 +54,8 @@ def main():
                                   'experiment_path': f'/Users/{owner}/surg-f-tool-baseline',
                                   'source_revision': revision, 'model_run_id': args.model_run_id,
                                   'case_id': args.case_id, 'iou': args.iou,
-                                  'smoothing': args.smoothing}))],
+                                  'smoothing': args.smoothing,
+                                  'all_labels': str(args.all_labels).lower()}))],
     ).response
     print(json.dumps({'run_id': response.run_id, 'revision': revision,
                       'url': w.jobs.get_run(response.run_id).run_page_url}, indent=2))
