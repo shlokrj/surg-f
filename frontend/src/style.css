@@ -126,7 +126,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
 
 /* --- footage filter and player --------------------------------------------- */
 .surgical-media { position: relative; }
-.surgical-media.filtered::after { content: ""; position: absolute; inset: 0; background: #0c332a14; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); pointer-events: none; }
+/* Content filter: blurred and fully desaturated (grayscale) so the footage clearly reads as hidden. */
+.surgical-media.filtered::after { content: ""; position: absolute; inset: 0; background: #0c332a14; backdrop-filter: blur(10px) grayscale(1); -webkit-backdrop-filter: blur(10px) grayscale(1); pointer-events: none; }
 .video-frame { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #122725; border-radius: var(--radius); scroll-margin-top: calc(var(--topbar) + 72px); }
 .video-frame video { width: 100%; height: 100%; display: block; }
 .video-frame:fullscreen { aspect-ratio: auto; height: 100vh; border-radius: 0; }
