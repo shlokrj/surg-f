@@ -18,4 +18,4 @@
 
 Shlok owns general frontend design. Aadhi owns spatial data/model/evaluation/export; Mihir owns spatial player integration and browser verification. Follow [the current plan](../ml/LOCALIZATION_PLAN.md#current-assignments-and-shared-workflow); earlier Shlok spatial assignments are superseded. Shlok and Mihir must coordinate shared frontend files and preserve each other's work.
 
-Aadhi and Mihir push spatial changes to `feat/spatial-overlays`, not main, until Shlok explicitly requests publication. The current ownership-documentation request authorizes a docs-only main update. Use separate checkouts, preserve concurrent commits and never force-push.
+Aadhi and Mihir push new spatial work to `feat/spatial-overlays`, not main, until publication is explicitly requested. Mihir separately requested publication of the already integrated `frontend/dev` work on 2026-11-14; `main` now contains it through `6d468dd`. That publication does not authorize future feature-branch work. Use separate checkouts, preserve concurrent commits and never force-push.

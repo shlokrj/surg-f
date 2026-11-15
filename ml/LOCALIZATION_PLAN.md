@@ -1,6 +1,6 @@
 # Stage 3: localized video overlays
 
-Status: **Aadhi (Aadhitya) and Mihir own spatial implementation; Shlok has moved to frontend design.** This supersedes all earlier three-person spatial assignments. Spatial work stays on `feat/spatial-overlays`; merge to main only when Shlok explicitly requests it. This ownership documentation is authorized for main now, not unfinished spatial code.
+Status: **Aadhi (Aadhitya) and Mihir own spatial implementation; Shlok has moved to frontend design.** This supersedes all earlier three-person spatial assignments. The earlier integrated frontend was published to `main` through `6d468dd` at Mihir's request. New spatial work stays on `feat/spatial-overlays` until explicitly published; that main publication does not include unfinished feature-branch work.
 
 ## Current assignments and shared workflow
 
