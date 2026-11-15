@@ -132,3 +132,12 @@ test('public and demo versions: demo runs problem, solution, features, stack, mo
  assert.ok(demo.querySelector('#solution #sample-event'));
  assert.equal(p.querySelectorAll('.pb-lane.is-cut .tr i').length,1,'one scissors segment');
 });
+test('one eye in the pinned nav blurs every surgery picture on the homepage',()=>{
+ for(const mode of ['public','demo']){
+  const on=new JSDOM(homePage({videoUrl:'/v.mp4',filterOn:true,filterButton:'',blurButton:'<button class="nav-eye" data-filter-toggle aria-pressed="true"></button>',error:'',showcase,mode})).window.document;
+  assert.ok(on.querySelector('.hero-nav .nav-actions .nav-eye[data-filter-toggle]'),mode);
+  assert.ok(on.querySelector('main.landing.is-blurred'),mode);
+  const off=new JSDOM(homePage({videoUrl:'/v.mp4',filterOn:false,filterButton:'',error:'',showcase,mode})).window.document;
+  assert.equal(off.querySelector('main.landing.is-blurred'),null,mode);
+ }
+});

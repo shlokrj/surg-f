@@ -110,12 +110,17 @@ const EYE_OPEN = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke
 const EYE_SLASH = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 5.7A9.7 9.7 0 0 1 12 5.5C18 5.5 21.5 12 21.5 12a17 17 0 0 1-2.7 3.5M6.3 7.4C3.9 9.1 2.5 12 2.5 12S6 18.5 12 18.5c1.7 0 3.2-.5 4.5-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18"/></svg>';
 // Content filter: an eye over the footage. Slashed while the footage is blurred.
 const eyeTitle = () => state.filterOn ? 'Footage blurred. Select to show it.' : 'Footage visible. Select to blur it.';
+/* Homepage: one eye in the pinned nav blurs every surgery picture on the page (same setting as the case
+   page's eye, so the choice carries between pages). */
+function blurButton() {
+  return `<button type="button" class="nav-eye" data-filter-toggle aria-pressed="${state.filterOn}" aria-label="Blur surgical footage" title="${eyeTitle()}">${state.filterOn ? EYE_SLASH : EYE_OPEN}</button>`;
+}
 function filterButton() {
   return `<button type="button" class="eye-toggle" data-filter-toggle aria-pressed="${state.filterOn}" aria-label="Blur footage" title="${eyeTitle()}">${state.filterOn ? EYE_SLASH : EYE_OPEN}</button>`;
 }
 
 function home() {
-  return homePage({videoUrl: escapeHtml(videoForCase('VID01')), filterOn: state.filterOn, filterButton: filterButton(), error: escapeHtml(state.error), showcase: {steps: homeSteps, timeline: homeTimeline, quiz: homeQuiz}, mode: HOME_MODE});
+  return homePage({videoUrl: escapeHtml(videoForCase('VID01')), filterOn: state.filterOn, filterButton: filterButton(), blurButton: blurButton(), error: escapeHtml(state.error), showcase: {steps: homeSteps, timeline: homeTimeline, quiz: homeQuiz}, mode: HOME_MODE});
 }
 
 function detectRequest(input) {
@@ -365,6 +370,7 @@ function wire() {
   document.querySelectorAll('[data-filter-toggle]').forEach(button => button.addEventListener('click', () => {
     state.filterOn = !state.filterOn;
     document.querySelectorAll('.surgical-media').forEach(media => media.classList.toggle('filtered', state.filterOn));
+    document.querySelector('.landing')?.classList.toggle('is-blurred', state.filterOn);
     document.querySelectorAll('[data-filter-toggle]').forEach(toggle => {
       toggle.innerHTML = state.filterOn ? EYE_SLASH : EYE_OPEN;
       toggle.setAttribute('aria-pressed', String(state.filterOn));

@@ -191,7 +191,7 @@ const feature = ({id, title, body, action, command, horizon, preview, index}) =>
 /* Two versions of the homepage. `public`: the product. `demo` (/demo or ?demo, used to present the
    project): problem, solution (in place of "Find the clip"), features, the stack, model notes, the
    Databricks section and what's next (in place of "Open your own video"). */
-export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}, mode = 'public'}) {
+export function homePage({videoUrl, filterOn, filterButton, blurButton = '', error, showcase = {}, mode = 'public'}) {
   const demo = mode === 'demo';
   const findClip = `    <section class="case-section" id="case-preview" aria-labelledby="case-heading">
       <div class="case-copy"><h2 id="case-heading">Find the clip.</h2><p>Ask when a step happens and jump straight to the annotated moment.</p><button type="button" class="btn-primary" id="sample">Explore the demo</button></div>
@@ -204,8 +204,8 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
     ${feature({id: 'feature-chart', title: 'See which instruments appear, and for how long.', body: 'Time on screen for each instrument, totalled from the dataset annotations.', action: 'Show the instrument chart', command: '/chart instruments', horizon: .62, index: 1, preview: instrumentsPreview(showcase.timeline)})}
     ${feature({id: 'feature-quiz', title: 'Test yourself on the procedure.', body: 'Five questions on step order and instruments, each with an explanation and example clips.', action: 'Start the quiz', command: '/quiz', horizon: .62, index: 2, preview: quizPreview(showcase.quiz)})}
     </div>`;
-  return `<main class="landing${demo ? ' is-demo' : ''}" id="main-content">
-    <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><button type="button" id="open-sample" class="nav-case">Open a case</button></nav>
+  return `<main class="landing${demo ? ' is-demo' : ''}${filterOn ? ' is-blurred' : ''}" id="main-content">
+    <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><span class="nav-actions">${blurButton}<button type="button" id="open-sample" class="nav-case">Open a case</button></span></nav>
     <section class="landing-intro" aria-labelledby="landing-title">
       <div class="intro-sticky">
         <div class="hero-frame">
