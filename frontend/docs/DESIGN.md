@@ -54,6 +54,18 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
   4. Lakeflow and Delta: clips_all.csv rides through stage and MERGE into surgf_clips (11,264 labels, 1,658 predictions), and a rerun inserts 0.
   5. SQL, Genie and Llama: three logged chat checks with their route and time, and the Genie space's view, table and function.
   Numbers follow the scroll (`data-scrub`). Class names are scoped per section; check for collisions with `architecture.css` before adding generic names.
+- **Two versions** (`homePage({mode})`, chosen in `main.js`):
+  - **Public** (`/`): hero, Find the clip, the three feature cards, the stack, model notes, Open your own video. No Databricks section.
+  - **Demo** (`/demo` or any URL with `?demo`, used to present the project): hero, problem, solution, the three feature cards, the stack, model notes, Built on Databricks, Open your own video. The hero link and footer links follow the version.
+  - `/demo` relies on the host serving `index.html` for unknown paths (Vite dev does). `?demo` works on any static host.
+- **Problem** (`src/problem.js`, `src/problem.css`; demo only): "Finding one moment.", four chapters built from real VID01 frames (painted by the shared `paintFrames`):
+  1. Half an hour: 24 frames, one every 72 s, fold into VID01's time line while the clock counts to 28:48.
+  2. 17 seconds: the scrubber hunts with a live frame preview, then lands on the cut (860–877 s).
+  3. Who needs it: residents, surgeons, educators and researchers, each tied to a real VID01 interval (or the 154 clipper clips across 50 surgeries) lit on the strip.
+  4. No index: a pen sweeps the strip while the surgeons' lanes are drawn in, and the 11,264 hand-labeled clips count up.
+- **Solution** (`src/solution.js`, `src/solution.css`; demo only, in place of Find the clip): "Ask, and jump to it." in three chapters: a read head labels every second, the demo question types and maps "cut" to scissors with the real VID01 result (and 103 more scissors clips), then the knob jumps to 14:20 on the real frame. The last chapter holds the "Open VID01 at 14:20" and "Explore the demo" buttons.
+- Find the clip's example now matches what it opens: "When is the cystic duct cut?", 14:20, scissors (it read "clipped, 11:38" but opened 14:20).
+- **Presenter keys:** Left and Right arrows step through every chapter of the pinned stages in page order (the top of the page is the first stop), using the same positions as the chapter buttons. Not mentioned on the page on purpose. Ignored while typing or with a modifier key.
 - **Pinned nav:** the logo and "Open a case" stay fixed at the top of the homepage. Over the hero they are white; past it they switch to a frosted logo and a teal button. The footer no longer repeats them.
 
 ## Case page

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
 import {homePage,mountHome,ditherCells,wordmark} from '../src/home.js';
 const showcase={steps:{steps:[{order:1,key:'Preparation',label:'Preparation',start_sec:0,end_sec:21},{order:3,key:'ClippingCutting',label:'Clipping and cutting',start_sec:673,end_sec:887}]},timeline:{summary:[{label:'clipper',count:5,total_sec:102,first_sec:674}]},quiz:{reviewed:false,questions:[{prompt:'Next step?',options:[{id:'a',text:'One'},{id:'d',text:'Clip'}],correct_option_id:'d'}]}};
-const markup=()=>homePage({videoUrl:'/videos/VID01.mp4',filterOn:true,filterButton:'<button>Content filter</button>',error:'',showcase});
+const markup=(mode)=>homePage({videoUrl:'/videos/VID01.mp4',filterOn:true,filterButton:'<button>Content filter</button>',error:'',showcase,mode});
 test('homepage preserves real entry points and honest upload scope',()=>{
  const doc=new JSDOM(markup()).window.document;
  assert.equal(doc.querySelectorAll('h1').length,1);
@@ -96,7 +96,7 @@ test('dig into the stack and model notes render real, cited project data',()=>{
  assert.equal(doc.querySelectorAll('.stack-card').length,3);
 });
 test('databricks section covers the real Databricks work, with the mark and checked links',()=>{
- const doc=new JSDOM(markup()).window.document;
+ const doc=new JSDOM(markup('demo')).window.document;
  const db=doc.querySelector('#databricks');
  assert.ok(db.querySelector('h2 .db-mark'),'Databricks mark in the heading');
  const logo=db.querySelector('h2 a.db-logo');
@@ -108,4 +108,22 @@ test('databricks section covers the real Databricks work, with the mark and chec
  assert.deepEqual([...db.querySelectorAll('[data-scrub]')].map(b=>b.dataset.scrub.split(',')[1]),['50','0.304','0.343','11264','1658']);
  assert.ok([...db.querySelectorAll('.layer-copy a')].every(a=>a.rel.includes('noopener')&&a.target==='_blank'));
  assert.ok(doc.querySelector('.footer-links a[href="#databricks"]'));
+});
+test('public and demo versions: demo runs problem, solution, features, stack, model, Databricks',()=>{
+ const order=mode=>[...new JSDOM(markup(mode)).window.document.querySelectorAll('main > section, main > div.feature-stack')].map(el=>el.id||el.className.split(' ')[0]);
+ assert.deepEqual(order('public'),['landing-intro','case-preview','feature-stack','architecture','model-notes','local-section']);
+ assert.deepEqual(order('demo'),['landing-intro','problem','solution','feature-stack','architecture','model-notes','databricks','local-section']);
+ const pub=new JSDOM(markup('public')).window.document,demo=new JSDOM(markup('demo')).window.document;
+ assert.equal(pub.querySelector('#databricks'),null,'no Databricks section in the public version');
+ assert.equal(pub.querySelector('#problem'),null);
+ assert.equal(pub.querySelector('.footer-links a[href="#databricks"]'),null);
+ assert.ok(demo.querySelector('.footer-links a[href="#problem"]'));
+ for(const id of ['sample','sample-event','open-sample','drop-zone','file-input'])assert.ok(demo.getElementById(id),id);
+ const p=demo.querySelector('#problem');
+ assert.equal(p.querySelectorAll('.pb-length .pb-tile').length,24,'24 real VID01 frames');
+ assert.match(p.textContent,/14:20 to 14:37, 17 s of 1,728 s/);
+ assert.equal(p.querySelectorAll('.pb-use').length,4,'four use cases');
+ assert.equal(demo.querySelector('#case-preview'),null,'the solution replaces Find the clip in the demo');
+ assert.ok(demo.querySelector('#solution #sample-event'));
+ assert.equal(p.querySelectorAll('.pb-lane.is-cut .tr i').length,1,'one scissors segment');
 });

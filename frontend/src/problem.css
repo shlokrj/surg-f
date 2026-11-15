@@ -1,0 +1,54 @@
+/* "Finding one moment": problem statement (demo version). Layout and transitions come from
+   architecture.css and modelnotes.css (.dig-model). Here: three scenes built from VID01 frames. */
+.pb-tile canvas,.pb-strip canvas,.pv{display:block;width:100%;height:100%;background:radial-gradient(circle at 40% 45%,#a5504a,#4a1a1d 60%,#140809)}
+.pb-tile canvas.vf:not(.is-painted),.pb-strip canvas.vf:not(.is-painted){opacity:.6}
+
+/* 1. Half an hour: a contact sheet of 24 frames folds into one strip, and the running time counts up. */
+.pb-length{--m:clamp(0, calc((var(--p) - .12) / .5), 1)}
+.pb-tile{--mi:clamp(0, calc((var(--m) - var(--st)) / .8), 1);position:absolute;top:0;left:0;overflow:hidden;border-radius:calc(8px - 6px * var(--mi));box-shadow:0 8px 20px #052a2640;transform:translate(calc(var(--x0) + (var(--x1) - var(--x0)) * var(--mi)), calc(var(--y0) + (250px - var(--y0)) * var(--mi)));width:calc(82px + (var(--w1) - 82px) * var(--mi));height:calc(46px + 30px * var(--mi))}
+.pb-total{position:absolute;left:14px;top:372px;display:grid;gap:4px;color:#fff;opacity:clamp(0, calc((var(--p) - .28) * 6), 1)}
+.pb-total b{font:600 54px/1 var(--mono);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.pb-total span{font-size:15px;color:#fff;text-shadow:0 1px 8px #0a3a3566}
+.pb-ticks{position:absolute;left:14px;right:14px;top:336px;display:flex;justify-content:space-between;color:#cfe6dc;font:500 13px var(--mono);opacity:clamp(0, calc((var(--p) - .62) * 8), 1)}
+
+/* Shared strip: 24 frames side by side, one per 72 s. */
+.pb-strip{display:grid;grid-template-columns:repeat(24,minmax(0,1fr));height:100%;overflow:hidden;border-radius:6px}
+.pb-strip span{position:relative;min-width:0;overflow:hidden}
+
+/* 2. 17 seconds: the knob hunts back and forth with a live preview, then lands on the cut. */
+.pb-needle{--hx:0;--land:clamp(0, calc((var(--p) - .8) * 8), 1)}
+.pb-preview{position:absolute;left:50%;top:40px;width:340px;aspect-ratio:854/480;margin-left:-170px;overflow:hidden;border-radius:14px;box-shadow:0 24px 60px #052a2660;transform:translateX(calc((var(--hx) - .5) * 120px)) rotate(calc((var(--hx) - .5) * 4deg));outline:calc(var(--land) * 3px) solid var(--hit)}
+.pv-time{position:absolute;left:10px;bottom:8px;padding:3px 8px;border-radius:6px;background:#0f2d2ad9;color:#fff;font:600 15px var(--mono)}
+.pb-bar{position:absolute;left:14px;right:14px;top:290px;height:64px}
+.pb-knob{position:absolute;top:-10px;bottom:-10px;left:calc(var(--hx) * 100%);width:4px;margin-left:-2px;border-radius:2px;background:#fff;box-shadow:0 0 0 3px #0f2d2a66,0 0 18px #fff}
+.pb-knob::before{content:"";position:absolute;left:50%;top:-12px;width:16px;height:16px;border-radius:50%;translate:-50% 0;background:#fff;box-shadow:0 4px 10px #052a2650}
+.pb-cut{position:absolute;top:-4px;bottom:-4px;left:var(--cx);width:max(var(--cw),5px);border-radius:2px;background:var(--hit);box-shadow:0 0 16px var(--hit);opacity:var(--land)}
+.pb-callout{position:absolute;left:calc(14px + (100% - 28px) * .4977);top:384px;display:grid;gap:3px;padding:10px 14px;border-radius:12px;background:#fff;color:var(--ink);translate:-50% 0;box-shadow:0 18px 40px #052a2650;opacity:var(--land);transform:translateY(calc((1 - var(--land)) * 12px))}
+.pb-callout::before{content:"";position:absolute;left:50%;top:-8px;width:14px;height:14px;background:#fff;rotate:45deg;translate:-50% 0}
+.pb-callout b{font-size:16px;color:var(--brand-strong)}.pb-callout span{font-size:14px;color:var(--ink-muted);white-space:nowrap}
+
+/* 3. Who needs it: four people, each tied to a real moment on the strip, arrive one after another. */
+.pb-bar.mid{top:56px;height:60px}
+.pb-mark{--u:clamp(0, calc((var(--p) - .08 - var(--k) * .17) / .12), 1);position:absolute;top:-6px;bottom:-6px;min-width:5px;border-radius:3px;background:var(--c);box-shadow:0 0 14px var(--c);opacity:var(--u)}
+.pb-mark,.pb-use{--c:#9ff3df}
+.pb-mark[style*="--k:1"],.pb-use[style*="--k:1"]{--c:#ffffff}
+.pb-mark[style*="--k:2"],.pb-use[style*="--k:2"]{--c:var(--hit)}
+.pb-mark[style*="--k:3"],.pb-use[style*="--k:3"]{--c:#b3a6ff}
+.pb-use{--u:clamp(0, calc((var(--p) - .08 - var(--k) * .17) / .12), 1);position:absolute;width:262px;display:grid;gap:4px;padding:14px 16px 14px 20px;border-radius:14px;background:#0f2d2ae8;color:#e6f3ee;box-shadow:0 18px 40px #052a2640;opacity:var(--u);transform:translateY(calc((1 - var(--u)) * 24px)) scale(calc(.96 + .04 * var(--u)))}
+.pb-use::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 3px 3px 0;background:var(--c)}
+.pb-use b{font-size:17px;color:#fff}.pb-use span{font-size:15px;line-height:1.35}.pb-use em{font:600 13px var(--mono);font-style:normal;color:var(--c)}
+.pb-use[style*="--k:0"]{left:14px;top:160px}.pb-use[style*="--k:1"]{left:284px;top:160px}
+.pb-use[style*="--k:2"]{left:14px;top:312px}.pb-use[style*="--k:3"]{left:284px;top:312px}
+
+/* 4. No index: a pen sweeps the strip while the surgeons' lanes are drawn in behind it, and the
+   hand-labeled clip count climbs. */
+.pb-index{--ln:clamp(0, calc((var(--p) - .05) / .5), 1)}
+.pb-bar.small{top:56px;height:52px}
+.pb-pen{position:absolute;top:-10px;bottom:-10px;left:calc(var(--ln) * 100%);width:3px;margin-left:-1.5px;border-radius:2px;background:#fff;box-shadow:0 0 16px #fff;opacity:calc(clamp(0, calc(var(--ln) * 30), 1) * clamp(0, calc((1 - var(--ln)) * 30), 1))}
+.pb-lanes{position:absolute;left:14px;right:14px;top:136px;display:grid;gap:9px;padding:16px 14px;border-radius:14px;background:#0f2d2ae0}
+.pb-lane{display:grid;grid-template-columns:78px 1fr;align-items:center;gap:8px;font-size:13.5px;color:#cfe6dc}
+.pb-lane .tr{position:relative;height:14px;border-radius:3px;background:#ffffff1a;clip-path:inset(0 calc((1 - var(--ln)) * 100%) 0 0)}
+.pb-lane .tr i{position:absolute;top:0;bottom:0;min-width:2px;border-radius:2px;background:#8bd5b7}
+.pb-lane.is-cut{color:#fff;font-weight:600}.pb-lane.is-cut .tr i{background:var(--hit);box-shadow:0 0 10px var(--hit)}
+.pb-hit{position:absolute;left:14px;top:396px;display:flex;align-items:baseline;gap:12px;padding:12px 18px;border-radius:12px;background:#fff;color:var(--ink);box-shadow:0 16px 36px #052a2650;opacity:clamp(0, calc((var(--p) - .28) * 6), 1)}
+.pb-hit b{font:600 30px var(--mono);color:var(--brand-strong);font-variant-numeric:tabular-nums}.pb-hit span{font-size:15px;color:var(--ink-muted)}

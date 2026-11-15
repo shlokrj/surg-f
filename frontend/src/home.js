@@ -1,6 +1,8 @@
 import { architectureSection, updateArchitecture, digScrollTop } from './architecture.js';
 import { modelSection } from './modelnotes.js';
 import { databricksSection } from './databricks.js';
+import { problemSection } from './problem.js';
+import { solutionSection } from './solution.js';
 
 /* Brand: "surg" and "f" as keycaps joined by "+", read like the Ctrl+F shortcut. Same markup in the hero
    and the small lockup; colors follow currentColor, so it works white-on-teal and teal-on-light.
@@ -185,14 +187,29 @@ const feature = ({id, title, body, action, command, horizon, preview, index}) =>
   <div class="feature-visual"><canvas class="sky-dither" data-horizon="${horizon}" data-ceiling="7.2" aria-hidden="true"></canvas>${preview}</div>
 </section>`;
 
-export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}}) {
-  return `<main class="landing" id="main-content">
+/* Two versions of the homepage. `public`: the product. `demo` (/demo or ?demo, used to present the
+   project): problem, solution (in place of "Find the clip"), features, the stack, model notes and the
+   Databricks section. */
+export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}, mode = 'public'}) {
+  const demo = mode === 'demo';
+  const findClip = `    <section class="case-section" id="case-preview" aria-labelledby="case-heading">
+      <div class="case-copy"><h2 id="case-heading">Find the clip.</h2><p>Ask when a step happens and jump straight to the annotated moment.</p><button type="button" class="btn-primary" id="sample">Explore the demo</button></div>
+      <div class="case-console"><div class="console-bar"><span class="console-case"><strong>VID01</strong><span>Cholecystectomy</span></span></div>
+      <div class="preview-video surgical-media ${filterOn ? 'filtered' : ''}">${filterButton}<video src="${videoUrl}" muted playsinline preload="metadata" aria-label="Surgical footage from the VID01 demo case"></video><span class="preview-unavailable" hidden>Video preview unavailable. You can still open the case.</span></div>
+      <button type="button" id="sample-event" class="find-result"><span class="find-query">${searchGlyph}${DEMO_QUESTION}</span><span class="find-time">14:20 <span aria-hidden="true">↗</span></span></button><div class="console-caption"><span>Annotated: scissors cut the cystic duct</span><span>Jump to this moment</span></div></div>
+    </section>`;
+  const features = `    <div class="feature-stack">
+    ${feature({index: 0, id: 'feature-steps', title: 'Follow the operation, step by step.', body: 'Each case is split into its surgical phases. Select a step to jump straight to it.', action: 'Open the case timeline', horizon: .62, preview: stepsPreview(showcase.steps)})}
+    ${feature({id: 'feature-chart', title: 'See which instruments appear, and for how long.', body: 'Time on screen for each instrument, totalled from the dataset annotations.', action: 'Show the instrument chart', command: '/chart instruments', horizon: .62, index: 1, preview: instrumentsPreview(showcase.timeline)})}
+    ${feature({id: 'feature-quiz', title: 'Test yourself on the procedure.', body: 'Five questions on step order and instruments, each with an explanation and example clips.', action: 'Start the quiz', command: '/quiz', horizon: .62, index: 2, preview: quizPreview(showcase.quiz)})}
+    </div>`;
+  return `<main class="landing${demo ? ' is-demo' : ''}" id="main-content">
     <nav class="hero-nav" aria-label="Main"><a class="small-brand" href="#top" aria-label="surg+f, back to top">${wordmark()}</a><button type="button" id="open-sample" class="nav-case">Open a case</button></nav>
     <section class="landing-intro" aria-labelledby="landing-title">
       <div class="intro-sticky">
         <div class="hero-frame">
           <canvas class="sky-dither hero-dither" aria-hidden="true"></canvas>
-          <div class="intro-copy"><h1 id="landing-title">${wordmark('sf-hero')}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="#case-preview">See the demo <span aria-hidden="true">↓</span></a></div>
+          <div class="intro-copy"><h1 id="landing-title">${wordmark('sf-hero')}</h1><p>Search surgical video.</p><a class="hero-demo-link" href="${demo ? '#problem' : '#case-preview'}">${demo ? 'See the problem' : 'See the demo'} <span aria-hidden="true">↓</span></a></div>
           <form class="hero-search" id="hero-search" role="search">
             <label class="sr-only" for="hero-q">Ask about the VID01 demo case</label>
             ${searchGlyph}<input id="hero-q" name="q" value="${DEMO_QUESTION}" placeholder="Ask about the VID01 demo case" autocomplete="off" spellcheck="false" required>
@@ -201,26 +218,17 @@ export function homePage({videoUrl, filterOn, filterButton, error, showcase = {}
         </div>
       </div>
     </section>
-    <section class="case-section" id="case-preview" aria-labelledby="case-heading">
-      <div class="case-copy"><h2 id="case-heading">Find the clip.</h2><p>Ask when a step happens and jump straight to the annotated moment.</p><button type="button" class="btn-primary" id="sample">Explore the demo</button></div>
-      <div class="case-console"><div class="console-bar"><span class="console-case"><strong>VID01</strong><span>Cholecystectomy</span></span></div>
-      <div class="preview-video surgical-media ${filterOn ? 'filtered' : ''}">${filterButton}<video src="${videoUrl}" muted playsinline preload="metadata" aria-label="Surgical footage from the VID01 demo case"></video><span class="preview-unavailable" hidden>Video preview unavailable. You can still open the case.</span></div>
-      <button type="button" id="sample-event" class="find-result"><span class="find-query">${searchGlyph}When is the cystic duct clipped?</span><span class="find-time">11:38 <span aria-hidden="true">↗</span></span></button><div class="console-caption"><span>Annotated: clipper clips the cystic duct</span><span>Jump to this moment</span></div></div>
-    </section>
-    <div class="feature-stack">
-    ${feature({index: 0, id: 'feature-steps', title: 'Follow the operation, step by step.', body: 'Each case is split into its surgical phases. Select a step to jump straight to it.', action: 'Open the case timeline', horizon: .62, preview: stepsPreview(showcase.steps)})}
-    ${feature({id: 'feature-chart', title: 'See which instruments appear, and for how long.', body: 'Time on screen for each instrument, totalled from the dataset annotations.', action: 'Show the instrument chart', command: '/chart instruments', horizon: .62, index: 1, preview: instrumentsPreview(showcase.timeline)})}
-    ${feature({id: 'feature-quiz', title: 'Test yourself on the procedure.', body: 'Five questions on step order and instruments, each with an explanation and example clips.', action: 'Start the quiz', command: '/quiz', horizon: .62, index: 2, preview: quizPreview(showcase.quiz)})}
-    </div>
+    ${demo ? `${problemSection()}\n${solutionSection()}` : findClip}
+    ${features}
     ${architectureSection()}
     ${modelSection()}
-    ${databricksSection()}
+    ${demo ? databricksSection() : ''}
     <section class="local-section" aria-labelledby="local-heading"><div><h2 id="local-heading">Open your own video.</h2><p>MP4 and MOV files open for local playback. Indexed search covers the demo cases.</p></div><button type="button" id="drop-zone" class="btn-secondary local-open" aria-label="Open a local MP4 or MOV for playback only">Open a video</button><input type="file" id="file-input" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>${error ? `<p class="home-error" role="alert">${error}</p>` : ''}</section>
     <footer class="site-footer" aria-label="About surg+f">
       <div class="footer-sticky">
         <div class="footer-top">
           <div class="footer-identity"><p>Search surgical video.</p></div>
-          <nav class="footer-links" aria-label="Footer"><a href="#case-preview">The demo</a><a href="#architecture">The stack</a><a href="#model-notes">Model</a><a href="#databricks">Databricks</a><a href="#top">Back to top</a></nav>
+          <nav class="footer-links" aria-label="Footer">${demo ? '<a href="#problem">The problem</a><a href="#solution">The solution</a>' : '<a href="#case-preview">The demo</a>'}<a href="#architecture">The stack</a><a href="#model-notes">Model</a>${demo ? '<a href="#databricks">Databricks</a>' : ''}<a href="#top">Back to top</a></nav>
         </div>
         <canvas class="footer-word" aria-hidden="true"></canvas>
         <div class="footer-legal"><span>Aadhitya Balaji, Shlok Jadhav, Mihir Kaushal, Rohan Nuthi</span><span>MadHacks 2026</span></div>
@@ -295,6 +303,22 @@ export function mountHome(root) {
     if (top !== null) window.scrollTo({top, behavior: 'auto'});
   };
   root.addEventListener('focusin', reveal);
+  /* Presenter shortcut (deliberately not shown on the page): Left and Right arrows step to the previous or
+     next chapter of the pinned stages (problem, solution, the stack, model notes, Databricks), with the top
+     of the page as the first stop. Ignored while typing or with a modifier held. */
+  const step = event => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.defaultPrevented) return;
+    if (event.target.closest?.('input, textarea, select, [contenteditable="true"], video')) return;
+    const stops = [0, ...[...root.querySelectorAll('.dig')].flatMap(section => [...section.querySelectorAll('.layer')].map((_, i) => digScrollTop(section, i)))]
+      .filter(top => top !== null).map(top => Math.round(Math.max(0, top))).sort((a, b) => a - b);
+    const y = window.scrollY, forward = event.key === 'ArrowRight';
+    const target = forward ? stops.find(top => top > y + 4) : [...stops].reverse().find(top => top < y - 4);
+    if (target === undefined) return;
+    event.preventDefault();
+    window.scrollTo({top: target, behavior: media.matches ? 'auto' : 'smooth'});
+  };
+  window.addEventListener('keydown', step);
   /* Hero keys: pressing a key sinks only that key, like a real keycap. Purely visual: it does not move
      focus or touch the search box, and the browser's own Ctrl+F is never intercepted. */
   const press = root.querySelector('.sf-hero');
@@ -309,8 +333,8 @@ export function mountHome(root) {
   press?.addEventListener('pointerdown', onDown);
   const video = root.querySelector('video');
   const unavailable = () => { root.querySelector('.preview-unavailable').hidden = false; };
-  video.addEventListener('error', unavailable);
+  video?.addEventListener('error', unavailable); // the demo version has no preview video
   update();
   root.ownerDocument?.fonts?.ready?.then(() => { footerCache.size = null; schedule(); });
-  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
+  return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); media.removeEventListener('change', schedule); root.removeEventListener('click', jump); root.removeEventListener('focusin', reveal); window.removeEventListener('keydown', step); press?.removeEventListener('pointerdown', onDown); clearTimeout(pressTimer); video?.removeEventListener('error', unavailable); cancelAnimationFrame(frame); };
 }
