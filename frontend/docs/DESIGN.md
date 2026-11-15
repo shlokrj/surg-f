@@ -32,12 +32,13 @@ Palette: white outer page, a teal sky ramp quantized to ten steps from `#1a8a81`
 
 ## Feature stack, how it works, model notes (2026-11-14)
 
-- **Feature stack:** the three feature sections are sticky cards (`.stack-card`, `top: 5vh + i·22px`). As the next card slides up, `--cover` (0–1) scales the previous card to 94% and dims its content. Reduced motion unpins them.
-- **How it works:** a pinned scene (`.arch`, `100svh + 6 × 42svh` of scroll) on a plus-dithered panel. Scroll progress sets `--fill`, which draws the line and moves a `+` runner. Six keycap nodes light up in turn, and the detail below swaps to the active step's text and card.
-  - Steps: surgery video, frame features, label model, clip index, search and chat, the moment.
-  - Facts come from the README, SPEC, DATABRICKS, backend README and Aadhi's `public/model-evals.md`.
-  - Each card uses only real data: the 50 cases with VID01/VID02 live, feature shapes `[1734,768]` and `[2840,768]`, the 29 CholecT50 labels, real clip rows, and a live `/search` and Genie answer checked on 2026-11-14.
-  - Narrow screens and reduced motion show the steps as a list.
+- **Feature stack:** the three feature sections are sticky cards (`.stack-card`, `top: 7vh + i·18px`, each 18px shorter than the one before). Cards keep full width; the covered card's content dims. A spacer inside the container (padding does not count for sticky) lets all three rest evenly offset, like Hangar's stack, then leave as one block.
+- **Dig into the stack** (`src/architecture.js`, `src/architecture.css`; hackathon theme "let's dig in"):
+  - A pinned intro shows an isometric block of six real CSS-3D slabs. Scroll pulls them apart (`--e`), labels track each slab, and the slabs darken with depth like strata.
+  - Then one scroll-driven scene per layer (`--p`), from surface to bedrock: player, search and chat, clip index, label model, frame features, surgery video. Each scene lists its tech with links and cites papers.
+  - Scenes use only real data: VID01 timings, clip rows, the 29 labels, and VID01 seconds 855–864 from the annotation CSV. The feature-vector bars are marked as an illustration.
+  - Every link was checked on 2026-11-14. The classifier is scikit-learn `MLPClassifier`, not PyTorch; PyTorch runs SurgVLP extraction only.
+  - Mobile hides the slab labels and scales the scenes down. Reduced motion shows the exploded block and final states statically.
 - **Model notes:** Aadhi's held-out F1 scores (final model, MLflow `9d18d20a`).
   - Instrument, best action and best target bars grow, and their numbers count up, once in view.
   - A v1→v2 comparison, three reading notes, and a link to the full `model-evals.md`.
